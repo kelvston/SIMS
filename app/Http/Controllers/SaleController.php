@@ -11,32 +11,28 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-use Spatie\Permission\Exceptions\UnauthorizedException; // Import for better error handling
+use Spatie\Permission\Exceptions\UnauthorizedException;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Mail\SaleReceiptMail;
 use Illuminate\Support\Facades\Mail;
 
-class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\Http\Controllers\Controller
+class SaleController extends Controller
 {
     public function __construct()
     {
-        // Protect sales related actions
         $this->middleware(['auth', 'permission:view sales'])->only(['index', 'show']);
         $this->middleware(['auth', 'permission:create sales'])->only(['create', 'store']);
-        // Add middleware for 'edit sales' and 'delete sales' if you implement those methods
     }
 
 
     public function index()
     {
-        // Eager load saleItems and their associated phones, and installmentPlan if it exists
         $sales = Sale::with(['saleItems.phone', 'installmentPlan'])
             ->orderBy('sale_date', 'desc')
             ->paginate(5);
 
 
-        \Artisan::call('stock:check-low'); // Run the command
-
+        \Artisan::call('stock:check-low');
         $lowStockAlerts = Cache::pull('low_stock_alerts', []);
 
         return view('sales.index', compact('sales','lowStockAlerts'));
@@ -52,7 +48,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
      */
     public function create()
     {
-        // Fetch only available phones for selection in the sales form
+
         $availablePhones = Phone::where('status', 'available')->orderBy('model')->get();
         return view('sales.create', compact('availablePhones'));
     }
@@ -66,7 +62,6 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
 
     public function store(Request $request)
     {
-        // Validate the request data
         $request->validate([
             'customer_name' => 'required|string|max:255',
             'customer_phone' => 'nullable|string|max:255',
@@ -91,7 +86,6 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             $phoneIds = [];
             $totalAmount = 0;
 
-            // Fetch phones and calculate total amount
             foreach ($request->phone_imeis as $imei) {
                 $phone = Phone::where('imei', $imei)->where('status', 'available')->first();
 
@@ -114,7 +108,6 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 ]);
             }
 
-            // Create the Sale record
             $sale = Sale::create([
                 'customer_name' => $request->customer_name,
                 'customer_phone' => $request->customer_phone,
@@ -126,7 +119,6 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 'is_installment' => $request->boolean('is_installment'),
             ]);
 
-            // Create SaleItem records, update phone status, and reduce stock level
             foreach ($phoneIds as $phoneId) {
                 $phone = Phone::find($phoneId);
 
@@ -139,7 +131,6 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                     'unit_price' => $phone->selling_price,
                 ]);
 
-                // Decrease stock in StockLevel
                 $stockLevel = \App\Models\StockLevel::where('brand_id', $phone->brand_id)
                     ->where('model', $phone->model)
                     ->where('color', $phone->color)
@@ -152,15 +143,12 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 }
             }
 
-            // Generate unique receipt number
             $receiptNumber = 'RCPT-' . strtoupper(uniqid());
 
-            // Determine paid amount
             $paidAmount = $request->boolean('is_installment')
                 ? $request->installment_amount
                 : $finalAmount;
 
-            // Create the receipt
             $receipt = SaleReceipt::create([
                 'receipt_number' => $receiptNumber,
                 'sale_id' => $sale->id,
@@ -176,25 +164,15 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 'notes' => null,
             ]);
 
-            // Load sale with related items and nested phone/brand relationships for PDF
             $sale->load('saleItems.phone.brand', 'installmentPlan');
 
-
-            // Load receipt with sale relation if needed
             $receipt->load('sale');
-
-            // Generate PDF
-
-
-
-
             $pdf = Pdf::loadView('pdf.receipt', ['sale' => $sale, 'receipt' => $receipt]);
             $pdfContent = base64_encode($pdf->output());
 
             Mail::to($sale->customer_email)->send(new SaleReceiptMail($sale, $receipt, $pdfContent));
 
 
-            // If it's an installment sale, create InstallmentPlan
             if ($request->boolean('is_installment')) {
                 if ($request->installment_amount * $request->total_installments < $finalAmount) {
                     throw ValidationException::withMessages([
@@ -233,7 +211,6 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
      */
     public function show(Sale $sale)
     {
-        // Eager load related data for the sale details page
         $sale->load(['saleItems.phone', 'installmentPlan.installmentPayments']);
         return view('sales.show', compact('sale'));
     }

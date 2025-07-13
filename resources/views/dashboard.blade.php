@@ -29,14 +29,10 @@
             left: 66%;
         }
     </style>
-
-    <!-- Watermark -->
     <img src="{{ asset('images/watermark.png') }}"
          alt="Watermark"
          class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
          style="transform: translate(-50%, -90%);" />
-
-    <!-- Hexagon Buttons and Arrows Wrapper -->
     <div class="relative">
         <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 relative z-10">
             @can('receive phones')
@@ -59,8 +55,6 @@
                     <i class="fas fa-receipt text-[11px]"></i> Expense
                 </a>
             @endcan
-
-            <!-- Summary block unchanged -->
             <div class="lg:col-span-1 p-3 bg-white rounded-md shadow-sm border border-gray-200">
                 <h2 class="text-xs font-bold mb-2 text-gray-800 flex items-center gap-1">
                     <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2"
@@ -112,17 +106,13 @@
         @endforeach
     </div>
 
-    <!-- Charts -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <!-- Sales Chart -->
         <div class="p-2 bg-white rounded-md shadow-sm border border-gray-200">
             <h2 class="text-xs font-semibold mb-1 text-gray-800">Sales (30 Days)</h2>
             <div class="h-48 overflow-hidden">
                 <canvas id="salesChart"></canvas>
             </div>
         </div>
-
-        <!-- Inventory Chart -->
         <div class="p-2 bg-white rounded-md shadow-sm border border-gray-200">
             <h2 class="text-xs font-semibold mb-1 text-gray-800">Inventory by Brand</h2>
             <div class="h-48 overflow-hidden">
@@ -131,7 +121,6 @@
         </div>
     </div>
 
-    <!-- Quick Actions and Activity -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-1 p-3 bg-white rounded-md shadow-sm border border-gray-200">
             <h2 class="text-sm font-bold mb-3 text-gray-800 flex items-center gap-1">
@@ -163,8 +152,6 @@
                 @endcan
             </div>
         </div>
-
-        <!-- Recent Activity -->
         <div class="lg:col-span-2 p-2 bg-white rounded-md shadow border border-gray-200">
             <h2 class="text-xs font-semibold text-gray-800 mb-1 flex items-center gap-1">
                 <svg class="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2"
@@ -194,8 +181,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Table -->
     @can('view stock reports')
         <div class="p-4 bg-white rounded-lg shadow overflow-x-auto">
             <h2 class="font-semibold mb-4">Low Stock Products Overview</h2>
@@ -231,7 +216,6 @@
 
 @push('scripts')
     <script>
-        // Chart Data from Laravel Controller
         const salesChartLabels = @json($salesChartLabels);
         const salesChartData = @json($salesChartData);
         const inventoryChartLabels = @json($inventoryChartLabels);

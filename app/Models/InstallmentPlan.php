@@ -9,7 +9,6 @@ class InstallmentPlan extends Model
 {
     use HasFactory;
 
-    // Define which attributes are mass assignable
     protected $fillable = [
         'sale_id',
         'total_installments',
@@ -19,7 +18,6 @@ class InstallmentPlan extends Model
         'status',
     ];
 
-    // Define the casts for attributes
     protected $casts = [
         'start_date' => 'date',
         'next_payment_date' => 'date',

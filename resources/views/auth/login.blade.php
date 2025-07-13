@@ -9,7 +9,7 @@
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(to bottom right, #AD5D29 0%, #f5e6da 40%, #AD5D29 75%, #6e3618 100%);
+            background: linear-gradient(to bottom right, #a2ad29 0%, #f5e6da 40%, #AD5D29 75%, #6e3618 100%);
             margin: 0;
             padding: 0;
             height: 100vh;
@@ -33,32 +33,23 @@
     </style>
 </head>
 <body class="flex items-center justify-center relative">
-
-<!-- Animated Blobs -->
 <div id="blob-container" class="absolute inset-0 z-10 pointer-events-none">
     <div class="blob bg-yellow-400 opacity-30 blur-xl rounded-full w-60 h-60 absolute" id="blob1"></div>
     <div class="blob bg-white opacity-20 blur-xl rounded-full w-72 h-52 absolute" id="blob2"></div>
     <div class="blob bg-purple-500 opacity-30 blur-xl rounded-full w-52 h-52 absolute" id="blob3"></div>
 </div>
-
-<!-- Main Container -->
 <div class="flex flex-col items-center justify-center w-full max-w-6xl mx-auto p-4 gap-8 z-20">
-
-    <!-- Logo and Header -->
     <div class="text-center">
-        <!-- SVG Logo -->
         <svg width="60" height="60" fill="none" viewBox="0 0 24 24" stroke="#facc15" stroke-width="1.5" class="mx-auto mb-2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2M12 3C6.477 3 2 7.477 2 13s4.477 10 10 10 10-4.477 10-10S17.523 3 12 3z"/>
         </svg>
         <h1 class="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-br from-yellow-200 via-orange-500 to-yellow-800">
             Enrich Your Digital Transformation
         </h1>
-        <p class="text-white/80 mt-1 text-sm">Powered by PhoneStore Pro</p>
+        <p class="text-white/80 mt-1 text-sm">Powered by Cosmetics Pro</p>
     </div>
 
     <div class="flex flex-col md:flex-row items-center justify-center gap-6 w-full">
-
-        <!-- Glass Login Card -->
         <div class="glass p-6 rounded-xl shadow-md w-full max-w-sm">
             <form action="{{ route('login') }}" method="POST" class="space-y-4">
                 @csrf
@@ -91,8 +82,6 @@
                 </button>
             </form>
         </div>
-
-        <!-- Dashboard Image Preview -->
         <div class="w-full max-w-md">
             <img src="images/phonepro1.png" alt="PhoneStore Dashboard Preview"
                  class="rounded-2xl shadow-lg w-full object-cover border-2 border-white/30">
@@ -114,7 +103,6 @@
         document.getElementById('btnText').textContent = 'Signing In...';
     });
 
-    // Animate blobs
     const blobs = [
         { el: document.getElementById("blob1"), x: 50, y: 100, dx: 1.2, dy: 0.9 },
         { el: document.getElementById("blob2"), x: 300, y: 200, dx: -1.1, dy: 1 },

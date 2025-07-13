@@ -11,7 +11,6 @@ class BrandController extends Controller
 {
     public function __construct()
     {
-        // Only authenticated users with 'manage brands' permission can access these actions
         $this->middleware(['auth', 'permission:manage brands']);
     }
 

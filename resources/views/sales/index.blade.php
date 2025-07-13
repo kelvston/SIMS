@@ -4,11 +4,11 @@
 @section('subtitle', 'View all recorded sales transactions.')
 
 @section('content')
-    <div class="container mx-auto bg-white p-8 rounded-lg shadow-md relative"> <!-- Added relative -->
+    <div class="container mx-auto bg-white p-8 rounded-lg shadow-md relative">
         <img src="{{ asset('images/watermark.png') }}"
              alt="Watermark"
              class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-             style="transform: translate(-50%, -50%);" /> <!-- Centered watermark -->
+             style="transform: translate(-50%, -50%);" />
 
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">All Sales</h1>
 
@@ -31,7 +31,7 @@
             <p class="text-center text-gray-600">No sales recorded yet. Start by creating a new sale!</p>
         @else
             <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-                <table class="min-w-full divide-y divide-gray-200 table-auto"> <!-- Added table-auto -->
+                <table class="min-w-full divide-y divide-gray-200 table-auto">
                     <thead class="bg-gray-50">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale ID</th>

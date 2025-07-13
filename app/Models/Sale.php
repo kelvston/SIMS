@@ -9,7 +9,6 @@ class Sale extends Model
 {
     use HasFactory;
 
-    // Define which attributes are mass assignable
     protected $fillable = [
         'customer_name',
         'customer_phone',
@@ -21,7 +20,6 @@ class Sale extends Model
         'customer_email',
     ];
 
-    // Define the casts for attributes
     protected $casts = [
         'sale_date' => 'datetime',
         'is_installment' => 'boolean',
