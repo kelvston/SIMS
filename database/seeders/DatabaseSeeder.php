@@ -29,7 +29,8 @@ class DatabaseSeeder extends Seeder
 //            ]
 //        );
         $this->call([
-            RolesAndPermissionsSeeder::class, // Add your new seeder here
+//            RolesAndPermissionsSeeder::class, // Add your new seeder here
+            BrandModelColorSeeder::class, // Add your new seeder here
         ]);
     }
 }

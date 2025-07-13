@@ -18,6 +18,7 @@ class Sale extends Model
         'final_amount',
         'sale_date',
         'is_installment',
+        'customer_email',
     ];
 
     // Define the casts for attributes

@@ -220,7 +220,7 @@ Route::post('/installment/payment', [InstallmentController::class, 'store'])->na
 Route::get('/reports/sales', [ReportController::class, 'salesReport'])->name('reports.sales');
 Route::get('/reports/stock', [ReportController::class, 'stockReport'])->name('reports.stock');
 Route::get('/reports/profit-loss', [ReportController::class, 'profitLossReport'])->name('reports.profit_loss'); // New P&L route
-Route::get('/index', [UserController::class, 'index'])->name('users.index');
+//Route::get('/index', [UserController::class, 'index'])->name('users.index');
 //Route::get('/users', [UserController::class, 'create'])->name('users.create');
 //Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
 //Route::get('/edit', [UserController::class, 'edit'])->name('users.edit');

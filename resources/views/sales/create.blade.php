@@ -57,6 +57,15 @@
                     @enderror
                 </div>
             </div>
+            <div>
+                <label for="customer_email" class="block text-gray-700 text-sm font-bold mb-2">Customer Email (Optional):</label>
+                <input type="email" name="customer_email" id="customer_email"
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('customer_email') border-red-500 @enderror"
+                       value="{{ old('customer_email') }}" placeholder="customer@example.com">
+                @error('customer_email')
+                <p class="text-red-500 text-xs italic">{{ $message }}</p>
+                @enderror
+            </div>
 
             <div class="mb-6">
                 <label class="block text-gray-700 text-sm font-bold mb-2">Phones to Sell (IMEI):</label>

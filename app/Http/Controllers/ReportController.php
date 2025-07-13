@@ -14,6 +14,7 @@ use App\Models\InstallmentPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Spatie\Permission\Exceptions\UnauthorizedException; // Import for better error handling
 
 class ReportController extends Controller // <<< IMPORTANT: Ensure it extends App\Http\Controllers\Controller
@@ -188,13 +189,26 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             });
 
         // Combine all recent activities and sort by date
-        $recentActivities = collect()
+        $recentActivitiesCollection = collect()
             ->concat($recentSales)
             ->concat($recentReceivedPhones)
             ->concat($recentInstallmentPayments)
-            ->concat($recentExpenses) // Add recent expenses
+            ->concat($recentExpenses)
             ->sortByDesc('date')
-            ->take(8); // Limit to top 8 recent activities for display
+            ->values(); // important to reindex keys
+
+// Paginate the collection manually
+        $page = request()->get('page', 1);
+        $perPage = 5;
+        $offset = ($page - 1) * $perPage;
+
+        $recentActivities = new LengthAwarePaginator(
+            $recentActivitiesCollection->slice($offset, $perPage),
+            $recentActivitiesCollection->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
 
 
         return view('dashboard', compact(

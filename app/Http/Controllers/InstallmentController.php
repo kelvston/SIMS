@@ -25,7 +25,7 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
     {
         $installmentPlans = InstallmentPlan::with(['sale.saleItems.phone', 'installmentPayments'])
             ->orderBy('next_payment_date', 'asc')
-            ->paginate(10);
+            ->paginate(5);
         return view('installments.index', compact('installmentPlans'));
     }
 

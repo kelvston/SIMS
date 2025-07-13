@@ -27,4 +27,9 @@ class Brand extends Model
     {
         return $this->hasMany(StockLevel::class);
     }
+
+    public function phoneModels()
+    {
+        return $this->hasMany(PhoneModel::class);
+    }
 }

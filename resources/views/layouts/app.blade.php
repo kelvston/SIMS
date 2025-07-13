@@ -191,18 +191,14 @@
         <main class="flex-1 p-6 space-y-8 overflow-y-auto relative">
             <!-- All main content stays above watermark -->
             <div class="relative z-10 space-y-8">
-                <!-- Top header section -->
-                <div class="hidden lg:flex justify-between items-center">
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-800">@yield('title', 'Dashboard')</h1>
-                        <p class="text-gray-600">@yield('subtitle', 'Welcome back! Here\'s your business overview')</p>
-                    </div>
-                    <div class="relative">
-                        <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-full">
-                            <i class="fas fa-bell fa-lg"></i>
-                        </button>
-                    </div>
-                </div>
+{{--                <!-- Top header section -->--}}
+{{--                <div class="hidden lg:flex justify-between items-center">--}}
+{{--                    <div class="relative">--}}
+{{--                        <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-full">--}}
+{{--                            <i class="fas fa-bell fa-lg"></i>--}}
+{{--                        </button>--}}
+{{--                    </div>--}}
+{{--                </div>--}}
 
                 @yield('content')
             </div>
