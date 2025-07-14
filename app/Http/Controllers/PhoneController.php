@@ -8,16 +8,13 @@ use App\Models\StockLevel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Spatie\Permission\Exceptions\UnauthorizedException; // Import for better error handling
-
-class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App\Http\Controllers\Controller
+use Spatie\Permission\Exceptions\UnauthorizedException;
+class PhoneController extends Controller
 {
     // Add a constructor to apply middleware
     public function __construct()
     {
-        // Only authenticated users with 'receive phones' permission can access storeReceivedPhones
         $this->middleware(['auth', 'permission:receive phones'])->only('storeReceivedPhones');
-        // Only authenticated users with 'view phones' permission can access index and showReceiveForm
         $this->middleware(['auth', 'permission:view phones'])->only(['index', 'showReceiveForm']);
     }
 
@@ -28,7 +25,6 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
      */
     public function showReceiveForm()
     {
-        // This method is now protected by 'permission:view phones' middleware
         $brands = Brand::all();
         return view('phones.receive', compact('brands'));
     }
@@ -41,8 +37,6 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
      */
     public function storeReceivedPhones(Request $request)
     {
-        // This method is now protected by 'permission:receive phones' middleware
-        // ... (rest of your existing storeReceivedPhones logic) ...
         $request->validate([
             'brand_id' => 'required|exists:brands,id',
             'model' => 'required|string|max:255',
@@ -74,8 +68,6 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
                 ]);
                 $newPhonesCount++;
             }
-
-            // Update StockLevel: Find or create the stock entry and increment the count
             $stockLevel = StockLevel::firstOrNew([
                 'brand_id' => $request->brand_id,
                 'model' => $request->model,
@@ -106,7 +98,6 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
      */
     public function index()
     {
-        // This method is now protected by 'permission:view phones' middleware
         $phones = Phone::with('brand')->orderBy('received_at', 'desc')->paginate(10);
         return view('phones.index', compact('phones'));
     }

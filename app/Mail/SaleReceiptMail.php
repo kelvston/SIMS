@@ -23,7 +23,7 @@ class SaleReceiptMail extends Mailable
 
     public function build()
     {
-        return $this->view('emails.sale.receipt')  // your email blade view
+        return $this->view('emails.sale.receipt')
         ->attachData($this->pdfContent, $this->receipt->receipt_number . '.pdf', [
             'mime' => 'application/pdf',
         ]);

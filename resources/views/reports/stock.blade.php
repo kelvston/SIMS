@@ -8,7 +8,6 @@
          style="transform: translate(-50%, -50%);" />
     <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Stock Report</h1>
 
-    <!-- Summary Statistics -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div class="bg-blue-100 p-5 rounded-lg shadow-md text-center">
             <p class="text-blue-700 text-sm font-semibold">Total Stocked Items (Units)</p>

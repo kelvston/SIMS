@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .imei-input-group {
@@ -16,7 +15,6 @@
             margin-left: 8px;
         }
     </style>
-</head>
 <body class="bg-gray-100 p-6">
 <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10">
     <img src="{{ asset('images/watermark.png') }}"
@@ -25,7 +23,7 @@
          style="transform: translate(-60%, -50%);" />
     <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Receive New Phones</h1>
 
-    <!-- Success/Error Messages -->
+
     @if (session('success'))
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
             <strong class="font-bold">Success!</strong>
@@ -114,7 +112,6 @@
         <div class="mb-6">
             <label class="block text-gray-700 text-sm font-bold mb-2">IMEI Numbers:</label>
             <div id="imei-inputs">
-                <!-- Initial IMEI input field -->
                 <div class="imei-input-group">
                     <input type="text" name="imeis[]" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Enter IMEI or scan barcode" autofocus>
                     <button type="button" onclick="addImeiInput()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">Add</button>
@@ -140,7 +137,7 @@
 </div>
 
 <script>
-    // Function to add a new IMEI input field
+
     function addImeiInput() {
         const container = document.getElementById('imei-inputs');
         const div = document.createElement('div');
@@ -150,10 +147,9 @@
                 <button type="button" onclick="removeImeiInput(this)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">Remove</button>
             `;
         container.appendChild(div);
-        div.querySelector('input').focus(); // Focus on the newly added input
+        div.querySelector('input').focus();
     }
 
-    // Function to remove an IMEI input field
     function removeImeiInput(button) {
         button.closest('.imei-input-group').remove();
     }

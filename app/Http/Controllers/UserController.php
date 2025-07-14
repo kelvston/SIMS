@@ -7,9 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role; // Import Role model
-use Spatie\Permission\Exceptions\UnauthorizedException; // Import for better error handling
+use Spatie\Permission\Exceptions\UnauthorizedException;
 
-class UserController extends Controller // <<< IMPORTANT: Ensure it extends App\Http\Controllers\Controller
+class UserController extends Controller
 {
     public function __construct()
     {
@@ -53,7 +53,7 @@ class UserController extends Controller // <<< IMPORTANT: Ensure it extends App\
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'phone_number' => ['nullable', 'string', 'max:255'],
             'roles' => ['nullable', 'array'],
-            'roles.*' => ['exists:roles,name'], // Ensure selected roles exist
+            'roles.*' => ['exists:roles,name'],
         ]);
 
         $user = User::create([
@@ -80,7 +80,7 @@ class UserController extends Controller // <<< IMPORTANT: Ensure it extends App\
     public function edit(User $user)
     {
         $roles = Role::all();
-        $userRoles = $user->roles->pluck('name')->toArray(); // Get roles assigned to this user
+        $userRoles = $user->roles->pluck('name')->toArray();
         return view('users.edit', compact('user', 'roles', 'userRoles'));
     }
 
