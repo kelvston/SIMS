@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@yield('title', 'PhoneStore Pro')</title>
+    <title>@yield('title', 'Cosmetics Pro')</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -58,9 +58,8 @@
 </head>
 <body class="bg-gray-100 font-sans">
 <div class="flex min-h-screen overflow-hidden">
-    <!-- Sidebar for desktop -->
     <aside class="fixed inset-y-0 left-0 w-60 bg-[#AD5D29] text-white p-4 hidden lg:flex flex-col z-40 overflow-hidden" x-data="{ manageOpen: false }">
-        <h2 class="text-xl font-bold mb-6">PhoneStore Pro</h2>
+        <h2 class="text-xl font-bold mb-6">Cosmetics Pro</h2>
         <nav class="space-y-2 overflow-hidden">
             @can('view dashboard')
                 <a href="{{ route('dashboard') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
@@ -77,16 +76,49 @@
                     <span class="mr-2">💰</span> Sales
                 </a>
             @endcan
-            @can('view installments')
-                <a href="{{ route('installments.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
-                    <span class="mr-2">🗓️</span> Installments
-                </a>
-            @endcan
-            @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])
-                <a href="{{ route('reports.sales') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
-                    <span class="mr-2">📈</span> Reports
-                </a>
-            @endcanany
+{{--            @can('view installments')--}}
+{{--                <a href="{{ route('installments.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">--}}
+{{--                    <span class="mr-2">🗓️</span> Installments--}}
+{{--                </a>--}}
+{{--            @endcan--}}
+{{--            @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])--}}
+{{--                <a href="{{ route('reports.sales') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">--}}
+{{--                    <span class="mr-2">📈</span> Reports--}}
+{{--                </a>--}}
+{{--            @endcanany--}}
+
+                @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])
+                    <div x-data="{ reportsOpen: false }">
+                        <button @click="reportsOpen = !reportsOpen"
+                                class="w-full text-left py-2 px-3 rounded hover:bg-[#C87137] flex justify-between items-center transition"
+                                :aria-expanded="reportsOpen.toString()" aria-controls="reports-menu">
+                            <span><span class="mr-2">📈</span> Reports</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-300"
+                                 :class="{ 'rotate-180': reportsOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                 stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div id="reports-menu" x-show="reportsOpen" x-collapse class="pl-4 space-y-1 mt-1 overflow-hidden">
+                            @can('view sales reports')
+                                <a href="{{ route('reports.sales') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                                    <span class="mr-2">🧾</span> Sales Report
+                                </a>
+                            @endcan
+                            @can('view stock reports')
+                                <a href="{{ route('reports.stock') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                                    <span class="mr-2">📦</span> Stock Report
+                                </a>
+                            @endcan
+                            @can('view profit loss reports')
+                                <a href="{{ route('reports.profit_loss') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                                    <span class="mr-2">📉</span> Profit & Loss
+                                </a>
+                            @endcan
+                        </div>
+                    </div>
+                @endcanany
+
             @canany(['manage users', 'manage roles', 'manage brands'])
                 <button @click="manageOpen = !manageOpen"
                         class="w-full text-left py-2 px-3 rounded hover:bg-[#C87137] flex justify-between items-center transition"
@@ -136,8 +168,6 @@
                 </div>
         </nav>
     </aside>
-
-    <!-- Sidebar for mobile -->
     <aside id="mobileSidebar" class="sidebar-mobile text-white p-4 lg:hidden overflow-hidden">
         <h2 class="text-xl font-bold mb-6">PhoneStore Pro</h2>
         <nav class="space-y-2 overflow-hidden">
@@ -172,9 +202,7 @@
         </nav>
     </aside>
 
-    <!-- Main content -->
     <div class="flex-1 flex flex-col lg:ml-60">
-        <!-- Top bar -->
         <header class="flex justify-between items-center bg-white px-6 py-4 shadow lg:hidden">
             <button id="menuToggle" class="text-gray-600">
                 <i class="fas fa-bars text-2xl"></i>
@@ -186,10 +214,7 @@
                 </button>
             </div>
         </header>
-
-        <!-- Page content -->
         <main class="flex-1 p-6 space-y-8 overflow-y-auto relative">
-            <!-- All main content stays above watermark -->
             <div class="relative z-10 space-y-8">
 {{--                <!-- Top header section -->--}}
 {{--                <div class="hidden lg:flex justify-between items-center">--}}
@@ -203,8 +228,6 @@
                 @yield('content')
             </div>
         </main>
-
-
     </div>
 </div>
 

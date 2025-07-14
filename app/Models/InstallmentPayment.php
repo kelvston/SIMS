@@ -9,14 +9,12 @@ class InstallmentPayment extends Model
 {
     use HasFactory;
 
-    // Define which attributes are mass assignable
     protected $fillable = [
         'installment_plan_id',
         'payment_date',
         'amount_paid',
     ];
 
-    // Define the casts for attributes
     protected $casts = [
         'payment_date' => 'datetime',
     ];

@@ -1,15 +1,13 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative"> <!-- Added relative -->
+    <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative">
         <img src="{{ asset('images/watermark.png') }}"
              alt="Watermark"
              class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-             style="transform: translate(-50%, -50%);" /> <!-- Centered better -->
+             style="transform: translate(-50%, -50%);" />
 
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Sale Details #{{ $sale->id }}</h1>
-
-        {{-- Customer Info --}}
         <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Customer Information</h2>
             <div class="detail-item"><span class="detail-label">Customer Name:</span> <span class="detail-value">{{ $sale->customer_name }}</span></div>
@@ -25,16 +23,12 @@
             </span>
             </div>
         </div>
-
-        {{-- Financial Summary --}}
         <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Financial Summary</h2>
             <div class="detail-item"><span class="detail-label">Total Amount (Before Discount):</span> <span class="detail-value">${{ number_format($sale->total_amount, 2) }}</span></div>
             <div class="detail-item"><span class="detail-label">Discount Applied:</span> <span class="detail-value">${{ number_format($sale->discount_amount, 2) }}</span></div>
             <div class="detail-item font-bold text-lg"><span class="detail-label">Final Amount:</span> <span class="detail-value">${{ number_format($sale->final_amount, 2) }}</span></div>
         </div>
-
-        {{-- Phones Sold --}}
         <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Phones Sold</h2>
             @if ($sale->saleItems->isEmpty())
@@ -52,8 +46,6 @@
                 </ul>
             @endif
         </div>
-
-        {{-- Installment Plan --}}
         @if ($sale->is_installment && $sale->installmentPlan)
             <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Installment Plan Details</h2>
@@ -72,14 +64,12 @@
                     </span>
                 </span>
                 </div>
-
-                {{-- Payment History Table --}}
                 <h3 class="text-xl font-semibold text-gray-600 mt-6 mb-3">Payment History</h3>
                 @if ($sale->installmentPlan->installmentPayments->isEmpty())
                     <p class="text-gray-600">No payments recorded yet for this installment plan.</p>
                 @else
                     <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-                        <table class="min-w-full divide-y divide-gray-200 table-auto"> <!-- table-auto added -->
+                        <table class="min-w-full divide-y divide-gray-200 table-auto">
                             <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Date</th>
@@ -97,8 +87,6 @@
                         </table>
                     </div>
                 @endif
-
-                {{-- Add Payment Button --}}
                 @can('record installment payments')
                     @if ($sale->installmentPlan->status == 'active')
                         <div class="flex justify-end mt-6">

@@ -9,7 +9,6 @@ class Phone extends Model
 {
     use HasFactory;
 
-    // Define which attributes are mass assignable
     protected $fillable = [
         'imei',
         'model',
@@ -22,7 +21,6 @@ class Phone extends Model
         'received_at',
     ];
 
-    // Define the casts for attributes
     protected $casts = [
         'received_at' => 'datetime',
     ];

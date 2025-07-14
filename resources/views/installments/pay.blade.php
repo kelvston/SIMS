@@ -33,7 +33,7 @@
 
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 text-center relative z-10">Record Installment Payment</h1>
 
-        <!-- Flash Messages -->
+
         @if (session('success'))
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4 z-10" role="alert">
                 <strong class="font-bold">Success!</strong>
@@ -59,9 +59,9 @@
             </div>
         @endif
 
-        <!-- Two Column Layout -->
+
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6 relative z-10">
-            <!-- Left Column: Details -->
+
                 <div class="bg-gray-50 rounded-lg border border-gray-200 p-4 sm:p-6">
 
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Installment Plan #{{ $installmentPlan->id }} Details</h2>

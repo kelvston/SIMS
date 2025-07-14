@@ -12,7 +12,6 @@ class RoleController extends Controller
 {
     public function __construct()
     {
-        // Only authenticated users with 'manage roles' permission can access these actions
         $this->middleware(['auth', 'permission:manage roles']);
     }
 
@@ -34,7 +33,7 @@ class RoleController extends Controller
      */
     public function create()
     {
-        $permissions = Permission::all(); // Get all available permissions
+        $permissions = Permission::all();
         return view('roles.create', compact('permissions'));
     }
 
@@ -49,12 +48,11 @@ class RoleController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
             'permissions' => ['nullable', 'array'],
-            'permissions.*' => ['exists:permissions,name'], // Ensure selected permissions exist
+            'permissions.*' => ['exists:permissions,name'],
         ]);
 
         $role = Role::create(['name' => $request->name]);
 
-        // Assign permissions to the role
         if ($request->has('permissions')) {
             $role->givePermissionTo($request->permissions);
         }
@@ -93,7 +91,7 @@ class RoleController extends Controller
     public function edit(Role $role)
     {
         $permissions = Permission::all();
-        $rolePermissions = $role->permissions->pluck('name')->toArray(); // Get permissions assigned to this role
+        $rolePermissions = $role->permissions->pluck('name')->toArray();
         return view('roles.edit', compact('role', 'permissions', 'rolePermissions'));
     }
 
@@ -129,7 +127,7 @@ class RoleController extends Controller
      */
     public function destroy(Role $role)
     {
-        // Prevent deleting 'admin' role or other critical roles if desired
+
         if ($role->name === 'admin') {
             return redirect()->back()->with('error', 'Cannot delete the admin role.');
         }
@@ -141,7 +139,7 @@ class RoleController extends Controller
     public function createPermission()
     {
 
-        $permissions = Permission::all(); // Get all available permissions
+        $permissions = Permission::all();
         $roles = Role::all();
         return view('roles.create_permission', compact('permissions','roles'));
     }

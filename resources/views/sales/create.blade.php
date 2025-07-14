@@ -11,7 +11,6 @@
              style="transform: translate(-50%, -60%);" />
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Create New Sale</h1>
 
-        <!-- Success/Error Messages -->
         @if (session('success'))
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
                 <strong class="font-bold">Success!</strong>
@@ -70,7 +69,6 @@
             <div class="mb-6">
                 <label class="block text-gray-700 text-sm font-bold mb-2">Phones to Sell (IMEI):</label>
                 <div id="phone-imei-inputs">
-                    <!-- Initial phone IMEI input field -->
                     <div class="phone-item-group">
                         <select name="phone_imeis[]" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                             <option value="">Select a Phone (IMEI - Model - Color - Price)</option>
@@ -146,7 +144,7 @@
     </div>
 
     <script>
-        const availablePhones = @json($availablePhones); // Pass available phones data to JavaScript
+        const availablePhones = @json($availablePhones);
 
         function addPhoneInput() {
             const container = document.getElementById('phone-imei-inputs');
@@ -175,7 +173,7 @@
             button.closest('.phone-item-group').remove();
         }
 
-        // Toggle installment details visibility
+
         document.getElementById('is_installment').addEventListener('change', function() {
             const installmentDetails = document.getElementById('installment-details');
             if (this.checked) {

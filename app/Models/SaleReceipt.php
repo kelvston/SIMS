@@ -36,13 +36,11 @@ class SaleReceipt extends Model
         'paid_amount' => 'decimal:2',
     ];
 
-    // Relationship to Sale (assuming you have a Sale model)
     public function sale()
     {
         return $this->belongsTo(Sale::class);
     }
 
-    // Accessor for balance (if not using virtual column in DB)
     public function getBalanceAttribute()
     {
         return $this->total - $this->paid_amount;

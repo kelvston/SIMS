@@ -21,7 +21,7 @@ class DeliveryNoteController extends Controller
      */
     public function show(Sale $sale)
     {
-        $sale->load('saleItems.phone.brand'); // Eager load necessary relationships
+        $sale->load('saleItems.phone.brand');
         return view('delivery_notes.show', compact('sale'));
     }
 }

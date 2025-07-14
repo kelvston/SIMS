@@ -15,36 +15,30 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Spatie\Permission\Exceptions\UnauthorizedException; // Import for better error handling
+use Spatie\Permission\Exceptions\UnauthorizedException;
 
-class ReportController extends Controller // <<< IMPORTANT: Ensure it extends App\Http\Controllers\Controller
+class ReportController extends Controller
 {
     public function __construct()
     {
-        // Protect report related actions
-        $this->middleware('auth'); // All reports require authentication
+        $this->middleware('auth');
         $this->middleware('permission:view sales reports')->only('salesReport');
         $this->middleware('permission:view stock reports')->only('stockReport');
         $this->middleware('permission:view profit loss reports')->only('profitLossReport');
-        // Dashboard can be accessed by anyone with 'view dashboard' permission
         $this->middleware('permission:view dashboard')->only('home');
     }
 
 
     public function home()
     {
-        // 1. Total Phones (Available in Stock)
-        $totalPhones = Phone::where('status', 'available')->count();
 
-        // 2. Monthly Sales (Current Month's Revenue)
+        $totalPhones = Phone::where('status', 'available')->count();
         $currentMonth = Carbon::now()->month;
         $currentYear = Carbon::now()->year;
 
         $monthlySales = Sale::whereMonth('sale_date', $currentMonth)
             ->whereYear('sale_date', $currentYear)
             ->sum('final_amount');
-
-        // 3. Pending Installments Amount
         $pendingInstallmentsAmount = 0;
         $activeInstallmentPlans = InstallmentPlan::where('status', 'active')
             ->with(['sale', 'installmentPayments'])
@@ -57,9 +51,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                 $pendingInstallmentsAmount += $remainingAmount;
             }
         }
-
-        // 4. Profit Margin (Current Month)
-        $totalRevenueThisMonth = $monthlySales; // Already calculated
+        $totalRevenueThisMonth = $monthlySales;
 
         $totalCogsThisMonth = 0;
         $soldPhonesThisMonth = SaleItem::whereHas('sale', function ($query) use ($currentMonth, $currentYear) {
@@ -74,19 +66,15 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                 $totalCogsThisMonth += $saleItem->phone->purchase_price;
             }
         }
-
-        // NEW: Total Expenses for the current month
         $totalMonthlyExpenses = Expense::whereMonth('expense_date', $currentMonth)
             ->whereYear('expense_date', $currentYear)
             ->sum('amount');
 
-        $grossProfit = $totalRevenueThisMonth - $totalCogsThisMonth - $totalMonthlyExpenses; // Deduct expenses
+        $grossProfit = $totalRevenueThisMonth - $totalCogsThisMonth - $totalMonthlyExpenses;
         $profitMarginPercentage = 0;
         if ($totalRevenueThisMonth > 0) {
             $profitMarginPercentage = ($grossProfit / $totalRevenueThisMonth) * 100;
         }
-
-        // 5. Sales Chart Data (Last 30 days)
         $salesData = Sale::select(
             DB::raw('DATE(sale_date) as date'),
             DB::raw('SUM(final_amount) as total_sales')
@@ -98,8 +86,6 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         $salesChartLabels = $salesData->pluck('date')->map(fn($date) => Carbon::parse($date)->format('j M'))->toArray();
         $salesChartData = $salesData->pluck('total_sales')->toArray();
-
-        // 6. Inventory Distribution Chart Data (Available Phones by Brand)
         $inventoryDistribution = Phone::where('status', 'available')
             ->select('brand_id', DB::raw('count(*) as count'))
             ->with('brand')
@@ -109,27 +95,14 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $inventoryChartLabels = $inventoryDistribution->pluck('brand.name')->toArray();
         $inventoryChartData = $inventoryDistribution->pluck('count')->toArray();
 
-        // 7. Low Stock Products
         $lowStockProducts = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')
             ->with('brand')
             ->get();
-
-        // Count for notifications (e.g., low stock items)
         $notificationCount = $lowStockProducts->count();
-
-        // New: Total Sales for the Year
         $totalYearlySales = Sale::whereYear('sale_date', $currentYear)->sum('final_amount');
-
-        // New: Total Sold Phones
         $totalSoldPhones = Phone::where('status', 'sold')->count();
-
-        // New: Total Active Installment Plans
         $totalActiveInstallments = InstallmentPlan::where('status', 'active')->count();
-
-        // New: Average Selling Price of ALL phones (could be refined to average *sold* price)
         $averageSellingPrice = Phone::avg('selling_price');
-
-        // New: Recent Activities (combining sales, received, payments, expenses)
         $recentSales = Sale::with('saleItems.phone.brand')
             ->latest('sale_date')
             ->take(5)
@@ -153,7 +126,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                     'type' => 'received',
                     'description' => "📦 1 {$phone->brand->name} {$phone->model} ({$phone->color}) received into inventory (IMEI: {$phone->imei})",
                     'date' => $phone->received_at,
-                    'link' => route('phones.index') // Link to general phone inventory
+                    'link' => route('phones.index')
                 ];
             });
 
@@ -171,11 +144,11 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                     'type' => 'payment',
                     'description' => "💵 Installment payment received for {$phoneName} - $" . number_format($payment->amount_paid, 2),
                     'date' => $payment->payment_date,
-                    'link' => route('sales.show', $payment->installmentPlan->sale->id) // Link to the sale details
+                    'link' => route('sales.show', $payment->installmentPlan->sale->id)
                 ];
             });
 
-        // NEW: Recent Expenses
+
         $recentExpenses = Expense::latest('expense_date')
             ->take(5)
             ->get()
@@ -184,20 +157,20 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                     'type' => 'expense',
                     'description' => "💸 Expense: {$expense->description} ({$expense->category}) - $" . number_format($expense->amount, 2),
                     'date' => $expense->expense_date,
-                    'link' => route('expenses.index') // Link to expense list
+                    'link' => route('expenses.index')
                 ];
             });
 
-        // Combine all recent activities and sort by date
+
         $recentActivitiesCollection = collect()
             ->concat($recentSales)
             ->concat($recentReceivedPhones)
             ->concat($recentInstallmentPayments)
             ->concat($recentExpenses)
             ->sortByDesc('date')
-            ->values(); // important to reindex keys
+            ->values();
 
-// Paginate the collection manually
+
         $page = request()->get('page', 1);
         $perPage = 5;
         $offset = ($page - 1) * $perPage;
@@ -222,12 +195,12 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             'inventoryChartData',
             'lowStockProducts',
             'notificationCount',
-            'totalYearlySales', // New stat
-            'totalSoldPhones', // New stat
-            'totalActiveInstallments', // New stat
-            'averageSellingPrice', // New stat
-            'recentActivities', // New dynamic activity list
-            'totalMonthlyExpenses' // NEW: Pass total monthly expenses to dashboard
+            'totalYearlySales',
+            'totalSoldPhones',
+            'totalActiveInstallments',
+            'averageSellingPrice',
+            'recentActivities',
+            'totalMonthlyExpenses'
         ));
     }
 
@@ -276,7 +249,6 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
     {
         $stockLevels = StockLevel::with('brand')->orderBy('current_stock', 'asc')->paginate(10);
 
-        // Calculate summary statistics for stock
         $totalStockItems = StockLevel::sum('current_stock');
         $lowStockCount = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')->count();
 

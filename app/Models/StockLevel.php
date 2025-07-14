@@ -9,7 +9,7 @@ class StockLevel extends Model
 {
     use HasFactory;
 
-    // Define which attributes are mass assignable
+
     protected $fillable = [
         'brand_id',
         'model',
@@ -19,7 +19,6 @@ class StockLevel extends Model
         'last_updated_at',
     ];
 
-    // Define the casts for attributes
     protected $casts = [
         'last_updated_at' => 'datetime',
     ];

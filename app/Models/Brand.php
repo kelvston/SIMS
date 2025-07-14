@@ -9,7 +9,6 @@ class Brand extends Model
 {
     use HasFactory;
 
-    // Define which attributes are mass assignable
     protected $fillable = ['name'];
 
     /**

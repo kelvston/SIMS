@@ -34,7 +34,6 @@
          style="transform: translate(-50%, -50%);" />
     <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Profit & Loss Report</h1>
 
-    <!-- Date Filter Form -->
     <form action="{{ route('reports.profit_loss') }}" method="GET" class="mb-6 p-4 bg-gray-50 rounded-lg shadow-sm flex flex-wrap items-center justify-center gap-4">
         <div class="flex items-center gap-2">
             <label for="start_date" class="text-gray-700 text-sm font-bold">Start Date:</label>

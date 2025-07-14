@@ -12,7 +12,6 @@ class ExpenseController extends Controller
 {
     public function __construct()
     {
-        // Protect expense related actions with permissions
         $this->middleware(['auth', 'permission:view expenses'])->only(['index', 'show']);
         $this->middleware(['auth', 'permission:create expenses'])->only(['create', 'store']);
         $this->middleware(['auth', 'permission:edit expenses'])->only(['edit', 'update']);

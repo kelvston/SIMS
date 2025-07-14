@@ -34,7 +34,7 @@ class CheckLowStock extends Command
             $alerts[] = $message;
         }
 
-        // Cache all alerts together (optional: join as a single string or keep array)
+        // Cache all alerts together
         Cache::put('low_stock_alerts', $alerts, now()->addMinutes(5));
 
         Log::info('[CheckLowStock] Low stock check complete.');
