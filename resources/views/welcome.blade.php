@@ -30,9 +30,39 @@
         html, body {
             overflow: hidden;
         }
+        @keyframes loader-bar {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(2); }
+        }
+
+        .animate-loader-bar {
+            animation: loader-bar 1s infinite ease-in-out;
+        }
+
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-400 { animation-delay: 0.4s; }
+
+        #page-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
     </style>
 </head>
 <body class="flex items-center justify-center relative">
+<!-- Page Loader -->
+<div id="page-loader"
+     class="fixed inset-0 z-[9999] bg-white flex items-center justify-center transition-opacity duration-500">
+    <div class="loader-bars flex space-x-1">
+        <div class="w-2 h-6 bg-yellow-700 animate-loader-bar"></div>
+        <div class="w-2 h-6 bg-yellow-700 animate-loader-bar delay-100"></div>
+        <div class="w-2 h-6 bg-yellow-700 animate-loader-bar delay-200"></div>
+        <div class="w-2 h-6 bg-yellow-700 animate-loader-bar delay-300"></div>
+        <div class="w-2 h-6 bg-yellow-700 animate-loader-bar delay-400"></div>
+    </div>
+</div>
 
 <!-- Animated Blobs -->
 <div id="blob-container" class="absolute inset-0 z-10 pointer-events-none">
@@ -60,7 +90,7 @@
 
         <!-- Glass Login Card -->
         <div class="glass p-6 rounded-xl shadow-md w-full max-w-sm">
-            <form action="{{ route('login') }}" method="POST" class="space-y-4">
+            <form  action="{{ route('login') }}" method="POST" class="space-y-4">
                 @csrf
 
                 <div>
@@ -101,6 +131,9 @@
 </div>
 
 <script>
+    window.addEventListener('load', () => {
+        document.getElementById('page-loader').classList.add('hidden');
+    });
     function togglePassword() {
         const passwordInput = document.getElementById("password");
         const toggleBtn = event.currentTarget;

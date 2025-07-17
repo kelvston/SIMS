@@ -54,9 +54,43 @@
         .chart-wrapper {
             height: 320px;
         }
+        @keyframes loader-bar {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(2); }
+        }
+
+        .animate-loader-bar {
+            animation: loader-bar 1s infinite ease-in-out;
+        }
+
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-400 { animation-delay: 0.4s; }
+        #page-loader {
+            transition: opacity 0.3s ease;
+        }
+        #page-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
+<!-- Page Loader -->
+<div id="page-loader"
+     class="fixed inset-0 z-50 bg-white flex items-center justify-center">
+    <div class="loader-bars flex space-x-1">
+        <div class="w-2 h-6 bg-indigo-600 animate-loader-bar"></div>
+        <div class="w-2 h-6 bg-indigo-600 animate-loader-bar delay-100"></div>
+        <div class="w-2 h-6 bg-indigo-600 animate-loader-bar delay-200"></div>
+        <div class="w-2 h-6 bg-indigo-600 animate-loader-bar delay-300"></div>
+        <div class="w-2 h-6 bg-indigo-600 animate-loader-bar delay-400"></div>
+    </div>
+</div>
+
 <div class="flex min-h-screen overflow-hidden">
     <!-- Sidebar for desktop -->
     <aside class="fixed inset-y-0 left-0 w-60 bg-[#AD5D29] text-white p-4 hidden lg:flex flex-col z-40 overflow-hidden" x-data="{ manageOpen: false }">
@@ -212,6 +246,13 @@
 <script>
     document.getElementById('menuToggle').addEventListener('click', () => {
         document.getElementById('mobileSidebar').classList.toggle('active');
+    });
+
+    window.addEventListener('load', () => {
+        const loader = document.getElementById('page-loader');
+        if (loader) {
+            loader.classList.add('hidden');
+        }
     });
 </script>
 @stack('scripts')
