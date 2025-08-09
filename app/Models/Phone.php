@@ -20,7 +20,9 @@ class Phone extends Model
         'selling_price',
         'status',
         'received_at',
-        'condition'
+        'condition',
+        'stock_origin',
+        'description'
     ];
 
     // Define the casts for attributes

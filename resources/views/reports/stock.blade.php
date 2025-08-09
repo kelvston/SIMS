@@ -59,7 +59,7 @@
 
 
         <!-- Two-column layout for tables -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+{{--        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">--}}
             <!-- Phones Stock Table -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
@@ -104,7 +104,10 @@
                 </div>
                 <div id="phonePagination" class="px-6 py-3 border-t border-gray-200"></div>
             </div>
-
+<hr>
+<hr>
+<hr>
+<hr>
             <!-- Accessories Stock Table -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
@@ -148,7 +151,7 @@
                 <div id="accessoryPagination" class="px-6 py-3 border-t border-gray-200"></div>
             </div>
         </div>
-    </div>
+{{--    </div>--}}
 
     <!-- Custom Modal for editing quantity and messages -->
     <div id="customModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden flex items-center justify-center z-50">

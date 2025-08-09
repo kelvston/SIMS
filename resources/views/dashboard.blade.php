@@ -5,12 +5,12 @@
         .hexagon-shape {
             clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%);
             transition: all 0.3s ease-in-out;
-            height: 60px;
-            font-size: 10px;
+            height: 90px;
+            font-size: 15px;
         }
 
         .hexagon-shape:hover {
-            transform: scale(1.03);
+            transform: scale(1.23);
         }
 
         .arrow-curve {
@@ -38,27 +38,35 @@
          style="transform: translate(-50%, -90%);" />
 
     <!-- Hexagon Buttons and Arrows Wrapper -->
+    <!-- Hexagon Buttons and Arrows Wrapper -->
     <div class="relative">
         <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 relative z-10">
             @can('receive phones')
                 <a href="{{ route('phones.receive.form') }}"
-                   class="hexagon-shape flex items-center justify-center gap-1 w-full text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-1 transition duration-200">
-                    <i class="fas fa-download text-[11px]"></i> Receive
+                   class="hexagon-shape flex items-center justify-center gap-1 w-full text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-1 transition duration-200 mt-6">
+                    <i class="fas fa-download text-[14px]"></i> Receive
                 </a>
             @endcan
 
-            @can('create sales')
+
+        @can('create sales')
                 <a href="{{ route('sales.create') }}"
                    class="hexagon-shape flex items-center justify-center gap-1 w-full text-[10px] bg-green-600 hover:bg-green-700 text-white py-2 px-1 transition duration-200">
-                    <i class="fas fa-dollar-sign text-[11px]"></i> Sale
+                    <i class="fas fa-dollar-sign text-[14px]"></i> Sale
                 </a>
             @endcan
 
             @can('create expenses')
-                <a href="{{ route('expenses.create') }}"
-                   class="hexagon-shape flex items-center justify-center gap-1 w-full text-[10px] bg-red-500 hover:bg-red-600 text-white py-2 px-1 transition duration-200">
-                    <i class="fas fa-receipt text-[11px]"></i> Expense
-                </a>
+                <div class="flex items-center">
+                    <!-- Expense Button -->
+                    <a href="{{ route('expenses.create') }}"
+                       class="hexagon-shape flex items-center justify-center gap-1 w-full text-[10px] bg-red-500 hover:bg-red-600 text-white py-2 px-1 transition duration-200">
+                        <i class="fas fa-receipt text-[14px]"></i> Expense
+                    </a>
+
+                    <!-- Vertical Line -->
+                    <div class="border-l border-gray-400 h-14 mx-3"></div>
+                </div>
             @endcan
 
             <!-- Summary block -->
@@ -96,8 +104,8 @@
         @php
             $cards = [
                 ['icon' => '📱', 'label' => 'Phones', 'value' => number_format($totalPhones), 'color' => 'indigo'],
-                ['icon' => '�', 'label' => 'Sales (' . \Carbon\Carbon::now()->format('M') . ')', 'value' => '$' . number_format($monthlySales, 2), 'color' => 'green'],
-                ['icon' => '⏳', 'label' => 'Pending', 'value' => '$' . number_format($pendingInstallmentsAmount, 2), 'color' => 'yellow'],
+                ['icon' => '�', 'label' => 'Sales (' . \Carbon\Carbon::now()->format('M') . ')', 'value' =>   number_format($monthlySales, 2), 'color' => 'green'],
+                ['icon' => '⏳', 'label' => 'Pending', 'value' =>   number_format($pendingInstallmentsAmount, 2), 'color' => 'yellow'],
                 ['icon' => '📈', 'label' => 'Profit', 'value' => number_format($profitMarginPercentage, 2) . '%', 'color' => $profitMarginPercentage >= 0 ? 'green' : 'red'],
             ];
         @endphp
@@ -265,7 +273,7 @@
                         beginAtZero: true,
                         title: {
                             display: true,
-                            text: 'Sales Amount ($)'
+                            text: 'Sales Amount'
                         }
                     },
                     x: {
@@ -334,4 +342,4 @@
         });
     </script>
 @endpush
-�
+

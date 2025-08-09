@@ -55,6 +55,8 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
             'phones.*.brand_id' => 'required|exists:brands,id',
             'phones.*.model' => 'required|string|max:255',
             'phones.*.color' => 'required|string|max:255',
+            'phones.*.description' => 'required|string|max:255',
+            'phones.*.stock_origin' => 'required|string|max:255',
             'phones.*.storage_capacity' => 'required|string|max:255',
             'phones.*.purchase_price' => 'required|numeric|min:0',
             'phones.*.selling_price' => 'required|numeric|min:0|gte:phones.*.purchase_price',
@@ -71,6 +73,8 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
             'accessories.*.category_id' => 'nullable|exists:accessory_categories,id',
             'accessories.*.barcode' => 'required|string|unique:accessories,barcode|max:255',
             'accessories.*.unit' => 'required|string|max:255',
+            'accessories.*.description' => 'required|string|max:255',
+            'accessories.*.stock_origin' => 'required|string|max:255',
             'accessories.*.purchase_price' => 'required|numeric|min:0',
             'accessories.*.selling_price' => 'required|numeric|min:0|gte:accessories.*.purchase_price',
             'accessories.*.quantity' => 'required|integer|min:1',
@@ -97,6 +101,8 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
                             'storage_capacity' => $phoneData['storage_capacity'],
                             'purchase_price' => $phoneData['purchase_price'],
                             'selling_price' => $phoneData['selling_price'],
+                            'description' => $phoneData['description'],
+                            'stock_origin' => $phoneData['stock_origin'],
                             'condition' => $imeiData['condition'],
                             'status' => 'available',
                             'received_at' => now(),
@@ -132,6 +138,8 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
                         'unit' => $accessoryData['unit'],
                         'purchase_price' => $accessoryData['purchase_price'],
                         'selling_price' => $accessoryData['selling_price'],
+                        'description' => $accessoryData['description'],
+                        'stock_origin' => $accessoryData['stock_origin'],
                         'quantity' => $accessoryData['quantity'],
                         'status' => 'in_stock',
                     ]);
@@ -163,240 +171,6 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
     }
 
 
-
-//    public function storeReceivedPhones(Request $request)
-//    {
-//
-//        $request->validate([
-//            'phones' => 'required_without:accessories|array|min:1',
-//            'accessories' => 'required_without:phones|array|min:1',
-//
-//            'phones.*.brand_id' => 'required|exists:brands,id',
-//            'phones.*.model' => 'required|string|max:255',
-//            'phones.*.color' => 'required|string|max:255',
-//            'phones.*.storage_capacity' => 'required|string|max:255',
-//            'phones.*.purchase_price' => 'required|numeric|min:0',
-//            'phones.*.selling_price' => 'required|numeric|min:0|gte:phones.*.purchase_price',
-//            'phones.*.imeis' => 'required|array|min:1',
-//
-//            // --- NEW VALIDATION RULES FOR NESTED IMEI AND CONDITION ---
-//            'phones.*.imeis.*.imei' => 'required|string|distinct|unique:phones,imei|max:255',
-//            'phones.*.imeis.*.condition' => 'required|string|in:New,Used',
-//            // --- END NEW VALIDATION RULES ---
-//
-//            // Validation rules for each accessory item
-//            'accessories.*.name' => 'required|string|max:255',
-//            'accessories.*.brand_id' => 'nullable|exists:brands,id',
-//            'accessories.*.category_id' => 'nullable|exists:accessory_categories,id',
-//            'accessories.*.barcode' => 'nullable|string|unique:accessories,barcode|max:255',
-//            'accessories.*.unit' => 'required|string|max:255',
-//            'accessories.*.purchase_price' => 'required|numeric|min:0',
-//            'accessories.*.selling_price' => 'required|numeric|min:0|gte:accessories.*.purchase_price',
-//            'accessories.*.quantity' => 'required|integer|min:1',
-//        ]);
-//
-//        DB::beginTransaction();
-//
-//        try {
-//            $newPhonesCount = 0;
-//            $updatedAccessoriesCount = 0;
-//
-//            // --- Handle Phone Receiving ---
-//            if ($request->has('phones')) {
-//                foreach ($request->phones as $phoneData) {
-//                    $newPhonesInGroup = 0;
-//
-//                    // Create Phone records for each IMEI
-//                    foreach ($phoneData['imeis'] as $imeiData) {
-//                        Phone::create([
-//                            'imei' => $imeiData['imei'],
-//                            'model' => $phoneData['model'],
-//                            'brand_id' => $phoneData['brand_id'],
-//                            'color' => $phoneData['color'],
-//                            'storage_capacity' => $phoneData['storage_capacity'],
-//                            'purchase_price' => $phoneData['purchase_price'],
-//                            'selling_price' => $phoneData['selling_price'],
-//                            'condition' => $imeiData['condition'],
-//                            'status' => 'available',
-//                            'received_at' => now(),
-//                        ]);
-//
-//                        $newPhonesInGroup++;
-//                        $newPhonesCount++;
-//                    }
-//
-//                    // Update StockLevel for this specific phone model
-//                    $stockLevel = StockLevel::firstOrNew([
-//                        'brand_id' => $phoneData['brand_id'],
-//                        'model' => $phoneData['model'],
-//                        'color' => $phoneData['color'],
-//                    ]);
-//                    $stockLevel->current_stock += $newPhonesInGroup;
-//                    $stockLevel->last_updated_at = now();
-//                    $stockLevel->save();
-//                }
-//
-//            }
-//
-//            // --- Handle Accessory Receiving ---
-//            if ($request->has('accessories')) {
-//                foreach ($request->accessories as $accessoryData) {
-//                    $categoryIds = $accessoryData['category_id'];
-//                    $category = DB::table('accessory_categories')->find($categoryIds)->name;
-//
-//                    $accessory = Accessory::firstOrNew([
-//                        'name' => $accessoryData['name'],
-//                        'brand_id' => $accessoryData['brand_id'],
-//                        'unit' => $accessoryData['unit'],
-//                        'barcode' => $accessoryData['barcode'],
-//                        'category' => $category,
-//                        'purchase_price' => $accessoryData['purchase_price'],
-//                        'selling_price' => $accessoryData['selling_price'],
-//                    ]);
-//
-//                    // Add the new quantity to the existing quantity (or initial quantity for a new record)
-//                    $accessory->quantity += $accessoryData['quantity'];
-//                    $accessory->status = 'in_stock';
-//                    $accessory->save();
-//
-//                    $updatedAccessoriesCount += $accessoryData['quantity'];
-//                }
-//            }
-//
-//            DB::commit();
-//
-//            $message = '';
-//            if ($newPhonesCount > 0 && $updatedAccessoriesCount > 0) {
-//                $message = "Successfully received {$newPhonesCount} phone(s) and {$updatedAccessoriesCount} accessory/ies!";
-//            } elseif ($newPhonesCount > 0) {
-//                $message = "Successfully received {$newPhonesCount} phone(s)!";
-//            } elseif ($updatedAccessoriesCount > 0) {
-//                $message = "Successfully received {$updatedAccessoriesCount} accessory/ies!";
-//            } else {
-//                $message = 'No new inventory was received.';
-//            }
-//
-//            return redirect()->back()->with('success', $message);
-//
-//        } catch (\Exception $e) {
-//            DB::rollBack();
-//            Log::error('Error receiving inventory: ' . $e->getMessage());
-//            return redirect()->back()->with('error', 'Failed to receive inventory. Please try again.')->withInput();
-//        }
-//    }
-
-
-//    public function storeReceivedPhones(Request $request)
-//    {
-//        dd($request->all());
-//        $request->validate([
-//            // Ensures at least one of the two arrays is present
-//            'phones' => 'required_without:accessories|array|min:1',
-//            'accessories' => 'required_without:phones|array|min:1',
-//
-//            // Validation rules for each phone item
-//            'phones.*.brand_id' => 'required|exists:brands,id',
-//            'phones.*.model' => 'required|string|max:255',
-//            'phones.*.color' => 'required|string|max:255',
-//            'phones.*.storage_capacity' => 'required|string|max:255',
-//            'phones.*.purchase_price' => 'required|numeric|min:0',
-//            'phones.*.selling_price' => 'required|numeric|min:0|gte:phones.*.purchase_price',
-//            'phones.*.imeis' => 'required|array|min:1',
-//            'phones.*.imeis.*' => 'required|string|distinct|unique:phones,imei|max:255',
-//
-//            // Validation rules for each accessory item
-//            'accessories.*.name' => 'required|string|max:255',
-//            'accessories.*.brand_id' => 'nullable|exists:brands,id',
-//            'accessories.*.unit' => 'required|string|max:255',
-//            'accessories.*.purchase_price' => 'required|numeric|min:0',
-//            'accessories.*.selling_price' => 'required|numeric|min:0|gte:accessories.*.purchase_price',
-//            'accessories.*.quantity' => 'required|integer|min:1',
-//        ]);
-//
-//        DB::beginTransaction();
-//
-//        try {
-//            $newPhonesCount = 0;
-//            $updatedAccessoriesCount = 0;
-//
-//            // --- Handle Phone Receiving ---
-//            if ($request->has('phones')) {
-//                foreach ($request->phones as $phoneData) {
-//                    $newPhonesInGroup = 0;
-//
-//                    // Create Phone records for each IMEI
-//                    foreach ($phoneData['imeis'] as $imei) {
-//                        Phone::create([
-//                            'imei' => $imei,
-//                            'model' => $phoneData['model'],
-//                            'brand_id' => $phoneData['brand_id'],
-//                            'color' => $phoneData['color'],
-//                            'storage_capacity' => $phoneData['storage_capacity'],
-//                            'purchase_price' => $phoneData['purchase_price'],
-//                            'selling_price' => $phoneData['selling_price'],
-//                            'status' => 'available',
-//                            'received_at' => now(),
-//                        ]);
-//                        $newPhonesInGroup++;
-//                        $newPhonesCount++;
-//                    }
-//
-//                    // Update StockLevel for this specific phone model
-//                    $stockLevel = StockLevel::firstOrNew([
-//                        'brand_id' => $phoneData['brand_id'],
-//                        'model' => $phoneData['model'],
-//                        'color' => $phoneData['color'],
-//                    ]);
-//                    $stockLevel->current_stock += $newPhonesInGroup;
-//                    $stockLevel->last_updated_at = now();
-//                    $stockLevel->save();
-//                }
-//
-//            }
-//
-//            // --- Handle Accessory Receiving ---
-//            if ($request->has('accessories')) {
-//                foreach ($request->accessories as $accessoryData) {
-//                    // Find an existing accessory or create a new one
-//                    $accessory = Accessory::firstOrNew([
-//                        'name' => $accessoryData['name'],
-//                        'brand_id' => $accessoryData['brand_id'],
-//                        'unit' => $accessoryData['unit'],
-//                        'purchase_price' => $accessoryData['purchase_price'],
-//                        'selling_price' => $accessoryData['selling_price'],
-//                    ]);
-//
-//                    // Add the new quantity to the existing quantity (or initial quantity for a new record)
-//                    $accessory->quantity += $accessoryData['quantity'];
-//                    $accessory->status = 'in_stock'; // Ensure status is set
-//                    $accessory->save();
-//
-//                    $updatedAccessoriesCount += $accessoryData['quantity'];
-//                }
-//            }
-//
-//            DB::commit();
-//
-//            $message = '';
-//            if ($newPhonesCount > 0 && $updatedAccessoriesCount > 0) {
-//                $message = "Successfully received {$newPhonesCount} phone(s) and {$updatedAccessoriesCount} accessory/ies!";
-//            } elseif ($newPhonesCount > 0) {
-//                $message = "Successfully received {$newPhonesCount} phone(s)!";
-//            } elseif ($updatedAccessoriesCount > 0) {
-//                $message = "Successfully received {$updatedAccessoriesCount} accessory/ies!";
-//            } else {
-//                $message = 'No new inventory was received.';
-//            }
-//
-//            return redirect()->back()->with('success', $message);
-//
-//        } catch (\Exception $e) {
-//            DB::rollBack();
-//            Log::error('Error receiving inventory: ' . $e->getMessage());
-//            return redirect()->back()->with('error', 'Failed to receive inventory. Please try again.')->withInput();
-//        }
-//    }
-
     /**
      * Display a listing of the phones.
      *
@@ -405,7 +179,9 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
     public function index()
     {
         // This method is now protected by 'permission:view phones' middleware
-        $phones = Phone::with('brand')->orderBy('received_at', 'desc')->paginate(7);
+        $phones = Phone::with('brand')
+            ->leftJoin('sale_items','sale_items.phone_id','phones.id')->whereNull('sale_items.phone_id')
+            ->orderBy('received_at', 'desc')->paginate(7);
         $accessories = Accessory::with('brand')->orderBy('created_at', 'desc')->paginate(10);
         return view('phones.index', compact('phones','accessories'));
     }

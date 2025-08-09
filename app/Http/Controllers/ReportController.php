@@ -221,7 +221,7 @@ class ReportController extends Controller
         $lowStockAccessories = Accessory::whereColumn('quantity', '<=', 'low_stock_threshold')
             ->get();
 
-        $lowStockProducts = $lowStockPhones->concat($lowStockAccessories);
+        $lowStockProducts = $lowStockPhones->concat($lowStockAccessories)->take(5);
 
         // Count for notifications (e.g., low stock items)
         $notificationCount = $lowStockProducts->count();
@@ -434,16 +434,34 @@ class ReportController extends Controller
         ));
     }
 
-    public function stock()
+    public function stock( Request $request)
     {
+
+        $totalPhoneItemsQuery = Phone::where('status', 'available')
+            ->when(isset($request['brand_id']) && $request['brand_id'] > 0, function ($query) use ($request) {
+                $query->where('brand_id', $request['brand_id']);
+            });
         $brands = Brand::all();
 
-        $totalPhoneItemsQuery = Phone::where('status', 'available');
+
         $totalPhoneItems = $totalPhoneItemsQuery->count();
 
         $totalPhonesValue = $totalPhoneItemsQuery->sum('purchase_price');
 
-        $phoneStock = Phone::select(
+//        $phoneStock = Phone::select(
+//            'phones.brand_id',
+//            'phones.model',
+//            'brands.name as brands'
+//        )
+//            ->selectRaw('COUNT(*) as quantity')
+//            ->selectRaw('SUM(purchase_price) as total_purchase_price')
+//            ->selectRaw('SUM(selling_price) as total_selling_price')
+//            ->selectRaw('(SUM(selling_price) - SUM(purchase_price)) as total_profit')
+//            ->leftJoin('brands','brands.id','=','phones.brand_id')
+//            ->where('phones.status', 'available')
+//            ->groupBy('phones.brand_id', 'phones.model', 'brands.name')
+//            ->get();
+        $phoneStockQuery = Phone::select(
             'phones.brand_id',
             'phones.model',
             'brands.name as brands'
@@ -452,10 +470,15 @@ class ReportController extends Controller
             ->selectRaw('SUM(purchase_price) as total_purchase_price')
             ->selectRaw('SUM(selling_price) as total_selling_price')
             ->selectRaw('(SUM(selling_price) - SUM(purchase_price)) as total_profit')
-            ->leftJoin('brands','brands.id','=','phones.brand_id')
+            ->leftJoin('brands', 'brands.id', '=', 'phones.brand_id')
             ->where('phones.status', 'available')
-            ->groupBy('phones.brand_id', 'phones.model', 'brands.name')
-            ->get();
+            ->groupBy('phones.brand_id', 'phones.model', 'brands.name');
+
+        if (isset($request['brand_id']) && $request['brand_id'] > 0) {
+            $phoneStockQuery->where('phones.brand_id', $request['brand_id']);
+        }
+
+        $phoneStock = $phoneStockQuery->get();
 
         $accessoryStock = Accessory::select('name')
             ->selectRaw('SUM(quantity) as quantity')
@@ -475,6 +498,66 @@ class ReportController extends Controller
             ->count();
         $lowStockAccessories = $accessoriesQuery->clone()->whereColumn('quantity', '<=', 'low_stock_threshold')->count();
         $lowStockCount = $lowStockPhones + $lowStockAccessories;
+
+        if ($request->query('download') === 'true') {
+            $csvData = [];
+
+            // Phones section header
+            $csvData[] = ['Phones Stock'];
+            $csvData[] = ['Brand', 'Model', 'Quantity', 'Total Purchase Price', 'Total Selling Price', 'Total Profit'];
+
+            // Add phones data
+            foreach ($phoneStock as $phone) {
+                $csvData[] = [
+                    $phone->brands,
+                    $phone->model,
+                    $phone->quantity,
+                    number_format($phone->total_purchase_price, 2),
+                    number_format($phone->total_selling_price, 2),
+                    number_format($phone->total_profit, 2),
+                ];
+            }
+
+            // Add empty line to separate sections
+            $csvData[] = [];
+
+            // Accessories section header
+            $csvData[] = ['Accessories Stock'];
+            $csvData[] = ['Item', 'Quantity', 'Total Purchase Price', 'Total Selling Price', 'Total Profit'];
+
+            // Add accessories data
+            foreach ($accessoryStock as $accessory) {
+                $totalProfit = $accessory->total_selling_price - $accessory->total_purchase_price;
+                $csvData[] = [
+                    $accessory->name,
+                    $accessory->quantity,
+                    number_format($accessory->total_purchase_price, 2),
+                    number_format($accessory->total_selling_price, 2),
+                    number_format($totalProfit, 2),
+                ];
+            }
+
+            // Generate CSV content
+            $handle = fopen('php://memory', 'r+');
+            foreach ($csvData as $row) {
+                fputcsv($handle, $row);
+            }
+            rewind($handle);
+            $csvContent = stream_get_contents($handle);
+            fclose($handle);
+
+            $filename = 'combined_stock_' . date('Y-m-d') . '.csv';
+
+            // Return CSV download response
+            return response($csvContent)
+                ->header('Content-Type', 'text/csv')
+                ->header('Content-Disposition', "attachment; filename=\"$filename\"")
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
+        }
+
+
+
 
         return view('reports.stock', compact(
             'phoneStock',

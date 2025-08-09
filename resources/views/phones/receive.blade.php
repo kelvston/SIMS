@@ -120,7 +120,18 @@
                     </div>
 
                     <hr class="my-6 border-gray-300">
-
+                    <div class="mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">description</label>
+                            <input type="text" step="0.01" id="description" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., SOS">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Stock Origin</label>
+                            <input type="text" step="0.01" id="stock_origin" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., ">
+                        </div>
+                    </div>
                     <div class="mb-4">
                         <label for="imei-input" class="block text-sm font-bold text-gray-700 mb-2">Scan Barcode or Enter IMEI:</label>
                         <div class="flex gap-2">
@@ -211,6 +222,14 @@
                             <label class="block text-sm font-medium text-gray-700">Selling Price</label>
                             <input type="number" step="0.01" id="modal-selling-price" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="S. Price">
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Description</label>
+                            <input type="text" step="0.01" id="modal-description" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="S. OS">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Stock Origin</label>
+                            <input type="text" step="0.01" id="modal-stock_origin" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="S.ORIGIN">
+                        </div>
                         <div class="col-span-2">
                             <label class="block text-sm font-medium text-gray-700">Quantity</label>
                             <input type="number" id="modal-quantity" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="Qty">
@@ -282,6 +301,8 @@
             const mainForm = document.getElementById('main-form');
             const phonePurchasePriceInput = document.getElementById('phone-purchase-price');
             const phoneSellingPriceInput = document.getElementById('phone-selling-price');
+            const descriptionInput = document.getElementById('description');
+            const stockOriginInput = document.getElementById('stock_origin');
             const submitButton = mainForm.querySelector('button[type="submit"]');
 
             let phonesData = [];
@@ -350,6 +371,8 @@
                 const storage = storageInput.value.trim();
                 const purchasePrice = phonePurchasePriceInput.value;
                 const sellingPrice = phoneSellingPriceInput.value;
+                const description = descriptionInput.value;
+                const stockOrigin = stockOriginInput.value;
                 // const condition = conditionInput.value; // Get the condition from the new input
 
                 // Validation for hidden IDs is crucial here
@@ -358,7 +381,7 @@
                 const colorId = colorHiddenInput.value;
                 const storageId = storageHiddenInput.value;
 
-                if (!brandId || !modelId || !colorId || !storageId || !purchasePrice || !sellingPrice) {
+                if (!brandId || !modelId || !colorId || !storageId || !purchasePrice || !sellingPrice || !description || !stockOrigin) {
                     showToast('Please fill in all phone details (Brand, Model, Color, Storage, and Prices) from the dropdowns before adding an IMEI.', 'error');
                     return;
                 }
@@ -381,6 +404,8 @@
                     storage_name: storage,
                     purchase_price: purchasePrice,
                     selling_price: sellingPrice,
+                    description: description,
+                    stock_origin: stockOrigin,
                     // You can hardcode a condition for now or add a dropdown to your HTML
                     condition: 'New'
                 });
@@ -480,6 +505,18 @@
                     inputSellingPrice.name = `phones[${index}][selling_price]`;
                     inputSellingPrice.value = phone.selling_price;
                     phoneHiddenInputs.appendChild(inputSellingPrice);
+
+                    const inputDescription = document.createElement('input');
+                    inputDescription.type = 'hidden';
+                    inputDescription.name = `phones[${index}][description]`;
+                    inputDescription.value = phone.description;
+                    phoneHiddenInputs.appendChild(inputDescription);
+
+                    const inputStockOrigin = document.createElement('input');
+                    inputStockOrigin.type = 'hidden';
+                    inputStockOrigin.name = `phones[${index}][stock_origin]`;
+                    inputStockOrigin.value = phone.stock_origin;
+                    phoneHiddenInputs.appendChild(inputStockOrigin);
                 });
 
                 if (phonesData.length === 0) {
@@ -665,6 +702,8 @@
                             selectedAccessoryIdInput.value = item.id;
                             document.getElementById('modal-purchase-price').value = item.purchase_price;
                             document.getElementById('modal-selling-price').value = item.selling_price;
+                            document.getElementById('modal-description').value = item.description;
+                            document.getElementById('modal-stock_origin').value = item.stock_origin;
                             document.getElementById('modal-unit').value = item.unit;
                             if (item.category_id) {
                                 const category = accessoryCategories.find(c => c.id === item.category_id);
@@ -691,6 +730,8 @@
                 const unit = document.getElementById('modal-unit').value;
                 const purchasePrice = document.getElementById('modal-purchase-price').value;
                 const sellingPrice = document.getElementById('modal-selling-price').value;
+                const stockOrigin = document.getElementById('modal-stock_origin').value;
+                const description = document.getElementById('modal-description').value;
                 const quantity = document.getElementById('modal-quantity').value;
 
                 if (!name || !quantity) {
@@ -707,6 +748,8 @@
                     unit,
                     purchase_price: purchasePrice,
                     selling_price: sellingPrice,
+                    description: description,
+                    stock_origin: stockOrigin,
                     quantity
                 };
 
@@ -770,6 +813,8 @@
                     document.getElementById('modal-unit').value = accessory.unit;
                     document.getElementById('modal-purchase-price').value = accessory.purchase_price;
                     document.getElementById('modal-selling-price').value = accessory.selling_price;
+                    document.getElementById('modal-stock_origin').value = accessory.stock_origin;
+                    document.getElementById('modal-description').value = accessory.description;
                     document.getElementById('modal-quantity').value = accessory.quantity;
                     accessoryModal.classList.remove('hidden');
                 } else if (e.target.classList.contains('remove-accessory-btn')) {

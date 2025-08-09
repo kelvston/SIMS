@@ -23,7 +23,9 @@ class Accessory extends Model
         'status',
         'quantity',
         'barcode',
-        'category'
+        'category',
+        'stock_origin',
+        'description'
     ];
 
     /**

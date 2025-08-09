@@ -10,16 +10,16 @@
 
         @can('receive phones')
             <div class="flex justify-end mb-8">
-                <a href="{{ route('phones.receive.form') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
+                <a href="{{ route('phones.receive.form') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded-full transition duration-300 ease-in-out shadow-md">
                     Receive New Inventory
                 </a>
-                <a href="{{ route('reports.detailed-stock') }}" class="bg-gray-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
+                <a href="{{ route('reports.detailed-stock') }}" class="bg-gray-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded-full transition duration-300 ease-in-out shadow-md">
                     Stock Adjustment
                 </a>
             </div>
         @endcan
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+{{--        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">--}}
             <!-- Phones Section -->
             <div>
                 <h2 class="text-2xl font-bold text-gray-700 mb-4">Phones</h2>
@@ -65,9 +65,14 @@
                                         <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="6" checked>
                                         <span class="ml-2">Status</span>
                                     </label>
+
                                     <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="7" checked>
-                                        <span class="ml-2">Received At</span>
+                                        <span class="ml-2">Stock Origin</span>
+                                    </label>
+                                    <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="8" checked>
+                                        <span class="ml-2">Description</span>
                                     </label>
                                 </div>
                             </div>
@@ -93,19 +98,20 @@
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="storage">Storage</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="price">Selling Price</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="status">Status</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="received_at">Received At</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="stock_origin">Stock Origin</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="description">Description</th>
                             </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                             @foreach ($phones as $phone)
                                 <tr data-row>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="imei">{{ $phone->imei }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="brand">{{ optional($phone->brand)->name }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="model">{{ $phone->model }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="color">{{ $phone->color }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="storage">{{ $phone->storage_capacity }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="price">{{ number_format($phone->selling_price, 2) }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="status">
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="imei">{{ $phone->imei }}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="brand">{{ optional($phone->brand)->name }}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="model">{{ $phone->model }}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="color">{{ $phone->color }}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="storage">{{ $phone->storage_capacity }}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="price">{{ number_format($phone->selling_price, 2) }}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="status">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                             @if($phone->status == 'available') bg-green-100 text-green-800
                                             @elseif($phone->status == 'sold') bg-red-100 text-red-800
@@ -114,7 +120,8 @@
                                             {{ ucfirst(str_replace('_', ' ', $phone->status)) }}
                                         </span>
                                     </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="received_at">{{ optional($phone->received_at)->format('Y-m-d H:i') }}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="stock_origin">{{ ($phone->stock_origin)}}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="description">{{ ($phone->description)}}</td>
                                 </tr>
                             @endforeach
                             </tbody>
@@ -125,7 +132,7 @@
                         {{ $phones->links('pagination::tailwind') }}
                     </div>
                 @endif
-            </div>
+{{--            </div>--}}
 
             <!-- Accessories Section -->
             <div>
@@ -148,33 +155,37 @@
                                         <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="0" checked>
                                         <span class="ml-2">Name</span>
                                     </label>
+{{--                                    <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">--}}
+{{--                                        <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="1" checked>--}}
+{{--                                        <span class="ml-2">Brand</span>--}}
+{{--                                    </label>--}}
                                     <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="1" checked>
-                                        <span class="ml-2">Brand</span>
-                                    </label>
-                                    <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="2" checked>
                                         <span class="ml-2">Unit</span>
                                     </label>
                                     <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="3" checked>
+                                        <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="2" checked>
                                         <span class="ml-2">Purchase Price</span>
                                     </label>
                                     <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="4" checked>
+                                        <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="3" checked>
                                         <span class="ml-2">Selling Price</span>
                                     </label>
                                     <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="5" checked>
+                                        <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="4" checked>
                                         <span class="ml-2">Quantity</span>
                                     </label>
                                     <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="6" checked>
+                                        <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="5" checked>
                                         <span class="ml-2">Status</span>
                                     </label>
                                     <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="6" checked>
+                                        <span class="ml-2">Description</span>
+                                    </label>
+                                    <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         <input type="checkbox" class="form-checkbox text-blue-600" data-column-index="7" checked>
-                                        <span class="ml-2">Received At</span>
+                                        <span class="ml-2">Stock Origin</span>
                                     </label>
                                 </div>
                             </div>
@@ -193,26 +204,27 @@
                         <table id="accessories-table" class="min-w-full divide-y divide-gray-200 table-auto">
                             <thead class="bg-gray-50">
                             <tr>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="name">Name</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="brand">Brand</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="unit">Unit</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="purchase_price">Purchase Price</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="selling_price">Selling Price</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="quantity">Quantity</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="status">Status</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="received_at">Received At</th>
+                                <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="name">Name</th>
+{{--                                <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="brand">Brand</th>--}}
+                                <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="unit">Unit</th>
+                                <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="purchase_price">Purchase Price</th>
+                                <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="selling_price">Selling Price</th>
+                                <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="quantity">Quantity</th>
+                                <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="status">Status</th>
+                                <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="description">Description</th>
+                                <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="stock_origin">Stock Origin</th>
                             </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                             @foreach ($accessories as $accessory)
                                 <tr data-row>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="name">{{ $accessory->name }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="brand">{{ optional($accessory->brand)->name ?? 'N/A' }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="unit">{{ $accessory->unit }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="purchase_price">{{ number_format($accessory->purchase_price, 2) }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="selling_price">{{ number_format($accessory->selling_price, 2) }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="quantity">{{ $accessory->quantity }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="status">
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="name">{{ $accessory->name }}</td>
+{{--                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="brand">{{ optional($accessory->brand)->name ?? 'N/A' }}</td>--}}
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="unit">{{ $accessory->unit }}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="purchase_price">{{ number_format($accessory->purchase_price, 2) }}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="selling_price">{{ number_format($accessory->selling_price, 2) }}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="quantity">{{ $accessory->quantity }}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="status">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                             @if($accessory->status == 'in_stock') bg-green-100 text-green-800
                                             @elseif($accessory->status == 'out_of_stock') bg-red-100 text-red-800
@@ -220,7 +232,8 @@
                                             {{ ucfirst(str_replace('_', ' ', $accessory->status)) }}
                                         </span>
                                     </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" data-column="received_at">{{ optional($accessory->created_at)->format('Y-m-d H:i') }}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="description">{{ ($accessory->description)}}</td>
+                                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900" data-column="stock_origin">{{ ($accessory->stock_origin)}}</td>
                                 </tr>
                             @endforeach
                             </tbody>
