@@ -19,6 +19,8 @@ class Sale extends Model
         'sale_date',
         'is_installment',
         'customer_email',
+        'amount_paid',
+        'amount_due'
     ];
 
     // Define the casts for attributes
@@ -26,6 +28,7 @@ class Sale extends Model
         'sale_date' => 'datetime',
         'is_installment' => 'boolean',
     ];
+
 
     /**
      * Get the sale items for the sale.

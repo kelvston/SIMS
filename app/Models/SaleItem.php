@@ -14,8 +14,11 @@ class SaleItem extends Model
         'sale_id',
         'phone_id',
         'unit_price',
+        'accessory_id',
+        'quantity',
+        'is_sold'
     ];
-
+    protected $with = ['phone', 'accessory'];
     /**
      * Get the sale that owns the sale item.
      */
@@ -30,6 +33,11 @@ class SaleItem extends Model
     public function phone()
     {
         return $this->belongsTo(Phone::class);
+    }
+
+    public function accessory()
+    {
+        return $this->belongsTo(Accessory::class);
     }
 
 }

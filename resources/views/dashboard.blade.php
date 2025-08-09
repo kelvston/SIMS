@@ -31,7 +31,8 @@
     </style>
 
     <!-- Watermark -->
-    <img src="{{ asset('images/watermark.png') }}"
+
+    <img src="{{ asset('storage/' . $settings['organization_logo_path']) }}"
          alt="Watermark"
          class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
          style="transform: translate(-50%, -90%);" />
@@ -60,7 +61,7 @@
                 </a>
             @endcan
 
-            <!-- Summary block unchanged -->
+            <!-- Summary block -->
             <div class="lg:col-span-1 p-3 bg-white rounded-md shadow-sm border border-gray-200">
                 <h2 class="text-xs font-bold mb-2 text-gray-800 flex items-center gap-1">
                     <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2"
@@ -71,19 +72,19 @@
                 </h2>
                 <table class="text-xs w-full text-left">
                     <tr class="font-semibold text-gray-700">
-                        <th colspan="2" class="pb-1">GENERAL SUMMARY</th>
+                        <th colspan="2" class="pb-1">KEY METRICS (Current Month)</th>
                     </tr>
                     <tr>
-                        <td>Invested:</td>
-                        <td><b>1,221,133,311</b></td>
+                        <td>Total Phones:</td>
+                        <td><b>{{ number_format($totalPhones) }}</b></td>
                     </tr>
                     <tr>
-                        <td>Profit:</td>
-                        <td><b>1,221,992,722</b></td>
+                        <td>Monthly Sales:</td>
+                        <td><b>{{ number_format($monthlySales, 2) }}</b></td>
                     </tr>
                     <tr>
-                        <td>Loss:</td>
-                        <td><b>12,211,223</b></td>
+                        <td>Pending Installments:</td>
+                        <td><b>{{ number_format($pendingInstallmentsAmount, 2) }}</b></td>
                     </tr>
                 </table>
             </div>
@@ -91,11 +92,11 @@
     </div>
 
 
-<div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
         @php
             $cards = [
                 ['icon' => '📱', 'label' => 'Phones', 'value' => number_format($totalPhones), 'color' => 'indigo'],
-                ['icon' => '💰', 'label' => 'Sales (' . \Carbon\Carbon::now()->format('M') . ')', 'value' => '$' . number_format($monthlySales, 2), 'color' => 'green'],
+                ['icon' => '�', 'label' => 'Sales (' . \Carbon\Carbon::now()->format('M') . ')', 'value' => '$' . number_format($monthlySales, 2), 'color' => 'green'],
                 ['icon' => '⏳', 'label' => 'Pending', 'value' => '$' . number_format($pendingInstallmentsAmount, 2), 'color' => 'yellow'],
                 ['icon' => '📈', 'label' => 'Profit', 'value' => number_format($profitMarginPercentage, 2) . '%', 'color' => $profitMarginPercentage >= 0 ? 'green' : 'red'],
             ];
@@ -195,7 +196,7 @@
         </div>
     </div>
 
-    <!-- Table -->
+    <!-- Low Stock Table -->
     @can('view stock reports')
         <div class="p-4 bg-white rounded-lg shadow overflow-x-auto">
             <h2 class="font-semibold mb-4">Low Stock Products Overview</h2>
@@ -205,8 +206,8 @@
                 <table class="min-w-full text-sm">
                     <thead class="bg-gray-100">
                     <tr>
-                        <th class="text-left p-2">Product</th>
-                        <th class="text-left p-2">Brand</th>
+                        <th class="text-left p-2">Item</th>
+                        <th class="text-left p-2">Category</th>
                         <th class="text-left p-2">Stock</th>
                         <th class="text-left p-2">Threshold</th>
                         <th class="text-left p-2">Status</th>
@@ -215,8 +216,14 @@
                     <tbody>
                     @foreach ($lowStockProducts as $item)
                         <tr>
-                            <td class="p-2">{{ $item->model }} ({{ $item->color }})</td>
-                            <td class="p-2">{{ $item->brand->name ?? 'N/A' }}</td>
+                            <td class="p-2">
+                                {{-- Display the brand name from the loaded relationship, and the model directly from the stock level item. --}}
+                                {{ $item->brand->name ?? 'N/A' }} {{ $item->model }} ({{ $item->color }})
+                            </td>
+                            <td class="p-2">
+                                {{-- The debug dump indicates the StockLevel table stores phone data, so we'll assume the category is "Phone". --}}
+                                Phone
+                            </td>
                             <td class="p-2">{{ $item->current_stock }} units</td>
                             <td class="p-2">{{ $item->low_stock_threshold }} units</td>
                             <td class="p-2 text-red-600">Critical</td>
@@ -327,3 +334,4 @@
         });
     </script>
 @endpush
+�

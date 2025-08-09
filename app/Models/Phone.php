@@ -20,6 +20,7 @@ class Phone extends Model
         'selling_price',
         'status',
         'received_at',
+        'condition'
     ];
 
     // Define the casts for attributes
@@ -42,6 +43,13 @@ class Phone extends Model
     {
         return $this->hasOne(SaleItem::class);
     }
+    public function stockLevel()
+    {
+        return $this->hasOne(StockLevel::class, 'model', 'model')
+            ->whereColumn('stock_levels.color', 'phones.color')
+            ->whereColumn('stock_levels.brand_id', 'phones.brand_id');
+    }
+
 
 
 }

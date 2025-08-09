@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@yield('title', 'PhoneStore Pro')</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}">
+    <script src="{{ asset('assets/js/tailwind.min.js') }}"></script>
+    <script src="{{ asset('assets/js/chart.min.js') }}"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -79,6 +79,7 @@
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
+
 <!-- Page Loader -->
 <div id="page-loader"
      class="fixed inset-0 z-50 bg-white flex items-center justify-center">
@@ -117,7 +118,7 @@
                 </a>
             @endcan
             @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])
-                <a href="{{ route('reports.sales') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                <a href="{{ route('reports.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                     <span class="mr-2">📈</span> Reports
                 </a>
             @endcanany
@@ -148,6 +149,11 @@
                             <span class="mr-2">🏷️</span> Manage Brands
                         </a>
                     @endcan
+                        @can('Manage Setting')
+                        <a href="{{ route('settings.edit') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                            <span class="mr-2">🏷️</span> Manage Settings
+                        </a>
+                    @endcan
                 </div>
             @endcanany
             @can('view expenses')
@@ -172,39 +178,39 @@
     </aside>
 
     <!-- Sidebar for mobile -->
-    <aside id="mobileSidebar" class="sidebar-mobile text-white p-4 lg:hidden overflow-hidden">
-        <h2 class="text-xl font-bold mb-6">PhoneStore Pro</h2>
-        <nav class="space-y-2 overflow-hidden">
-            @can('view dashboard')
-                <a href="{{ route('dashboard') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Dashboard</a>
-            @endcan
-            @can('view phones')
-                <a href="{{ route('phones.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Inventory</a>
-            @endcan
-            @can('view sales')
-                <a href="{{ route('sales.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Sales</a>
-            @endcan
-            @can('view installments')
-                <a href="{{ route('installments.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Installments</a>
-            @endcan
-            @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])
-                <a href="{{ route('reports.sales') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Reports</a>
-            @endcanany
-            @can('manage users')
-                <a href="{{ route('users.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Users</a>
-            @endcan
-            @can('manage roles')
-                <a href="{{ route('roles.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Roles</a>
-            @endcan
-            @can('manage brands')
-                <a href="{{ route('brands.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Brands</a>
-            @endcan
-            <form method="POST" action="{{ route('logout') }}" class="block">
-                @csrf
-                <button type="submit" class="w-full text-left py-2 px-3 rounded hover:bg-gray-700">Log Out</button>
-            </form>
-        </nav>
-    </aside>
+{{--    <aside id="mobileSidebar" class="sidebar-mobile text-white p-4 lg:hidden overflow-hidden">--}}
+{{--        <h2 class="text-xl font-bold mb-6">PhoneStore Pro</h2>--}}
+{{--        <nav class="space-y-2 overflow-hidden">--}}
+{{--            @can('view dashboard')--}}
+{{--                <a href="{{ route('dashboard') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Dashboard</a>--}}
+{{--            @endcan--}}
+{{--            @can('view phones')--}}
+{{--                <a href="{{ route('phones.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Inventory</a>--}}
+{{--            @endcan--}}
+{{--            @can('view sales')--}}
+{{--                <a href="{{ route('sales.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Sales</a>--}}
+{{--            @endcan--}}
+{{--            @can('view installments')--}}
+{{--                <a href="{{ route('installments.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Installments</a>--}}
+{{--            @endcan--}}
+{{--            @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])--}}
+{{--                <a href="{{ route('reports.sales') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Reports</a>--}}
+{{--            @endcanany--}}
+{{--            @can('manage users')--}}
+{{--                <a href="{{ route('users.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Users</a>--}}
+{{--            @endcan--}}
+{{--            @can('manage roles')--}}
+{{--                <a href="{{ route('roles.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Roles</a>--}}
+{{--            @endcan--}}
+{{--            @can('manage brands')--}}
+{{--                <a href="{{ route('brands.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Brands</a>--}}
+{{--            @endcan--}}
+{{--            <form method="POST" action="{{ route('logout') }}" class="block">--}}
+{{--                @csrf--}}
+{{--                <button type="submit" class="w-full text-left py-2 px-3 rounded hover:bg-gray-700">Log Out</button>--}}
+{{--            </form>--}}
+{{--        </nav>--}}
+{{--    </aside>--}}
 
     <!-- Main content -->
     <div class="flex-1 flex flex-col lg:ml-60">
@@ -242,7 +248,8 @@
     </div>
 </div>
 
-<script src="//unpkg.com/alpinejs" defer></script>
+{{--<script src="//unpkg.com/alpinejs" defer></script>--}}
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script>
     document.getElementById('menuToggle').addEventListener('click', () => {
         document.getElementById('mobileSidebar').classList.toggle('active');

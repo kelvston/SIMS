@@ -9,6 +9,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\SettingsController;
 
 use App\Models\InstallmentPayment;
 use App\Models\InstallmentPlan;
@@ -100,6 +101,7 @@ Route::get('/dashboard', function () {
     $lowStockProducts = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')
         ->with('brand')
         ->get();
+
 
     // Count for notifications (e.g., low stock items)
     $notificationCount = $lowStockProducts->count();
@@ -207,9 +209,19 @@ Route::get('/phones', [PhoneController::class, 'index'])->name('phones.index');
 
 // Sales Routes
 Route::get('/sales/create', [SaleController::class, 'create'])->name('sales.create');
+Route::get('/sales/return', [SaleController::class, 'showReturnPage'])->name('sales.return');
+Route::get('/sales/print', [SaleController::class, 'printReceipt'])->name('sales.print');
 Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
 Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
 Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show'); // For viewing a single sale detail
+Route::get('/sales/{sale}/pay',[SaleController::class, 'payForm'])->name('sales.pay.form');
+Route::post('/sales/{sale}/pay',[SaleController::class, 'storePayment'])->name('sales.pay.store');
+Route::get('/sales/receipt/{receipt}', [SaleController::class, 'printSingleReceipt'])->name('sales.print-receipt-single');
+//Route::get('/sales/return', [SaleController::class, 'showReturnPage'])->name('sales.return');
+Route::post('/sales/search', [SaleController::class, 'search'])->name('sales.search');
+Route::post('/sales/return/{sale}', [SaleController::class, 'processReturn'])->name('sales.processReturn');
+Route::get('/api/scan-item/{code}', [SaleController::class, 'find']);
+
 
 // Installment Routes
 Route::get('/installments/{installmentPlan}/pay', [InstallmentController::class, 'showPaymentForm'])->name('installments.pay.form');
@@ -217,16 +229,12 @@ Route::post('/installments/{installmentPlan}/pay', [InstallmentController::class
 Route::get('/installments', [InstallmentController::class, 'index'])->name('installments.index');
 Route::post('/installment/payment', [InstallmentController::class, 'store'])->name('installment.payment.store');
 // Reporting Routes
-Route::get('/reports/sales', [ReportController::class, 'salesReport'])->name('reports.sales');
-Route::get('/reports/stock', [ReportController::class, 'stockReport'])->name('reports.stock');
-Route::get('/reports/profit-loss', [ReportController::class, 'profitLossReport'])->name('reports.profit_loss'); // New P&L route
+//Route::get('/reports/index', [ReportController::class, 'index'])->name('reports.index');
+//Route::get('/reports/sales', [ReportController::class, 'salesReport'])->name('reports.sales');
+//Route::get('/reports/stock', [ReportController::class, 'stockReport'])->name('reports.stock');
+//Route::get('/reports/profit-loss', [ReportController::class, 'profitLossReport'])->name('reports.profit_loss'); // New P&L route
 //Route::get('/index', [UserController::class, 'index'])->name('users.index');
-//Route::get('/users', [UserController::class, 'create'])->name('users.create');
-//Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
-//Route::get('/edit', [UserController::class, 'edit'])->name('users.edit');
-//Route::put('/destroy', [UserController::class, 'destroy'])->name('users.destroy');
-//Route::put('/update', [UserController::class, 'update'])->name('users.update');
-// Display user creation form
+
 Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
 Route::post('/users', [UserController::class, 'store'])->name('users.store');
 Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
@@ -240,9 +248,32 @@ Route::resource('brands', BrandController::class);
 Route::resource('expenses', ExpenseController::class);
 
 
+Route::prefix('reports')->name('reports.')->group(function () {
+    Route::get('/', [ReportController::class, 'index'])->name('index');
+    Route::get('/sales', [ReportController::class, 'sales'])->name('sales');
+    Route::get('/stock', [ReportController::class, 'stock'])->name('stock');
+    Route::get('/profit-loss', [ReportController::class, 'profitLoss'])->name('profitloss');
+    Route::get('/expenses', [ReportController::class, 'expenses'])->name('expenses');
+    Route::get('/installments', [ReportController::class, 'installments'])->name('installments');
+    Route::get('/users', [ReportController::class, 'users'])->name('users');
+    Route::get('/general', [ReportController::class, 'general'])->name('general');
+    Route::get('/credit_sale', [ReportController::class, 'creditSale'])->name('credit_sale');
+    Route::get('/customers', [ReportController::class, 'CustomerReport'])->name('customers');
+    Route::get('/sale_adjustment', [ReportController::class, 'SaleAdjustment'])->name('sale_adjustment');
+    Route::get('/download', [ReportController::class, 'download'])->name('download');
+    Route::post('/reports/send-all', [ReportController::class, 'sendAllReports'])->name('send_all');
 
+});
+Route::post('/reports/stock/update-quantity', [ReportController::class, 'updateStockQuantity'])->name('reports.stock.update-quantity');
+//Route::get('/accessories', [AccessoryController::class, 'index'])->name('accessories.index');
 
+Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
+Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+Route::get('/reports/detailed-stock', [ReportController::class, 'detailedStock'])->name('reports.detailed-stock');
+Route::post('/reports/stock/update-accessory/{id}', [ReportController::class, 'updateAccessoryStock'])->name('stock.update-accessory');
+Route::post('/reports/stock/remove-phone/{id}', [ReportController::class, 'removePhone'])->name('stock.remove.phone');
 Route::get('/dashboard', [ReportController::class, 'home'])->name('dashboard');
+
 // To view all installment plans
 
 

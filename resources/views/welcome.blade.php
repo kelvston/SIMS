@@ -4,8 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - PhoneStore Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+{{--    <script src="https://cdn.tailwindcss.com"></script>--}}
+{{--    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">--}}
+    <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}">
+    <script src="{{ asset('assets/js/tailwind.min.js') }}"></script>
+    <script src="{{ asset('assets/js/chart.min.js') }}"></script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -52,6 +55,15 @@
     </style>
 </head>
 <body class="flex items-center justify-center relative">
+@if ($errors->any())
+    <div class="bg-red-500 text-white p-4">
+        <ul>
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
 <!-- Page Loader -->
 <div id="page-loader"
      class="fixed inset-0 z-[9999] bg-white flex items-center justify-center transition-opacity duration-500">
@@ -98,6 +110,9 @@
                     <input type="email" name="email" id="email"
                            class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md focus:ring-2 focus:ring-yellow-900 text-white placeholder-white/60 text-sm"
                            placeholder="you@example.com" required>
+                    @error('email')
+                    <p class="text-red-400 text-xs mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div>
@@ -109,6 +124,9 @@
                         <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-3 text-xs text-white/60 hover:text-white">
                             Show
                         </button>
+                        @error('password')
+                        <p class="text-red-400 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
 

@@ -1,81 +1,131 @@
 @extends('layouts.app')
 
 @section('content')
-    <style>
-        .report-summary-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px dashed #e5e7eb;
-        }
-        .report-summary-item:last-child {
-            border-bottom: none;
-        }
-        .report-label {
-            font-weight: 600;
-            color: #4b5563;
-        }
-        .report-value {
-            font-weight: bold;
-            color: #1f2937;
-        }
-        .positive {
-            color: #10b981; /* Green */
-        }
-        .negative {
-            color: #ef4444; /* Red */
-        }
-    </style>
+    <div class="container mx-auto p-4 md:p-8">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">Profit & Loss Report</h1>
 
-<div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10">
-    <img src="{{ asset('images/watermark.png') }}"
-         alt="Watermark"
-         class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-         style="transform: translate(-50%, -50%);" />
-    <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Profit & Loss Report</h1>
+        <!-- Filter Form -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <form action="{{ route('reports.profitloss') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                    <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
+                    <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div class="flex items-end space-x-2">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
+                        <i class="fas fa-filter mr-2"></i>Filter
+                    </button>
+                    @if(request()->has('start_date') || request()->has('end_date'))
+                        <a href="{{ route('reports.profitloss') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
+                            <i class="fas fa-undo-alt mr-2"></i>Reset
+                        </a>
+                    @endif
+                    <a href="{{ route('reports.profitloss', array_merge(request()->query(), ['download' => 'true'])) }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
+                        <i class="fas fa-download mr-2"></i>Download CSV
+                    </a>
+                </div>
+            </form>
+        </div>
 
-    <!-- Date Filter Form -->
-    <form action="{{ route('reports.profit_loss') }}" method="GET" class="mb-6 p-4 bg-gray-50 rounded-lg shadow-sm flex flex-wrap items-center justify-center gap-4">
-        <div class="flex items-center gap-2">
-            <label for="start_date" class="text-gray-700 text-sm font-bold">Start Date:</label>
-            <input type="date" name="start_date" id="start_date" class="shadow-sm border rounded py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ $startDate }}">
+        <!-- Summary Cards -->
+        <!-- Summary Cards (Circle Design) -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8 justify-center text-center">
+            <div class="flex flex-col items-center justify-center bg-white rounded-full h-40 w-40 mx-auto shadow-lg border-4 border-indigo-500">
+                <p class="text-sm font-medium text-gray-500">Revenue</p>
+                <p class="mt-2 text-xl font-bold text-gray-900">{{ number_format($totalRevenue, 2) }}</p>
+            </div>
+            <div class="flex flex-col items-center justify-center bg-white rounded-full h-40 w-40 mx-auto shadow-lg border-4 border-red-500">
+                <p class="text-sm font-medium text-gray-500">COGS</p>
+                <p class="mt-2 text-xl font-bold text-gray-900">{{ number_format($totalCostOfGoodsSold, 2) }}</p>
+            </div>
+            <div class="flex flex-col items-center justify-center bg-white rounded-full h-40 w-40 mx-auto shadow-lg border-4 border-yellow-500">
+                <p class="text-sm font-medium text-gray-500">Gross Profit</p>
+                <p class="mt-2 text-xl font-bold text-gray-900">{{ number_format($grossProfit, 2) }}</p>
+            </div>
+            <div class="flex flex-col items-center justify-center bg-white rounded-full h-40 w-40 mx-auto shadow-lg border-4 border-purple-500">
+                <p class="text-sm font-medium text-gray-500">Expenses</p>
+                <p class="mt-2 text-xl font-bold text-gray-900">{{ number_format($totalExpenses, 2) }}</p>
+            </div>
+            <div class="flex flex-col items-center justify-center bg-white rounded-full h-40 w-40 mx-auto shadow-lg border-4 border-emerald-500">
+                <p class="text-sm font-medium text-gray-500">Net Profit</p>
+                <p class="mt-2 text-xl font-bold text-gray-900">{{ number_format($netProfit, 2) }}</p>
+            </div>
         </div>
-        <div class="flex items-center gap-2">
-            <label for="end_date" class="text-gray-700 text-sm font-bold">End Date:</label>
-            <input type="date" name="end_date" id="end_date" class="shadow-sm border rounded py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ $endDate }}">
-        </div>
-        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
-            Apply Filter
-        </button>
-        <a href="{{ route('reports.profit_loss') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
-            Clear Filter
-        </a>
-    </form>
 
-    <div class="p-6 bg-gray-50 rounded-lg border border-gray-200">
-        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Summary</h2>
 
-        <div class="report-summary-item">
-            <span class="report-label">Total Revenue:</span>
-            <span class="report-value">${{ number_format($totalRevenue, 2) }}</span>
-        </div>
-        <div class="report-summary-item">
-            <span class="report-label">Total Cost of Goods Sold (COGS):</span>
-            <span class="report-value">${{ number_format($totalCostOfGoodsSold, 2) }}</span>
-        </div>
-        <div class="report-summary-item text-lg {{ $grossProfit >= 0 ? 'positive' : 'negative' }}">
-            <span class="report-label">Gross Profit/Loss:</span>
-            <span class="report-value">${{ number_format($grossProfit, 2) }}</span>
-        </div>
-        <div class="report-summary-item text-lg {{ $grossProfitMarginPercentage >= 0 ? 'positive' : 'negative' }}">
-            <span class="report-label">Gross Profit Margin:</span>
-            <span class="report-value">{{ number_format($grossProfitMarginPercentage, 2) }}%</span>
+        <!-- P&L Chart -->
+
+
+        <!-- Detailed Transactions -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-800">Sales Transactions</h2>
+                </div>
+                <div class="overflow-x-auto" style="max-height: 400px;">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50 sticky top-0">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                        @forelse($sales as $sale)
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->sale_date->format('M d, Y') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->customer_name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ number_format($sale->final_amount, 2) }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No sales transactions found.</td>
+                            </tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-800">Expense Transactions</h2>
+                </div>
+                <div class="overflow-x-auto" style="max-height: 400px;">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50 sticky top-0">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                        @forelse($expenses as $expense)
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($expense->expense_date)->format('d M Y') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $expense->description }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ number_format($expense->amount, 2) }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No expense transactions found.</td>
+                            </tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="flex justify-end mt-8">
-        <a href="{{ url('/') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-full transition duration-300 ease-in-out shadow-md">
-            Back to Dashboard
-        </a>
-    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+
+    </script>
 @endsection

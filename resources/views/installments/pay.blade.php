@@ -88,19 +88,19 @@
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Total Sale Amount:</span>
-                    <span class="detail-value">${{ number_format($installmentPlan->sale->final_amount, 2) }}</span>
+                    <span class="detail-value">{{ number_format($installmentPlan->sale->final_amount, 2) }}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Total Paid So Far:</span>
-                    <span class="detail-value text-green-600">${{ number_format($totalPaid, 2) }}</span>
+                    <span class="detail-value text-green-600">{{ number_format($totalPaid, 2) }}</span>
                 </div>
                 <div class="detail-item font-bold text-lg">
                     <span class="detail-label">Remaining Balance:</span>
-                    <span class="detail-value text-red-600">${{ number_format($remainingAmount, 2) }}</span>
+                    <span class="detail-value text-red-600">{{ number_format($remainingAmount, 2) }}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Amount Per Installment:</span>
-                    <span class="detail-value">${{ number_format($installmentPlan->installment_amount, 2) }}</span>
+                    <span class="detail-value">{{ number_format($installmentPlan->installment_amount, 2) }}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Next Payment Due:</span>
