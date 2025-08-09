@@ -78,15 +78,12 @@
                         </div>
                         <div class="relative">
                             <label class="block text-sm font-medium text-gray-700">Model:</label>
-                            <input
-                                type="text"
-                                id="phone-model-input"
-                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline cursor-pointer"
-                                placeholder="Search or select a Model"
-                            >
-                            <input type="hidden" id="phone-model">
-                            <ul id="model-dropdown" class="absolute z-10 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg max-h-48 overflow-y-auto hidden"></ul>
+                            <input type="text" step="0.01" id="phone-model-input" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., S22  ULTRA">
                         </div>
+{{--                        <div>--}}
+{{--                            <label class="block text-sm font-medium text-gray-700">Model:</label>--}}
+{{--                            <input type="text" step="0.01" id="phone-model-input" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., SOS">--}}
+{{--                        </div>--}}
                         <div class="relative">
                             <label class="block text-sm font-medium text-gray-700">Color:</label>
                             <input
@@ -377,11 +374,11 @@
 
                 // Validation for hidden IDs is crucial here
                 const brandId = brandHiddenInput.value;
-                const modelId = modelHiddenInput.value;
+                // const modelId = modelHiddenInput.value;
                 const colorId = colorHiddenInput.value;
                 const storageId = storageHiddenInput.value;
 
-                if (!brandId || !modelId || !colorId || !storageId || !purchasePrice || !sellingPrice || !description || !stockOrigin) {
+                if (!brandId ||!colorId || !storageId || !purchasePrice || !sellingPrice || !description || !stockOrigin) {
                     showToast('Please fill in all phone details (Brand, Model, Color, Storage, and Prices) from the dropdowns before adding an IMEI.', 'error');
                     return;
                 }
@@ -396,7 +393,7 @@
                     imei,
                     brand_id: brandId,
                     brand_name: brand,
-                    model_id: modelId,
+                    // model_id: modelId,
                     model_name: model,
                     color_id: colorId,
                     color_name: color,
