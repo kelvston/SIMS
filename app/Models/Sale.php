@@ -20,7 +20,7 @@ class Sale extends Model
         'is_installment',
         'customer_email',
         'amount_paid',
-        'amount_due'
+        'amount_due','payment_option'
     ];
 
     // Define the casts for attributes

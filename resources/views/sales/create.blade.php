@@ -533,6 +533,36 @@
                         <input type="checkbox" name="is_installment" id="is_installment" class="form-checkbox h-5 w-5 text-blue-600" value="1" {{ old('is_installment') ? 'checked' : '' }}>
                         <span class="ml-2 text-gray-700">Is Installment Sale?</span>
                     </label>
+                    <!-- Hidden input to handle "no selection" case -->
+                    <input type="hidden" name="payment_option" value="0">
+
+                    <div class="flex items-center space-x-6">
+                        <!-- Cash -->
+                        <span class="ml-2 text-gray-700">Payment Option</span>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="payment_option" value="1"
+                                   class="form-radio h-5 w-5 text-blue-600"
+                                {{ old('payment_option') == 1 ? 'checked' : '' }}>
+                            <span class="ml-2 text-gray-700">Cash</span>
+                        </label>
+
+                        <!-- Bank -->
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="payment_option" value="2"
+                                   class="form-radio h-5 w-5 text-blue-600"
+                                {{ old('payment_option') == 2 ? 'checked' : '' }}>
+                            <span class="ml-2 text-gray-700">Bank</span>
+                        </label>
+
+                        <!-- Phone -->
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="payment_option" value="3"
+                                   class="form-radio h-5 w-5 text-blue-600"
+                                {{ old('payment_option') == 3 ? 'checked' : '' }}>
+                            <span class="ml-2 text-gray-700">Phone</span>
+                        </label>
+                    </div>
+
                 </div>
                 <div class="mb-6">
                     <input type="hidden" name="credit_sale" value="0">

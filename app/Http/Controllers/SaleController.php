@@ -290,6 +290,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             'customer_phone' => 'nullable|string|max:255',
             'customer_email' => 'nullable|email|max:255',
             'discount_amount' => 'required|numeric|min:0',
+            'payment_option' => 'nullable|numeric|min:0',
             // amount_paid is now only required if it's NOT a credit sale
             'amount_paid' => 'required_without:credit_sale|nullable|numeric|min:0',
             'credit_sale' => 'nullable|boolean', // New validation for the credit_sale flag
@@ -384,9 +385,25 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                     throw ValidationException::withMessages(['items' => 'One or more selected phones are either not found or already sold.']);
                 }
             }
-
-
             // 3. Create the Sale record with the calculated total amount and payment details
+            $payment_option = null;
+            if (isset($request['payment_option'])) {
+                switch ((int) $request['payment_option']) {
+                    case 1:
+                        $payment_option = 'Cash';
+                        break;
+                    case 2:
+                        $payment_option = 'Bank';
+                        break;
+                    case 3:
+                        $payment_option = 'Phone';
+                        break;
+                    default:
+                        $payment_option = 'Cash';
+                }
+            }
+
+
             $sale = Sale::create([
                 'customer_name' => $validated['customer_name'],
                 'customer_phone' => $validated['customer_phone'],
@@ -398,6 +415,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 'amount_due' => $amountDue,
                 'is_installment' => $request->boolean('is_installment'),
                 'sale_date' => now(),
+                'payment_option' => $payment_option,
             ]);
 
             // 4. Create sale items and update stock

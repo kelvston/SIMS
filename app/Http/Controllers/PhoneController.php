@@ -71,7 +71,7 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
             'accessories.*.name' => 'required|string|max:255',
             'accessories.*.brand_id' => 'nullable|exists:brands,id',
             'accessories.*.category_id' => 'nullable|exists:accessory_categories,id',
-            'accessories.*.barcode' => 'required|string|unique:accessories,barcode|max:255',
+            'accessories.*.barcode' => 'nullable|string|unique:accessories,barcode|max:255',
             'accessories.*.unit' => 'required|string|max:255',
             'accessories.*.description' => 'required|string|max:255',
             'accessories.*.stock_origin' => 'required|string|max:255',

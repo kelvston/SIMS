@@ -16,15 +16,15 @@
 {{--                        <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">--}}
 {{--                    </div>--}}
 {{--                    <div class="flex items-end space-x-2">--}}
-{{--                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">--}}
+{{--                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-2 rounded-lg shadow-md transition-colors duration-200">--}}
 {{--                            <i class="fas fa-filter mr-2"></i>Filter--}}
 {{--                        </button>--}}
 {{--                        @if(request()->has('start_date') || request()->has('end_date'))--}}
-{{--                            <a href="{{ route('reports.sales') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">--}}
+{{--                            <a href="{{ route('reports.sales') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-2 rounded-lg shadow-md transition-colors duration-200">--}}
 {{--                                <i class="fas fa-undo-alt mr-2"></i>Reset--}}
 {{--                            </a>--}}
 {{--                        @endif--}}
-{{--                        <a href="{{ route('reports.sales', array_merge(request()->query(), ['download' => 'true'])) }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">--}}
+{{--                        <a href="{{ route('reports.sales', array_merge(request()->query(), ['download' => 'true'])) }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-2 rounded-lg shadow-md transition-colors duration-200">--}}
 {{--                            <i class="fas fa-download mr-2"></i>Download CSV--}}
 {{--                        </a>--}}
 {{--                    </div>--}}
@@ -39,24 +39,24 @@
 {{--                    <table class="min-w-full divide-y divide-gray-200">--}}
 {{--                        <thead class="bg-gray-50">--}}
 {{--                        <tr>--}}
-{{--                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale ID</th>--}}
-{{--                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>--}}
-{{--                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>--}}
-{{--                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>--}}
-{{--                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Price</th>--}}
-{{--                            <th scope="col" class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Cost</th>--}}
-{{--                            <th scope="col" class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit</th>--}}
-{{--                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>--}}
+{{--                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale ID</th>--}}
+{{--                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>--}}
+{{--                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>--}}
+{{--                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>--}}
+{{--                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Price</th>--}}
+{{--                            <th scope="col" class="hidden md:table-cell px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Cost</th>--}}
+{{--                            <th scope="col" class="hidden md:table-cell px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit</th>--}}
+{{--                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>--}}
 {{--                        </tr>--}}
 {{--                        </thead>--}}
 {{--                        <tbody class="bg-white divide-y divide-gray-200">--}}
 {{--                        @forelse($sales as $sale)--}}
 {{--                            @foreach($sale->saleItems as $item)--}}
 {{--                                <tr>--}}
-{{--                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->id }}</td>--}}
-{{--                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->sale_date->format('M d, Y') }}</td>--}}
-{{--                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->customer_name }}</td>--}}
-{{--                                    <td class="px-4 py-4 text-sm text-gray-900">--}}
+{{--                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->id }}</td>--}}
+{{--                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->sale_date->format('M d, Y') }}</td>--}}
+{{--                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->customer_name }}</td>--}}
+{{--                                    <td class="px-2 py-4 text-sm text-gray-900">--}}
 {{--                                        @if($item->phone)--}}
 {{--                                            <div class="font-medium text-gray-900">{{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }}</div>--}}
 {{--                                            <div class="text-gray-500">IMEI: {{ $item->phone->imei }}</div>--}}
@@ -64,12 +64,12 @@
 {{--                                            {{ $item->accessory->name }}--}}
 {{--                                        @endif--}}
 {{--                                    </td>--}}
-{{--                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${{ number_format($item->price, 2) }}</td>--}}
-{{--                                    <td class="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm text-gray-500">${{ number_format($item->phone->purchase_price ?? $item->accessory->cost_price ?? 0, 2) }}</td>--}}
-{{--                                    <td class="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm font-semibold @if(($item->price - ($item->phone->purchase_price ?? $item->accessory->cost_price ?? 0)) > 0) text-green-600 @else text-red-600 @endif">--}}
+{{--                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">${{ number_format($item->price, 2) }}</td>--}}
+{{--                                    <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm text-gray-500">${{ number_format($item->phone->purchase_price ?? $item->accessory->cost_price ?? 0, 2) }}</td>--}}
+{{--                                    <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm font-semibold @if(($item->price - ($item->phone->purchase_price ?? $item->accessory->cost_price ?? 0)) > 0) text-green-600 @else text-red-600 @endif">--}}
 {{--                                        ${{ number_format($item->price - ($item->phone->purchase_price ?? $item->accessory->cost_price ?? 0), 2) }}--}}
 {{--                                    </td>--}}
-{{--                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">--}}
+{{--                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">--}}
 {{--                                        @if($sale->is_installment)--}}
 {{--                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Installment</span>--}}
 {{--                                        @else--}}
@@ -80,7 +80,7 @@
 {{--                            @endforeach--}}
 {{--                        @empty--}}
 {{--                            <tr>--}}
-{{--                                <td colspan="8" class="px-4 py-4 text-center text-sm text-gray-500">No sales found for the selected date range.</td>--}}
+{{--                                <td colspan="8" class="px-2 py-4 text-center text-sm text-gray-500">No sales found for the selected date range.</td>--}}
 {{--                            </tr>--}}
 {{--                        @endforelse--}}
 {{--                        </tbody>--}}
@@ -112,15 +112,15 @@
                         <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                     </div>
                     <div class="col-span-1 sm:col-span-2 lg:col-span-2 flex flex-wrap gap-2 items-end">
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200 w-full sm:w-auto">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-2 rounded-lg shadow-md transition-colors duration-200 w-full sm:w-auto">
                             <i class="fas fa-filter mr-2"></i>Filter
                         </button>
                         @if(request()->has('start_date') || request()->has('end_date'))
-                            <a href="{{ route('reports.sales') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200 w-full sm:w-auto">
+                            <a href="{{ route('reports.sales') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-2 rounded-lg shadow-md transition-colors duration-200 w-full sm:w-auto">
                                 <i class="fas fa-undo-alt mr-2"></i>Reset
                             </a>
                         @endif
-                        <a href="{{ route('reports.sales', array_merge(request()->query(), ['download' => 'true'])) }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200 w-full sm:w-auto">
+                        <a href="{{ route('reports.sales', array_merge(request()->query(), ['download' => 'true'])) }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-2 rounded-lg shadow-md transition-colors duration-200 w-full sm:w-auto">
                             <i class="fas fa-download mr-2"></i>Download CSV
                         </a>
                     </div>
@@ -135,24 +135,25 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale ID</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Price</th>
-                            <th scope="col" class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Cost</th>
-                            <th scope="col" class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale ID</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Price</th>
+                            <th scope="col" class="hidden md:table-cell px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Cost</th>
+                            <th scope="col" class="hidden md:table-cell px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Type</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Option</th>
                         </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($sales as $sale)
                             @foreach($sale->saleItems as $item)
                                 <tr>
-                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->id }}</td>
-                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->sale_date->format('M d, Y') }}</td>
-                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->customer_name }}</td>
-                                    <td class="px-4 py-4 text-sm text-gray-900">
+                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->id }}</td>
+                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->sale_date->format('M d, Y') }}</td>
+                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->customer_name }}</td>
+                                    <td class="px-2 py-4 text-sm text-gray-900">
                                         @if($item->phone)
                                             <div class="font-medium text-gray-900">{{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }}</div>
                                             <div class="text-gray-500">IMEI: {{ $item->phone->imei }}</div>
@@ -160,23 +161,24 @@
                                             {{ $item->accessory->name }}
                                         @endif
                                     </td>
-                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($item->price, 2) }}</td>
-                                    <td class="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($item->phone->purchase_price ?? $item->accessory->cost_price ?? 0, 2) }}</td>
-                                    <td class="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm font-semibold @if(($item->price - ($item->phone->purchase_price ?? $item->accessory->cost_price ?? 0)) > 0) text-green-600 @else text-red-600 @endif">
+                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($item->price, 2) }}</td>
+                                    <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($item->phone->purchase_price ?? $item->accessory->cost_price ?? 0, 2) }}</td>
+                                    <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm font-semibold @if(($item->price - ($item->phone->purchase_price ?? $item->accessory->cost_price ?? 0)) > 0) text-green-600 @else text-red-600 @endif">
                                         {{ number_format($item->price - ($item->phone->purchase_price ?? $item->accessory->cost_price ?? 0), 2) }}
                                     </td>
-                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
                                         @if($sale->is_installment)
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Installment</span>
                                         @else
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Full Payment</span>
                                         @endif
                                     </td>
+                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->payment_option }}</td>
                                 </tr>
                             @endforeach
                         @empty
                             <tr>
-                                <td colspan="8" class="px-4 py-4 text-center text-sm text-gray-500">No sales found for the selected date range.</td>
+                                <td colspan="8" class="px-2 py-4 text-center text-sm text-gray-500">No sales found for the selected date range.</td>
                             </tr>
                         @endforelse
                         </tbody>

@@ -10,6 +10,8 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\CategoryController ;
+use App\Http\Controllers\ManageController;
 
 use App\Models\InstallmentPayment;
 use App\Models\InstallmentPlan;
@@ -245,7 +247,14 @@ Route::get('/create_permission', [RoleController::class, 'createPermission'])->n
 Route::post('/store_permission', [RoleController::class, 'storePermission'])->name('roles.store_permission');
 Route::resource('roles', RoleController::class);
 Route::resource('brands', BrandController::class);
+Route::resource('categories', categoryController::class);
 Route::resource('expenses', ExpenseController::class);
+
+
+Route::prefix('manage')->name('manage.')->group(function () {
+    Route::get('/', [ManageController::class, 'index'])->name('index');
+});
+
 
 
 Route::prefix('reports')->name('reports.')->group(function () {
