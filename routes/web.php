@@ -12,6 +12,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\CategoryController ;
 use App\Http\Controllers\ManageController;
+use App\Http\Controllers\BarcodeController;
 
 use App\Models\InstallmentPayment;
 use App\Models\InstallmentPlan;
@@ -284,7 +285,9 @@ Route::post('/reports/stock/remove-phone/{id}', [ReportController::class, 'remov
 Route::get('/dashboard', [ReportController::class, 'home'])->name('dashboard');
 
 // To view all installment plans
-
+Route::get('/barcodes/generate/form', [BarcodeController::class, 'generateForm'])->name('barcodes.generate.form');
+Route::post('/barcodes/generate', [BarcodeController::class, 'generate'])->name('barcodes.generate');
+Route::post('/barcodes/download', [BarcodeController::class, 'download'])->name('barcodes.download');
 
 
 

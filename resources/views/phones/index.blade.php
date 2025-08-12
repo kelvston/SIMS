@@ -8,13 +8,26 @@
              style="transform: translate(-50%, -50%);" />
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">All Inventory</h1>
 
+{{--        @can('receive phones')--}}
+{{--            <div class="flex justify-end mb-8">--}}
+{{--                <a href="{{ route('phones.receive.form') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded-full transition duration-300 ease-in-out shadow-md">--}}
+{{--                    Receive New Inventory--}}
+{{--                </a>--}}
+{{--                <a href="{{ route('reports.detailed-stock') }}" class="bg-gray-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded-full transition duration-300 ease-in-out shadow-md">--}}
+{{--                    Stock Adjustment--}}
+{{--                </a>--}}
+{{--            </div>--}}
+{{--        @endcan--}}
         @can('receive phones')
-            <div class="flex justify-end mb-8">
-                <a href="{{ route('phones.receive.form') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded-full transition duration-300 ease-in-out shadow-md">
-                    Receive New Inventory
+            <div class="flex justify-end mb-8 space-x-2">
+                <a href="{{ route('phones.receive.form') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
+                    <i class="fas fa-box-open mr-2"></i> Receive New Inventory
                 </a>
-                <a href="{{ route('reports.detailed-stock') }}" class="bg-gray-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded-full transition duration-300 ease-in-out shadow-md">
-                    Stock Adjustment
+                <a href="{{ route('reports.detailed-stock') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
+                    <i class="fas fa-warehouse mr-2"></i> Stock Adjustment
+                </a>
+                <a href="{{ route('barcodes.generate.form') }}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
+                    <i class="fas fa-barcode mr-2"></i> Generate Barcodes
                 </a>
             </div>
         @endcan

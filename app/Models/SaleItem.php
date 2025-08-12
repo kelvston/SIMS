@@ -16,7 +16,8 @@ class SaleItem extends Model
         'unit_price',
         'accessory_id',
         'quantity',
-        'is_sold'
+        'is_sold',
+        'unit_cost'
     ];
     protected $with = ['phone', 'accessory'];
     /**

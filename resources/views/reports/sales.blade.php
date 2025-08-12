@@ -161,9 +161,9 @@
                                             {{ $item->accessory->name }}
                                         @endif
                                     </td>
-                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($item->price, 2) }}</td>
-                                    <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($item->phone->purchase_price ?? $item->accessory->cost_price ?? 0, 2) }}</td>
-                                    <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm font-semibold @if(($item->price - ($item->phone->purchase_price ?? $item->accessory->cost_price ?? 0)) > 0) text-green-600 @else text-red-600 @endif">
+                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($item->unit_price, 2) }}</td>
+                                    <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format(($item->unit_cost * $item->quantity) ?? ($item->unit_cost * $item->quantity) ?? 0, 2) }}</td>
+                                    <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm font-semibold @if(($item->unit_price - ($item->unit_cost ?? $item->unit_cost ?? 0)) > 0) text-green-600 @else text-red-600 @endif">
                                         {{ number_format($item->price - ($item->phone->purchase_price ?? $item->accessory->cost_price ?? 0), 2) }}
                                     </td>
                                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
