@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Picqer\Barcode\BarcodeGeneratorSVG;
@@ -37,9 +38,10 @@ class BarcodeController extends Controller
             $barcode_number = str_pad($i, 4, '0', STR_PAD_LEFT);
             // Generate the SVG barcode using the number
             $barcode_svg = $generator->getBarcode($barcode_number, $generator::TYPE_CODE_128);
-
+           $org = Setting::first()->v;
+            dd($org);
             $barcodes[] = [
-                'name' => 'Product Name', // Placeholder name
+                'name' => $org,
                 'number' => $barcode_number,
                 'svg' => $barcode_svg,
             ];

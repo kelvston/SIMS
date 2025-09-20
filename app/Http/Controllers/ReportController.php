@@ -1050,16 +1050,16 @@ class ReportController extends Controller
                             } elseif ($item->accessory) {
                                 $itemType = 'Accessory';
                                 $itemName = $item->accessory->name;
-                                $itemCost = $item->accessory->cost_price;
+                                $itemCost = $item->accessory->purchase_price;
                             }
-                            $profit = $item->price - $itemCost;
+                            $profit = $item->unit_price - $itemCost;
 
                             fputcsv($handle, [
                                 Carbon::parse($sale->sale_date)->format('Y-m-d'),
                                 $sale->customer_name,
                                 $itemType,
                                 $itemName,
-                                number_format($item->price, 2),
+                                number_format($item->unit_price, 2),
                                 number_format($itemCost, 2),
                                 number_format($profit, 2),
                                 $sale->is_installment ? 'Installment' : 'Full Payment',
