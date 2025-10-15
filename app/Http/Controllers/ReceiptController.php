@@ -21,7 +21,7 @@ class ReceiptController extends Controller
      */
     public function show(Sale $sale)
     {
-        $sale->load('saleItems.phone.brand'); // Eager load necessary relationships
+        $sale->load('saleItems.medicine.product'); // Eager load necessary relationships
         return view('receipts.show', compact('sale'));
     }
 }

@@ -17,8 +17,8 @@ class CheckLowStock extends Command
         Log::info('[CheckLowStock] Starting low stock check...');
 
         $lowStockItems = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')
-            ->join('phones', 'phones.brand_id', '=', 'stock_levels.brand_id')
-            ->with('brand')->where('status','=','available')
+            ->join('medicines', 'medicines.product_id', '=', 'stock_levels.product_id')
+            ->with('product')->where('status','=','available')
             ->get();
 
         if ($lowStockItems->isEmpty()) {
@@ -29,7 +29,7 @@ class CheckLowStock extends Command
         $alerts = [];
 
         foreach ($lowStockItems as $item) {
-            $message = "Low Stock Alert! Phone: {$item->brand->name} {$item->model} ({$item->color}). Current stock: {$item->current_stock}, Threshold: {$item->low_stock_threshold}.";
+            $message = "Low Stock Alert! Medicine: {$item->product->name}). Current stock: {$item->current_stock}, Threshold: {$item->low_stock_threshold}.";
             Log::warning("[CheckLowStock] {$message}");
             $alerts[] = $message;
         }

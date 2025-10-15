@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Accessory extends Model
+class Cosmetic extends Model
 {
     use HasFactory;
 
@@ -16,7 +16,7 @@ class Accessory extends Model
      */
     protected $fillable = [
         'name',
-        'brand_id',
+        'product_id',
         'unit',
         'purchase_price',
         'selling_price',
@@ -33,7 +33,7 @@ class Accessory extends Model
      */
     public function brand()
     {
-        return $this->belongsTo(Brand::class);
+        return $this->belongsTo(Product::class);
     }
 
     public function category()

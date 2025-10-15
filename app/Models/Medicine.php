@@ -5,17 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Phone extends Model
+class Medicine extends Model
 {
     use HasFactory;
 
     // Define which attributes are mass assignable
     protected $fillable = [
-        'imei',
-        'model',
-        'brand_id',
-        'color',
-        'storage_capacity',
+        'product_id',
         'purchase_price',
         'selling_price',
         'status',
@@ -31,11 +27,11 @@ class Phone extends Model
     ];
 
     /**
-     * Get the brand that owns the phone.
+     * Get the product that owns the phone.
      */
-    public function brand()
+    public function product()
     {
-        return $this->belongsTo(Brand::class);
+        return $this->belongsTo(Product::class);
     }
 
     /**
@@ -48,10 +44,12 @@ class Phone extends Model
     public function stockLevel()
     {
         return $this->hasOne(StockLevel::class, 'model', 'model')
-            ->whereColumn('stock_levels.color', 'phones.color')
-            ->whereColumn('stock_levels.brand_id', 'phones.brand_id');
+            ->whereColumn('stock_levels.product_id', 'phones.product_id');
     }
 
-
+    public function MedicineCategory()
+    {
+        return $this->belongsTo(MedicineCategory::class);
+    }
 
 }

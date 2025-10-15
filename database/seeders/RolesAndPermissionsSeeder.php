@@ -18,10 +18,19 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // --- Create Permissions ---
         // Inventory Permissions
-        Permission::firstOrCreate(['name' => 'view phones']);
-        Permission::firstOrCreate(['name' => 'receive phones']);
-        Permission::firstOrCreate(['name' => 'edit phones']); // For future update/delete
-        Permission::firstOrCreate(['name' => 'delete phones']); // For future delete
+        Permission::firstOrCreate(['name' => 'view products']);
+        Permission::firstOrCreate(['name' => 'receive products']);
+        Permission::firstOrCreate(['name' => 'edit products']); // For future update/delete
+        Permission::firstOrCreate(['name' => 'delete products']); // For future delete
+        Permission::firstOrCreate(['name' => 'view dashboard']); // For future delete
+        Permission::firstOrCreate(['name' => 'receive medicines']); // For future delete
+        Permission::firstOrCreate(['name' => 'create expenses']); // For future delete
+        Permission::firstOrCreate(['name' => 'view expenses']); // For future delete
+        Permission::firstOrCreate(['name' => 'view medicines']); // For future delete
+        Permission::firstOrCreate(['name' => 'view general reports']); // For future delete
+        Permission::firstOrCreate(['name' => 'view user activity reports']); // For future delete
+        Permission::firstOrCreate(['name' => 'view installments reports']); // For future delete
+        Permission::firstOrCreate(['name' => 'view expenses reports']); // For future delete
 
         // Sales Permissions
         Permission::firstOrCreate(['name' => 'view sales']);
@@ -37,6 +46,9 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'view sales reports']);
         Permission::firstOrCreate(['name' => 'view stock reports']);
         Permission::firstOrCreate(['name' => 'view profit loss reports']);
+        Permission::firstOrCreate(['name' => 'manage category']);
+        Permission::firstOrCreate(['name' => 'manage products']);
+        Permission::firstOrCreate(['name' => 'Manage Setting']);
 
         // Admin Permissions (can do everything)
         Permission::firstOrCreate(['name' => 'manage users']); // For creating/editing users
@@ -51,7 +63,8 @@ class RolesAndPermissionsSeeder extends Seeder
         // 2. Sales Manager Role
         $salesManagerRole = Role::firstOrCreate(['name' => 'sales_manager']);
         $salesManagerRole->givePermissionTo([
-            'view phones', 'receive phones',
+            'view products', 'view products',
+            'view dashboard', 'view dashboard',
             'view sales', 'create sales', 'edit sales',
             'view installments', 'record installment payments',
             'view sales reports', 'view stock reports', 'view profit loss reports',
@@ -60,7 +73,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // 3. Staff Role (e.g., for daily operations)
         $staffRole = Role::firstOrCreate(['name' => 'staff']);
         $staffRole->givePermissionTo([
-            'view phones', 'receive phones',
+            'view products', 'view products',
             'view sales', 'create sales',
             'view installments', 'record installment payments',
         ]);
@@ -68,7 +81,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // 4. Viewer Role (can only see reports and inventory)
         $viewerRole = Role::firstOrCreate(['name' => 'viewer']);
         $viewerRole->givePermissionTo([
-            'view phones',
+            'view products',
             'view sales',
             'view installments',
             'view sales reports',

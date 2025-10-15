@@ -7,10 +7,10 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Setting;
 use App\Models\StockLevel;
-use App\Models\Phone;
+use App\Models\Medicine;
 use App\Models\StockAdjustment;
-use App\Models\Brand;
-use App\Models\Accessory;
+use App\Models\Product;
+use App\Models\Cosmetic;
 use App\Models\InstallmentPlan;
 use App\Models\InstallmentPayment;
 use Illuminate\Http\Request;
@@ -47,43 +47,40 @@ class ReportController extends Controller
     }
 
     public function SaleAdjustment(){
-        $stock_adjustment = StockAdjustment::leftJoin('accessories','accessories.id','=','stock_adjustments.accessory_id')
-            ->select('*','accessories.name as accessory')
-        ->leftJoin('phones','phones.id','=','stock_adjustments.phone_id')
+        $stock_adjustment = StockAdjustment::leftJoin('cosmetics','cosmetics.id','=','stock_adjustments.cosmetic_id')
+            ->select('*','cosmetics.name as cosmetic')
+        ->leftJoin('medicines','medicines.id','=','stock_adjustments.medicine_id')
         ->leftJoin('users','users.id','=','stock_adjustments.adjusted_by_user_id')->get();
          return view('reports.stock_adjustment', compact('stock_adjustment'));
     }
 
     public function CustomerReport()
     {
-        // Eager-load items and their phone/accessory relations
-        $sales = \App\Models\Sale::with(['saleItems.phone', 'saleItems.accessory'])->get();
+        // Eager-load items and their medicine/cosmetic relations
+        $sales = \App\Models\Sale::with(['saleItems.medicine', 'saleItems.cosmetic'])->get();
 
         // Group sales by customer and build per-sale summaries
         $customers = $sales
             ->groupBy(function ($sale) {
-                // group by a unique customer key (name + phone + email)
-                return $sale->customer_name . '||' . $sale->customer_phone . '||' . $sale->customer_email;
+                // group by a unique customer key (name + medicine + email)
+                return $sale->customer_name . '||' . $sale->customer_medicine . '||' . $sale->customer_email;
             })
             ->map(function ($groupedSales) {
                 $first = $groupedSales->first();
 
                 $salesList = $groupedSales->map(function ($sale) {
-                    // phones in this sale
-                    $phones = $sale->saleItems
-                        ->filter(fn($si) => $si->phone)
-                        ->map(function ($si) {
-                            return ($si->phone->model ?? 'Unknown model') . ' (IMEI: ' . ($si->phone->imei ?? '-') . ')';
-                        })
+                    // medicines in this sale
+                    $medicines = $sale->saleItems
+                        ->filter(fn($si) => $si->medicine)
                         ->unique()
                         ->values()
                         ->all();
 
-                    // accessories in this sale
-                    $accessories = $sale->saleItems
-                        ->filter(fn($si) => $si->accessory)
+                    // cosmetics in this sale
+                    $cosmetics = $sale->saleItems
+                        ->filter(fn($si) => $si->cosmetic)
                         ->map(function ($si) {
-                            return ($si->accessory->name ?? 'Unknown') . ' x' . ($si->quantity ?? 1);
+                            return ($si->cosmetic->name ?? 'Unknown') . ' x' . ($si->quantity ?? 1);
                         })
                         ->values()
                         ->all();
@@ -96,14 +93,14 @@ class ReportController extends Controller
                     return [
                         'id' => $sale->id,
                         'date' => $date,
-                        'phones' => $phones,
-                        'accessories' => $accessories,
+                        'medicines' => $medicines,
+                        'cosmetics' => $cosmetics,
                     ];
                 })->values();
 
                 return (object) [
                     'customer_name'  => $first->customer_name,
-                    'customer_phone' => $first->customer_phone,
+                    'customer_medicine' => $first->customer_medicine,
                     'customer_email' => $first->customer_email,
                     'sales'          => $salesList,
                 ];
@@ -126,8 +123,8 @@ class ReportController extends Controller
 
     public function home()
     {
-        // 1. Total Phones (Available in Stock)
-        $totalPhones = Phone::where('status', 'available')->count();
+        // 1. Total Medicines (Available in Stock)
+        $totalMedicines = Medicine::where('status', 'available')->count();
 
         // 2. Monthly Sales (Current Month's Revenue)
         $currentMonth = Carbon::now()->month;
@@ -159,14 +156,14 @@ class ReportController extends Controller
             $query->whereMonth('sale_date', $currentMonth)
                 ->whereYear('sale_date', $currentYear);
         })
-            ->with(['phone', 'accessory'])
+            ->with(['medicine', 'cosmetic'])
             ->get();
 
         foreach ($soldItemsThisMonth as $saleItem) {
-            if ($saleItem->phone) {
-                $totalCogsThisMonth += $saleItem->phone->purchase_price;
-            } elseif ($saleItem->accessory) {
-                $totalCogsThisMonth += $saleItem->accessory->cost_price;
+            if ($saleItem->medicine) {
+                $totalCogsThisMonth += $saleItem->medicine->purchase_price;
+            } elseif ($saleItem->cosmetic) {
+                $totalCogsThisMonth += $saleItem->cosmetic->cost_price;
             }
         }
 
@@ -194,34 +191,32 @@ class ReportController extends Controller
         $salesChartLabels = $salesData->pluck('date')->map(fn($date) => Carbon::parse($date)->format('j M'))->toArray();
         $salesChartData = $salesData->pluck('total_sales')->toArray();
 
-        // 6. Inventory Distribution Chart Data (Available Phones by Brand)
-        $inventoryDistribution = Phone::where('status', 'available')
-            ->select('brand_id', DB::raw('count(*) as count'))
-            ->with('brand')
-            ->groupBy('brand_id')
+        // 6. Inventory Distribution Chart Data (Available Medicines by Brand)
+        $inventoryDistribution = Medicine::where('status', 'available')
+            ->select('product_id', DB::raw('count(*) as count'))
+            ->with('product')
+            ->groupBy('product_id')
             ->get();
 
-        $inventoryChartLabels = $inventoryDistribution->pluck('brand.name')->toArray();
+        $inventoryChartLabels = $inventoryDistribution->pluck('product.name')->toArray();
         $inventoryChartData = $inventoryDistribution->pluck('count')->toArray();
 
         // 7. Low Stock Products
-        $lowStockPhones = DB::table('phones')
+        $lowStockMedicines = DB::table('medicines')
             ->join('stock_levels', function ($join) {
-                $join->on('phones.model', '=', 'stock_levels.model')
-                    ->on('phones.color', '=', 'stock_levels.color')
-                    ->on('phones.brand_id', '=', 'stock_levels.brand_id');
+                $join->on('medicines.product_id', '=', 'stock_levels.product_id');
             })
-            ->where('phones.status', 'available')
+            ->where('medicines.status', 'available')
             ->whereColumn('stock_levels.current_stock', '<=', 'stock_levels.low_stock_threshold')
-            ->select('phones.*', 'stock_levels.current_stock', 'stock_levels.low_stock_threshold')
+            ->select('medicines.*', 'stock_levels.current_stock', 'stock_levels.low_stock_threshold')
             ->get();
 
 
 
-        $lowStockAccessories = Accessory::whereColumn('quantity', '<=', 'low_stock_threshold')
+        $lowStockCosmetics = Cosmetic::whereColumn('quantity', '<=', 'low_stock_threshold')
             ->get();
 
-        $lowStockProducts = $lowStockPhones->concat($lowStockAccessories)->take(5);
+        $lowStockProducts = $lowStockMedicines->concat($lowStockCosmetics)->take(5);
 
         // Count for notifications (e.g., low stock items)
         $notificationCount = $lowStockProducts->count();
@@ -229,26 +224,26 @@ class ReportController extends Controller
         // New: Total Sales for the Year
         $totalYearlySales = Sale::whereYear('sale_date', $currentYear)->sum('final_amount');
 
-        // New: Total Sold Phones
-        $totalSoldPhones = Phone::where('status', 'sold')->count();
+        // New: Total Sold Medicines
+        $totalSoldMedicines = Medicine::where('status', 'sold')->count();
 
         // New: Total Active Installment Plans
         $totalActiveInstallments = InstallmentPlan::where('status', 'active')->count();
 
-        // New: Average Selling Price of ALL phones (could be refined to average *sold* price)
-        $averageSellingPrice = Phone::avg('selling_price');
+        // New: Average Selling Price of ALL medicines (could be refined to average *sold* price)
+        $averageSellingPrice = Medicine::avg('selling_price');
 
         // New: Recent Activities (combining sales, received, payments, expenses)
-        $recentSales = Sale::with(['saleItems.phone.brand', 'saleItems.accessory'])
+        $recentSales = Sale::with(['saleItems.medicine.product', 'saleItems.cosmetic'])
             ->latest('sale_date')
             ->take(5)
             ->get()
             ->map(function ($sale) {
                 $itemNames = $sale->saleItems->map(function ($item) {
-                    if ($item->phone) {
-                        return ($item->phone->brand->name ?? 'N/A') . ' ' . $item->phone->model;
-                    } elseif ($item->accessory) {
-                        return $item->accessory->name;
+                    if ($item->medicine) {
+                        return ($item->medicine->product->name ?? 'N/A') . ' ' . $item->medicine->model;
+                    } elseif ($item->cosmetic) {
+                        return $item->cosmetic->name;
                     }
                     return 'Unknown Item';
                 })->implode(', ');
@@ -260,34 +255,34 @@ class ReportController extends Controller
                 ];
             });
 
-        $recentReceivedPhones = Phone::with('brand')
+        $recentReceivedMedicines = Medicine::with('product')
             ->latest('received_at')
             ->take(5)
             ->get()
-            ->map(function ($phone) {
+            ->map(function ($medicine) {
                 return [
                     'type' => 'received',
-                    'description' => "📦 1 {$phone->brand->name} {$phone->model} ({$phone->color}) received into inventory (IMEI: {$phone->imei})",
-                    'date' => $phone->received_at,
-                    'link' => route('phones.index')
+                    'description' => "📦 1 {$medicine->product->name} {$medicine->model} ({$medicine->color}) received into inventory (IMEI: {$medicine->imei})",
+                    'date' => $medicine->received_at,
+                    'link' => route('medicines.index')
                 ];
             });
 
-        $recentInstallmentPayments = InstallmentPayment::with('installmentPlan.sale.saleItems.phone')
+        $recentInstallmentPayments = InstallmentPayment::with('installmentPlan.sale.saleItems.medicine')
             ->latest('payment_date')
             ->take(5)
             ->get()
             ->map(function ($payment) {
-                $phoneName = 'N/A';
+                $medicineName = 'N/A';
                 if ($payment->installmentPlan && $payment->installmentPlan->sale && $payment->installmentPlan->sale->saleItems->isNotEmpty()) {
-                    $firstPhone = $payment->installmentPlan->sale->saleItems->first()->phone;
-                    if ($firstPhone) {
-                        $phoneName = $firstPhone->brand->name . ' ' . $firstPhone->model;
+                    $firstMedicine = $payment->installmentPlan->sale->saleItems->first()->medicine;
+                    if ($firstMedicine) {
+                        $medicineName = $firstMedicine->product->name . ' ' . $firstMedicine->model;
                     }
                 }
                 return [
                     'type' => 'payment',
-                    'description' => "💵 Installment payment received for {$phoneName} - $" . number_format($payment->amount_paid, 2),
+                    'description' => "💵 Installment payment received for {$medicineName} - $" . number_format($payment->amount_paid, 2),
                     'date' => $payment->payment_date,
                     'link' => route('sales.show', $payment->installmentPlan->sale->id)
                 ];
@@ -307,7 +302,7 @@ class ReportController extends Controller
 
         $recentActivitiesCollection = collect()
             ->concat($recentSales)
-            ->concat($recentReceivedPhones)
+            ->concat($recentReceivedMedicines)
             ->concat($recentInstallmentPayments)
             ->concat($recentExpenses)
             ->sortByDesc('date')
@@ -327,7 +322,7 @@ class ReportController extends Controller
         $settings = Setting::all()->pluck('value', 'key')->toArray();
 
         return view('dashboard', compact(
-            'totalPhones',
+            'totalMedicines',
             'monthlySales',
             'pendingInstallmentsAmount',
             'profitMarginPercentage',
@@ -338,7 +333,7 @@ class ReportController extends Controller
             'lowStockProducts',
             'notificationCount',
             'totalYearlySales',
-            'totalSoldPhones',
+            'totalSoldMedicines',
             'totalActiveInstallments',
             'averageSellingPrice',
             'recentActivities',
@@ -372,7 +367,7 @@ class ReportController extends Controller
             return $this->download($request, 'sales');
         }
 
-        $sales = $salesQuery->with(['saleItems.phone.brand', 'saleItems.accessory'])
+        $sales = $salesQuery->with(['saleItems.medicine.product', 'saleItems.cosmetic'])
             ->orderBy('sale_date', 'desc')
             ->paginate(10);
 
@@ -382,16 +377,16 @@ class ReportController extends Controller
         $totalSalesAmount = $filteredSalesForSummary->sum('final_amount');
         $averageSaleValue = $totalSalesCount > 0 ? $totalSalesAmount / $totalSalesCount : 0;
 
-        $totalPhonesSold = $saleItemsQuery->whereNotNull('phone_id')->count();
-        $totalAccessoriesSold = $saleItemsQuery->whereNotNull('accessory_id')->count();
+        $totalMedicinesSold = $saleItemsQuery->whereNotNull('medicine_id')->count();
+        $totalCosmeticsSold = $saleItemsQuery->whereNotNull('cosmetic_id')->count();
 
         // Calculate profit margin for the selected period
         $totalRevenue = $totalSalesAmount;
-        $totalCostOfGoodsSold = $saleItemsQuery->with(['phone', 'accessory'])->get()->sum(function($item) {
-            if ($item->phone) {
-                return $item->phone->purchase_price ?? 0;
-            } elseif ($item->accessory) {
-                return $item->accessory->cost_price ?? 0;
+        $totalCostOfGoodsSold = $saleItemsQuery->with(['medicine', 'cosmetic'])->get()->sum(function($item) {
+            if ($item->medicine) {
+                return $item->medicine->purchase_price ?? 0;
+            } elseif ($item->cosmetic) {
+                return $item->cosmetic->cost_price ?? 0;
             }
             return 0;
         });
@@ -399,16 +394,16 @@ class ReportController extends Controller
         $grossProfit = $totalRevenue - $totalCostOfGoodsSold - $totalExpenses;
         $grossProfitMarginPercentage = $totalRevenue > 0 ? ($grossProfit / $totalRevenue) * 100 : 0;
 
-        // Data for Sales by Brand chart (phones only, for now)
+        // Data for Sales by Brand chart (medicines only, for now)
         $salesByBrand = $saleItemsQuery
-            ->select('phones.brand_id', DB::raw('count(*) as count'))
-            ->join('phones', 'sale_items.phone_id', '=', 'phones.id')
-            ->with('phone.brand')
-            ->groupBy('phones.brand_id')
+            ->select('medicines.product_id', DB::raw('count(*) as count'))
+            ->join('medicines', 'sale_items.medicine_id', '=', 'medicines.id')
+            ->with('medicine.product')
+            ->groupBy('medicines.product_id')
             ->get();
 
-        $brandLabels = $salesByBrand->pluck('phone.brand.name')->toArray();
-        $brandData = $salesByBrand->pluck('count')->toArray();
+        $productLabels = $salesByBrand->pluck('medicine.product.name')->toArray();
+        $productData = $salesByBrand->pluck('count')->toArray();
 
         // --- End of new detailed report calculations ---
 
@@ -426,61 +421,60 @@ class ReportController extends Controller
             'startDate',
             'endDate',
             'averageSaleValue',
-            'totalPhonesSold',
-            'totalAccessoriesSold',
+            'totalMedicinesSold',
+            'totalCosmeticsSold',
             'grossProfitMarginPercentage',
-            'brandLabels',
-            'brandData'
+            'productLabels',
+            'productData'
         ));
     }
 
     public function stock( Request $request)
     {
 
-        $totalPhoneItemsQuery = Phone::where('status', 'available')
-            ->when(isset($request['brand_id']) && $request['brand_id'] > 0, function ($query) use ($request) {
-                $query->where('brand_id', $request['brand_id']);
+        $totalMedicineItemsQuery = Medicine::where('status', 'available')
+            ->when(isset($request['product_id']) && $request['product_id'] > 0, function ($query) use ($request) {
+                $query->where('product_id', $request['product_id']);
             });
-        $brands = Brand::all();
+        $products = Product::all();
 
 
-        $totalPhoneItems = $totalPhoneItemsQuery->count();
+        $totalMedicineItems = $totalMedicineItemsQuery->count();
 
-        $totalPhonesValue = $totalPhoneItemsQuery->sum('purchase_price');
+        $totalMedicinesValue = $totalMedicineItemsQuery->sum('purchase_price');
 
-//        $phoneStock = Phone::select(
-//            'phones.brand_id',
-//            'phones.model',
-//            'brands.name as brands'
+//        $medicineStock = Medicine::select(
+//            'medicines.product_id',
+//            'medicines.model',
+//            'products.name as products'
 //        )
 //            ->selectRaw('COUNT(*) as quantity')
 //            ->selectRaw('SUM(purchase_price) as total_purchase_price')
 //            ->selectRaw('SUM(selling_price) as total_selling_price')
 //            ->selectRaw('(SUM(selling_price) - SUM(purchase_price)) as total_profit')
-//            ->leftJoin('brands','brands.id','=','phones.brand_id')
-//            ->where('phones.status', 'available')
-//            ->groupBy('phones.brand_id', 'phones.model', 'brands.name')
+//            ->leftJoin('products','products.id','=','medicines.product_id')
+//            ->where('medicines.status', 'available')
+//            ->groupBy('medicines.product_id', 'medicines.model', 'products.name')
 //            ->get();
-        $phoneStockQuery = Phone::select(
-            'phones.brand_id',
-            'phones.model',
-            'brands.name as brands'
+        $medicineStockQuery = Medicine::select(
+            'medicines.product_id',
+            'products.name as products'
         )
             ->selectRaw('COUNT(*) as quantity')
             ->selectRaw('SUM(purchase_price) as total_purchase_price')
             ->selectRaw('SUM(selling_price) as total_selling_price')
             ->selectRaw('(SUM(selling_price) - SUM(purchase_price)) as total_profit')
-            ->leftJoin('brands', 'brands.id', '=', 'phones.brand_id')
-            ->where('phones.status', 'available')
-            ->groupBy('phones.brand_id', 'phones.model', 'brands.name');
+            ->leftJoin('products', 'products.id', '=', 'medicines.product_id')
+            ->where('medicines.status', 'available')
+            ->groupBy('medicines.product_id','products.name');
 
-        if (isset($request['brand_id']) && $request['brand_id'] > 0) {
-            $phoneStockQuery->where('phones.brand_id', $request['brand_id']);
+        if (isset($request['product_id']) && $request['product_id'] > 0) {
+            $medicineStockQuery->where('medicines.product_id', $request['product_id']);
         }
 
-        $phoneStock = $phoneStockQuery->get();
+        $medicineStock = $medicineStockQuery->get();
 
-        $accessoryStock = Accessory::select('name')
+        $cosmeticStock = Cosmetic::select('name')
             ->selectRaw('SUM(quantity) as quantity')
             ->selectRaw('SUM(purchase_price * quantity) as total_purchase_price')
             ->selectRaw('SUM(selling_price * quantity) as total_selling_price')
@@ -488,51 +482,51 @@ class ReportController extends Controller
             ->groupBy('name')
             ->get();
 
-        $totalAccessoryItems = $accessoryStock->sum('quantity');
-        $totalAccessoriesValue = $accessoryStock->sum('total_purchase_price');
-        $totalStockItems = $totalPhoneItems + $totalAccessoryItems;
-        $totalStockValue = $totalPhonesValue + $totalAccessoriesValue;
-                $phonesQuery = Phone::query();
-        $accessoriesQuery = Accessory::query();
-        $lowStockPhones = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')
+        $totalCosmeticItems = $cosmeticStock->sum('quantity');
+        $totalCosmeticsValue = $cosmeticStock->sum('total_purchase_price');
+        $totalStockItems = $totalMedicineItems + $totalCosmeticItems;
+        $totalStockValue = $totalMedicinesValue + $totalCosmeticsValue;
+                $medicinesQuery = Medicine::query();
+        $cosmeticsQuery = Cosmetic::query();
+        $lowStockMedicines = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')
             ->count();
-        $lowStockAccessories = $accessoriesQuery->clone()->whereColumn('quantity', '<=', 'low_stock_threshold')->count();
-        $lowStockCount = $lowStockPhones + $lowStockAccessories;
+        $lowStockCosmetics = $cosmeticsQuery->clone()->whereColumn('quantity', '<=', 'low_stock_threshold')->count();
+        $lowStockCount = $lowStockMedicines + $lowStockCosmetics;
 
         if ($request->query('download') === 'true') {
             $csvData = [];
 
-            // Phones section header
-            $csvData[] = ['Phones Stock'];
+            // Medicines section header
+            $csvData[] = ['Medicines Stock'];
             $csvData[] = ['Brand', 'Model', 'Quantity', 'Total Purchase Price', 'Total Selling Price', 'Total Profit'];
 
-            // Add phones data
-            foreach ($phoneStock as $phone) {
+            // Add medicines data
+            foreach ($medicineStock as $medicine) {
                 $csvData[] = [
-                    $phone->brands,
-                    $phone->model,
-                    $phone->quantity,
-                    number_format($phone->total_purchase_price, 2),
-                    number_format($phone->total_selling_price, 2),
-                    number_format($phone->total_profit, 2),
+                    $medicine->products,
+                    $medicine->model,
+                    $medicine->quantity,
+                    number_format($medicine->total_purchase_price, 2),
+                    number_format($medicine->total_selling_price, 2),
+                    number_format($medicine->total_profit, 2),
                 ];
             }
 
             // Add empty line to separate sections
             $csvData[] = [];
 
-            // Accessories section header
-            $csvData[] = ['Accessories Stock'];
+            // Cosmetics section header
+            $csvData[] = ['Cosmetics Stock'];
             $csvData[] = ['Item', 'Quantity', 'Total Purchase Price', 'Total Selling Price', 'Total Profit'];
 
-            // Add accessories data
-            foreach ($accessoryStock as $accessory) {
-                $totalProfit = $accessory->total_selling_price - $accessory->total_purchase_price;
+            // Add cosmetics data
+            foreach ($cosmeticStock as $cosmetic) {
+                $totalProfit = $cosmetic->total_selling_price - $cosmetic->total_purchase_price;
                 $csvData[] = [
-                    $accessory->name,
-                    $accessory->quantity,
-                    number_format($accessory->total_purchase_price, 2),
-                    number_format($accessory->total_selling_price, 2),
+                    $cosmetic->name,
+                    $cosmetic->quantity,
+                    number_format($cosmetic->total_purchase_price, 2),
+                    number_format($cosmetic->total_selling_price, 2),
                     number_format($totalProfit, 2),
                 ];
             }
@@ -560,13 +554,13 @@ class ReportController extends Controller
 
 
         return view('reports.stock', compact(
-            'phoneStock',
-            'accessoryStock',
-            'totalPhoneItems',
-            'totalPhonesValue',
-            'totalAccessoryItems',
-            'totalAccessoriesValue',
-            'brands',
+            'medicineStock',
+            'cosmeticStock',
+            'totalMedicineItems',
+            'totalMedicinesValue',
+            'totalCosmeticItems',
+            'totalCosmeticsValue',
+            'products',
             'totalStockItems',
             'totalStockValue',
             'lowStockCount'
@@ -599,15 +593,15 @@ class ReportController extends Controller
         }
 
         // Detailed metrics for the new report
-        $sales = $salesQuery->with('saleItems.phone')->get();
+        $sales = $salesQuery->with('saleItems.medicine')->get();
         $expenses = $expensesQuery->get();
 
         $totalRevenue = $sales->sum('final_amount');
         $totalCostOfGoodsSold = $sales->flatMap->saleItems->sum(function($item) {
-            if ($item->phone) {
-                return $item->phone->purchase_price ?? 0;
-            } elseif ($item->accessory) {
-                return $item->accessory->purchase_price ?? 0;
+            if ($item->medicine) {
+                return $item->medicine->purchase_price ?? 0;
+            } elseif ($item->cosmetic) {
+                return $item->cosmetic->purchase_price ?? 0;
             }
             return 0;
         });
@@ -630,14 +624,14 @@ class ReportController extends Controller
             ->orderBy('month')
             ->get();
 
-        $monthlyCogs = SaleItem::with(['phone', 'accessory'])
+        $monthlyCogs = SaleItem::with(['medicine', 'cosmetic'])
             ->whereHas('sale', fn($q) => $q->whereBetween('sale_date', [
                 $startDate ? Carbon::parse($startDate) : Carbon::now()->subMonths(6),
                 $endDate ? Carbon::parse($endDate) : Carbon::now()
             ]))
             ->get()
             ->groupBy(fn($item) => Carbon::parse($item->sale->sale_date)->format('Y-m'))
-            ->map(fn($group) => $group->sum(fn($item) => ($item->phone->purchase_price ?? $item->accessory->purchase_price) ?? 0));
+            ->map(fn($group) => $group->sum(fn($item) => ($item->medicine->purchase_price ?? $item->cosmetic->purchase_price) ?? 0));
 
         $monthlyExpenses = Expense::select(
             DB::raw('DATE_FORMAT(expense_date, "%Y-%m") as month'),
@@ -790,7 +784,7 @@ class ReportController extends Controller
         $totalPendingAmount = $totalInitialSaleAmount - $totalCollectedAmount;
 
         // Fetch the paginated installment plans for the view
-        $installmentPlans = $installmentPlansQuery->with(['sale.saleItems.phone', 'sale.saleItems.accessory', 'installmentPayments'])
+        $installmentPlans = $installmentPlansQuery->with(['sale.saleItems.medicine', 'sale.saleItems.cosmetic', 'installmentPayments'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -813,16 +807,16 @@ class ReportController extends Controller
         $endDate = $request->input('end_date', '');
 
         // Fetch all sales and map to a standardized activity format
-        $allSales = Sale::with(['saleItems.phone.brand', 'saleItems.accessory'])
+        $allSales = Sale::with(['saleItems.medicine.product', 'saleItems.cosmetic'])
             ->when($startDate, fn ($query) => $query->whereDate('sale_date', '>=', $startDate))
             ->when($endDate, fn ($query) => $query->whereDate('sale_date', '<=', $endDate))
             ->get()
             ->map(function ($sale) {
                 $itemNames = $sale->saleItems->map(function ($item) {
-                    if ($item->phone) {
-                        return ($item->phone->brand->name ?? 'N/A') . ' ' . $item->phone->model;
-                    } elseif ($item->accessory) {
-                        return $item->accessory->name;
+                    if ($item->medicine) {
+                        return ($item->medicine->product->name ?? 'N/A') . ' ' . $item->medicine->model;
+                    } elseif ($item->cosmetic) {
+                        return $item->cosmetic->name;
                     }
                     return 'Unknown Item';
                 })->implode(', ');
@@ -834,37 +828,37 @@ class ReportController extends Controller
                 ];
             });
 
-        // Fetch all received phones and map to a standardized activity format
-        $allReceivedPhones = Phone::with('brand')
+        // Fetch all received medicines and map to a standardized activity format
+        $allReceivedMedicines = Medicine::with('product')
             ->when($startDate, fn ($query) => $query->whereDate('received_at', '>=', $startDate))
             ->when($endDate, fn ($query) => $query->whereDate('received_at', '<=', $endDate))
             ->get()
-            ->map(function ($phone) {
+            ->map(function ($medicine) {
                 return [
                     'type' => 'received',
-                    'description' => "📦 Received 1 {$phone->brand->name} {$phone->model} (IMEI: {$phone->imei})",
-                    'date' => $phone->received_at,
-                    // The accessories.index route was not defined, so we'll link to the reports.users page as a fallback.
+                    'description' => "📦 Received 1 {$medicine->product->name} {$medicine->model} (IMEI: {$medicine->imei})",
+                    'date' => $medicine->received_at,
+                    // The cosmetics.index route was not defined, so we'll link to the reports.users page as a fallback.
                     'link' => route('reports.users')
                 ];
             });
 
-        // Fetch all received accessories and map to a standardized activity format
-        $allReceivedAccessories = Accessory::when($startDate, fn ($query) => $query->whereDate('created_at', '>=', $startDate))
+        // Fetch all received cosmetics and map to a standardized activity format
+        $allReceivedCosmetics = Cosmetic::when($startDate, fn ($query) => $query->whereDate('created_at', '>=', $startDate))
             ->when($endDate, fn ($query) => $query->whereDate('created_at', '<=', $endDate))
             ->get()
-            ->map(function ($accessory) {
+            ->map(function ($cosmetic) {
                 return [
                     'type' => 'received',
-                    'description' => "📦 Received {$accessory->quantity} {$accessory->name} into inventory",
-                    'date' => $accessory->created_at,
-                    // The accessories.index route was not defined, so we'll link to the reports.users page as a fallback.
+                    'description' => "📦 Received {$cosmetic->quantity} {$cosmetic->name} into inventory",
+                    'date' => $cosmetic->created_at,
+                    // The cosmetics.index route was not defined, so we'll link to the reports.users page as a fallback.
                     'link' => route('reports.users')
                 ];
             });
 
         // Fetch all installment payments and map to a standardized activity format
-        $allInstallmentPayments = InstallmentPayment::with('installmentPlan.sale.saleItems.phone')
+        $allInstallmentPayments = InstallmentPayment::with('installmentPlan.sale.saleItems.medicine')
             ->when($startDate, fn ($query) => $query->whereDate('payment_date', '>=', $startDate))
             ->when($endDate, fn ($query) => $query->whereDate('payment_date', '<=', $endDate))
             ->get()
@@ -872,10 +866,10 @@ class ReportController extends Controller
                 $itemNames = 'N/A';
                 if ($payment->installmentPlan && $payment->installmentPlan->sale && $payment->installmentPlan->sale->saleItems->isNotEmpty()) {
                     $itemNames = $payment->installmentPlan->sale->saleItems->map(function($item) {
-                        if ($item->phone) {
-                            return ($item->phone->brand->name ?? 'N/A') . ' ' . $item->phone->model;
-                        } elseif ($item->accessory) {
-                            return $item->accessory->name;
+                        if ($item->medicine) {
+                            return ($item->medicine->product->name ?? 'N/A') . ' ' . $item->medicine->model;
+                        } elseif ($item->cosmetic) {
+                            return $item->cosmetic->name;
                         }
                     })->implode(', ');
                 }
@@ -904,8 +898,8 @@ class ReportController extends Controller
         // Combine all activities into a single collection, sort by date, and paginate
         $allActivitiesCollection = (new Collection())
             ->concat($allSales)
-            ->concat($allReceivedPhones)
-            ->concat($allReceivedAccessories)
+            ->concat($allReceivedMedicines)
+            ->concat($allReceivedCosmetics)
             ->concat($allInstallmentPayments)
             ->concat($allExpenses)
             ->sortByDesc('date')
@@ -940,21 +934,21 @@ class ReportController extends Controller
 
         $salesQuery = Sale::query();
         $expensesQuery = Expense::query();
-        $phonesQuery = Phone::query();
+        $medicinesQuery = Medicine::query();
         $installmentPlansQuery = InstallmentPlan::query();
-        $saleItemsQuery = SaleItem::query()->with(['sale', 'phone.brand', 'accessory']);
+        $saleItemsQuery = SaleItem::query()->with(['sale', 'medicine.product', 'cosmetic']);
 
         if ($startDate) {
             $salesQuery->whereDate('sale_date', '>=', $startDate);
             $expensesQuery->whereDate('expense_date', '>=', $startDate);
-            $phonesQuery->whereDate('received_at', '>=', $startDate);
+            $medicinesQuery->whereDate('received_at', '>=', $startDate);
             $installmentPlansQuery->whereHas('sale', fn ($q) => $q->whereDate('sale_date', '>=', $startDate));
             $saleItemsQuery->whereHas('sale', fn ($q) => $q->whereDate('sale_date', '>=', $startDate));
         }
         if ($endDate) {
             $salesQuery->whereDate('sale_date', '<=', $endDate);
             $expensesQuery->whereDate('expense_date', '<=', $endDate);
-            $phonesQuery->whereDate('received_at', '<=', $endDate);
+            $medicinesQuery->whereDate('received_at', '<=', $endDate);
             $installmentPlansQuery->whereHas('sale', fn ($q) => $q->whereDate('sale_date', '<=', $endDate));
             $saleItemsQuery->whereHas('sale', fn ($q) => $q->whereDate('sale_date', '<=', $endDate));
         }
@@ -968,10 +962,10 @@ class ReportController extends Controller
 
         // Calculate total COGS and profit based on the detailed items
         $totalCostOfGoodsSold = $detailedItems->sum(function ($item) {
-            if ($item->phone) {
-                return $item->phone->purchase_price;
-            } elseif ($item->accessory) {
-                return $item->accessory->cost_price;
+            if ($item->medicine) {
+                return $item->medicine->purchase_price;
+            } elseif ($item->cosmetic) {
+                return $item->cosmetic->cost_price;
             }
             return 0;
         });
@@ -980,9 +974,9 @@ class ReportController extends Controller
         $totalRevenue = $salesQuery->sum('final_amount');
         $totalExpenses = $expensesQuery->sum('amount');
         $totalSalesCount = $salesQuery->count();
-        $totalPhonesInStock = $phonesQuery->clone()->where('status', 'available')->count();
-        $totalSoldPhones = $detailedItems->whereNotNull('phone_id')->count();
-        $totalSoldAccessories = $detailedItems->whereNotNull('accessory_id')->count();
+        $totalMedicinesInStock = $medicinesQuery->clone()->where('status', 'available')->count();
+        $totalSoldMedicines = $detailedItems->whereNotNull('medicine_id')->count();
+        $totalSoldCosmetics = $detailedItems->whereNotNull('cosmetic_id')->count();
         $totalActiveInstallments = $installmentPlansQuery->clone()->where('status', 'active')->count();
 
         // Calculate profit for the summary cards
@@ -994,9 +988,9 @@ class ReportController extends Controller
             'totalExpenses' => $totalExpenses,
             'netProfit' => $netProfit,
             'totalSalesCount' => $totalSalesCount,
-            'totalPhonesInStock' => $totalPhonesInStock,
-            'totalSoldPhones' => $totalSoldPhones,
-            'totalSoldAccessories' => $totalSoldAccessories,
+            'totalMedicinesInStock' => $totalMedicinesInStock,
+            'totalSoldMedicines' => $totalSoldMedicines,
+            'totalSoldCosmetics' => $totalSoldCosmetics,
             'totalActiveInstallments' => $totalActiveInstallments,
             'totalCostOfGoodsSold' => $totalCostOfGoodsSold,
         ];
@@ -1036,21 +1030,21 @@ class ReportController extends Controller
                     if ($request->filled('end_date')) {
                         $salesQuery->whereDate('sale_date', '<=', $request->input('end_date'));
                     }
-                    $sales = $salesQuery->with(['saleItems.phone.brand', 'saleItems.accessory'])->get();
+                    $sales = $salesQuery->with(['saleItems.medicine.product', 'saleItems.cosmetic'])->get();
                     fputcsv($handle, ['Sale Date', 'Customer', 'Item Type', 'Item Name', 'Item Price', 'Item Cost', 'Item Profit', 'Payment Type', 'Payment Status']);
                     foreach ($sales as $sale) {
                         foreach ($sale->saleItems as $item) {
                             $itemName = 'N/A';
                             $itemType = 'N/A';
                             $itemCost = 0;
-                            if ($item->phone) {
-                                $itemType = 'Phone';
-                                $itemName = ($item->phone->brand->name ?? 'N/A') . ' ' . $item->phone->model;
-                                $itemCost = $item->phone->purchase_price;
-                            } elseif ($item->accessory) {
-                                $itemType = 'Accessory';
-                                $itemName = $item->accessory->name;
-                                $itemCost = $item->accessory->purchase_price;
+                            if ($item->medicine) {
+                                $itemType = 'Medicine';
+                                $itemName = ($item->medicine->product->name ?? 'N/A') . ' ' . $item->medicine->model;
+                                $itemCost = $item->medicine->purchase_price;
+                            } elseif ($item->cosmetic) {
+                                $itemType = 'Cosmetic';
+                                $itemName = $item->cosmetic->name;
+                                $itemCost = $item->cosmetic->purchase_price;
                             }
                             $profit = $item->unit_price - $itemCost;
 
@@ -1069,35 +1063,34 @@ class ReportController extends Controller
                     }
                     break;
                 case 'stock':
-                    $phonesQuery = Phone::query()->where('status', 'available');
-                    $accessoriesQuery = Accessory::query();
-                    if ($request->filled('brand_id')) {
-                        $phonesQuery->where('brand_id', $request->input('brand_id'));
+                    $medicinesQuery = Medicine::query()->where('status', 'available');
+                    $cosmeticsQuery = Cosmetic::query();
+                    if ($request->filled('product_id')) {
+                        $medicinesQuery->where('product_id', $request->input('product_id'));
                     }
-                    $phoneStock = $phonesQuery->with('brand')->get();
-                    $accessoryStock = $accessoriesQuery->get();
+                    $medicineStock = $medicinesQuery->with('product')->get();
+                    $cosmeticStock = $cosmeticsQuery->get();
 
                     fputcsv($handle, ['Item Type', 'Brand', 'Name/Model', 'Current Stock', 'Low Stock Threshold', 'Cost Value', 'Total Value']);
-                    foreach ($phoneStock as $phone) {
+                    foreach ($medicineStock as $medicine) {
                         fputcsv($handle, [
-                            'Phone',
-                            $phone->brand->name ?? 'N/A',
-                            $phone->model,
-                            '1 (single unit)', // Assuming phones are tracked as single units
-                            $phone->low_stock_threshold ?? 'N/A', // Assuming low_stock_threshold is a column on the Phone model
-                            number_format($phone->purchase_price, 2),
-                            number_format($phone->purchase_price, 2),
+                            'Medicine',
+                            $medicine->product->name ?? 'N/A',
+                            '1 (single unit)', // Assuming medicines are tracked as single units
+                            $medicine->low_stock_threshold ?? 'N/A', // Assuming low_stock_threshold is a column on the Medicine model
+                            number_format($medicine->purchase_price, 2),
+//                            number_format($medicine->purchase_price, 2),
                         ]);
                     }
-                    foreach ($accessoryStock as $accessory) {
+                    foreach ($cosmeticStock as $cosmetic) {
                         fputcsv($handle, [
-                            'Accessory',
+                            'Cosmetic',
                             'N/A',
-                            $accessory->name,
-                            $accessory->quantity,
-                            $accessory->low_stock_threshold,
-                            number_format($accessory->cost_price, 2),
-                            number_format($accessory->cost_price * $accessory->quantity, 2),
+                            $cosmetic->name,
+                            $cosmetic->quantity,
+                            $cosmetic->low_stock_threshold,
+                            number_format($cosmetic->cost_price, 2),
+                            number_format($cosmetic->cost_price * $cosmetic->quantity, 2),
                         ]);
                     }
                     break;
@@ -1116,11 +1109,11 @@ class ReportController extends Controller
                         $saleItemsQuery->whereHas('sale', fn ($q) => $q->whereDate('sale_date', '<=', $request->input('end_date')));
                     }
                     $totalRevenue = $salesQuery->sum('final_amount');
-                    $totalCostOfGoodsSold = $saleItemsQuery->with(['phone', 'accessory'])->get()->sum(function($item) {
-                        if ($item->phone) {
-                            return $item->phone->purchase_price ?? 0;
-                        } elseif ($item->accessory) {
-                            return $item->accessory->cost_price ?? 0;
+                    $totalCostOfGoodsSold = $saleItemsQuery->with(['medicine', 'cosmetic'])->get()->sum(function($item) {
+                        if ($item->medicine) {
+                            return $item->medicine->purchase_price ?? 0;
+                        } elseif ($item->cosmetic) {
+                            return $item->cosmetic->cost_price ?? 0;
                         }
                         return 0;
                     });
@@ -1161,16 +1154,16 @@ class ReportController extends Controller
                     if ($request->filled('status')) {
                         $installmentPlansQuery->where('status', $request->input('status'));
                     }
-                    $plans = $installmentPlansQuery->with(['sale.saleItems.phone', 'sale.saleItems.accessory', 'installmentPayments'])->get();
+                    $plans = $installmentPlansQuery->with(['sale.saleItems.medicine', 'sale.saleItems.cosmetic', 'installmentPayments'])->get();
                     fputcsv($handle, ['Sale ID', 'Customer', 'Items', 'Initial Amount', 'Amount Paid', 'Remaining', 'Payment Start Date', 'Status']);
                     foreach ($plans as $plan) {
                         $totalPaid = $plan->installmentPayments->sum('amount_paid');
                         $remaining = ($plan->sale->final_amount ?? 0) - $totalPaid;
                         $items = $plan->sale->saleItems->map(function ($item) {
-                            if ($item->phone) {
-                                return ($item->phone->brand->name ?? 'N/A') . ' ' . $item->phone->model;
-                            } elseif ($item->accessory) {
-                                return $item->accessory->name;
+                            if ($item->medicine) {
+                                return ($item->medicine->product->name ?? 'N/A') . ' ' . $item->medicine->model;
+                            } elseif ($item->cosmetic) {
+                                return $item->cosmetic->name;
                             }
                             return 'Unknown';
                         })->implode('; ');
@@ -1188,16 +1181,16 @@ class ReportController extends Controller
                     }
                     break;
                 case 'users':
-                    $allSales = Sale::with(['saleItems.phone.brand', 'saleItems.accessory'])
+                    $allSales = Sale::with(['saleItems.medicine.product', 'saleItems.cosmetic'])
                         ->when($request->filled('start_date'), fn ($query) => $query->whereDate('sale_date', '>=', $request->input('start_date')))
                         ->when($request->filled('end_date'), fn ($query) => $query->whereDate('sale_date', '<=', $request->input('end_date')))
                         ->get()
                         ->map(function ($sale) {
                             $itemNames = $sale->saleItems->map(function ($item) {
-                                if ($item->phone) {
-                                    return ($item->phone->brand->name ?? 'N/A') . ' ' . $item->phone->model;
-                                } elseif ($item->accessory) {
-                                    return $item->accessory->name;
+                                if ($item->medicine) {
+                                    return ($item->medicine->product->name ?? 'N/A') . ' ' . $item->medicine->model;
+                                } elseif ($item->cosmetic) {
+                                    return $item->cosmetic->name;
                                 }
                                 return 'Unknown Item';
                             })->implode(', ');
@@ -1209,28 +1202,28 @@ class ReportController extends Controller
                             ];
                         });
 
-                    $allReceivedPhones = Phone::with('brand')
+                    $allReceivedMedicines = Medicine::with('product')
                         ->when($request->filled('start_date'), fn ($query) => $query->whereDate('received_at', '>=', $request->input('start_date')))
                         ->when($request->filled('end_date'), fn ($query) => $query->whereDate('received_at', '<=', $request->input('end_date')))
                         ->get()
-                        ->map(function ($phone) {
+                        ->map(function ($medicine) {
                             return [
-                                'type' => 'Received Phone',
-                                'description' => "1 {$phone->brand->name} {$phone->model} ({$phone->color}) received into inventory",
-                                'amount' => number_format($phone->purchase_price, 2),
-                                'date' => $phone->received_at,
+                                'type' => 'Received Medicine',
+                                'description' => "1 {$medicine->product->name} {$medicine->model} ({$medicine->color}) received into inventory",
+                                'amount' => number_format($medicine->purchase_price, 2),
+                                'date' => $medicine->received_at,
                             ];
                         });
 
-                    $allReceivedAccessories = Accessory::when($request->filled('start_date'), fn ($query) => $query->whereDate('created_at', '>=', $request->input('start_date')))
+                    $allReceivedCosmetics = Cosmetic::when($request->filled('start_date'), fn ($query) => $query->whereDate('created_at', '>=', $request->input('start_date')))
                         ->when($request->filled('end_date'), fn ($query) => $query->whereDate('created_at', '<=', $request->input('end_date')))
                         ->get()
-                        ->map(function ($accessory) {
+                        ->map(function ($cosmetic) {
                             return [
-                                'type' => 'Received Accessory',
-                                'description' => "{$accessory->quantity} {$accessory->name} received into inventory",
-                                'amount' => number_format($accessory->cost_price * $accessory->quantity, 2),
-                                'date' => $accessory->created_at,
+                                'type' => 'Received Cosmetic',
+                                'description' => "{$cosmetic->quantity} {$cosmetic->name} received into inventory",
+                                'amount' => number_format($cosmetic->cost_price * $cosmetic->quantity, 2),
+                                'date' => $cosmetic->created_at,
                             ];
                         });
 
@@ -1242,10 +1235,10 @@ class ReportController extends Controller
                             $itemNames = 'N/A';
                             if ($payment->installmentPlan && $payment->installmentPlan->sale && $payment->installmentPlan->sale->saleItems->isNotEmpty()) {
                                 $itemNames = $payment->installmentPlan->sale->saleItems->map(function($item) {
-                                    if ($item->phone) {
-                                        return ($item->phone->brand->name ?? 'N/A') . ' ' . $item->phone->model;
-                                    } elseif ($item->accessory) {
-                                        return $item->accessory->name;
+                                    if ($item->medicine) {
+                                        return ($item->medicine->product->name ?? 'N/A') . ' ' . $item->medicine->model;
+                                    } elseif ($item->cosmetic) {
+                                        return $item->cosmetic->name;
                                     }
                                 })->implode(', ');
                             }
@@ -1270,8 +1263,8 @@ class ReportController extends Controller
                         });
 
                     $allActivities = $allSales
-                        ->concat($allReceivedPhones)
-                        ->concat($allReceivedAccessories)
+                        ->concat($allReceivedMedicines)
+                        ->concat($allReceivedCosmetics)
                         ->concat($allInstallmentPayments)
                         ->concat($allExpenses)
                         ->sortByDesc('date')
@@ -1288,7 +1281,7 @@ class ReportController extends Controller
                     }
                     break;
                 case 'general':
-                    $saleItemsQuery = SaleItem::query()->with(['sale', 'phone.brand', 'accessory']);
+                    $saleItemsQuery = SaleItem::query()->with(['sale', 'medicine.product', 'cosmetic']);
                     if ($request->filled('start_date')) {
                         $saleItemsQuery->whereHas('sale', fn ($q) => $q->whereDate('sale_date', '>=', $request->input('start_date')));
                     }
@@ -1301,14 +1294,14 @@ class ReportController extends Controller
                         $itemName = 'N/A';
                         $itemType = 'N/A';
                         $itemCost = 0;
-                        if ($item->phone) {
-                            $itemType = 'Phone';
-                            $itemName = ($item->phone->brand->name ?? 'N/A') . ' ' . $item->phone->model;
-                            $itemCost = $item->phone->purchase_price;
-                        } elseif ($item->accessory) {
-                            $itemType = 'Accessory';
-                            $itemName = $item->accessory->name;
-                            $itemCost = $item->accessory->cost_price;
+                        if ($item->medicine) {
+                            $itemType = 'Medicine';
+                            $itemName = ($item->medicine->product->name ?? 'N/A') . ' ' . $item->medicine->model;
+                            $itemCost = $item->medicine->purchase_price;
+                        } elseif ($item->cosmetic) {
+                            $itemType = 'Cosmetic';
+                            $itemName = $item->cosmetic->name;
+                            $itemCost = $item->cosmetic->cost_price;
                         }
                         $profit = $item->price - $itemCost;
                         fputcsv($handle, [
@@ -1333,19 +1326,19 @@ class ReportController extends Controller
     public function updateStockQuantity(Request $request)
     {
         $validatedData = $request->validate([
-            'id' => 'required|exists:accessories,id',
+            'id' => 'required|exists:cosmetics,id',
             'new_quantity' => 'required|integer|min:0',
             'comment' => 'nullable|string|max:255',
         ]);
-        $accessory = Accessory::find($validatedData['id']);
-        $accessory->quantity = $validatedData['new_quantity'];
-        $accessory->save();
+        $cosmetic = Cosmetic::find($validatedData['id']);
+        $cosmetic->quantity = $validatedData['new_quantity'];
+        $cosmetic->save();
 
         // You would need a StockAdjustment model and migration for this
          StockAdjustment::create([
-             'accessory_id' => $accessory->id,
-             'old_quantity' => $accessory->getOriginal('quantity'),
-             'new_quantity' => $accessory->quantity,
+             'cosmetic_id' => $cosmetic->id,
+             'old_quantity' => $cosmetic->getOriginal('quantity'),
+             'new_quantity' => $cosmetic->quantity,
              'comment' => $validatedData['comment'],
              'adjusted_by_user_id' => auth()->id(),
          ]);
@@ -1353,42 +1346,41 @@ class ReportController extends Controller
         // 4. Return a JSON response
         return response()->json([
             'success' => true,
-            'message' => "Quantity for {$accessory->name} has been updated to {$accessory->quantity}.",
-            'new_quantity' => $accessory->quantity
+            'message' => "Quantity for {$cosmetic->name} has been updated to {$cosmetic->quantity}.",
+            'new_quantity' => $cosmetic->quantity
         ]);
     }
     public function detailedStock(Request $request)
     {
-        // Fetch all accessories that are in stock, without aggregating
-        $detailedAccessoryStock = Accessory::where('status', 'in_stock')
+        // Fetch all cosmetics that are in stock, without aggregating
+        $detailedCosmeticStock = Cosmetic::where('status', 'in_stock')
             ->orderBy('name')
             ->orderBy('purchase_price')
             ->paginate(10); // Paginate to handle large datasets
 
-        // Fetch all phones that are in stock, without aggregating
-        $detailedPhoneStock = DB::table('phones')
-        ->leftJoin('sale_items', 'sale_items.phone_id', '=', 'phones.id')
-        ->leftJoin('brands', 'brands.id', '=', 'phones.brand_id')
-        ->where('phones.status', 'available')
-        ->whereNull('sale_items.phone_id')
-        ->select('phones.*', 'brands.name as brand_name')
-        ->orderBy('brands.name')
-        ->orderBy('phones.model')
+        // Fetch all medicines that are in stock, without aggregating
+        $detailedMedicineStock = DB::table('medicines')
+        ->leftJoin('sale_items', 'sale_items.medicine_id', '=', 'medicines.id')
+        ->leftJoin('products', 'products.id', '=', 'medicines.product_id')
+        ->where('medicines.status', 'available')
+        ->whereNull('sale_items.medicine_id')
+        ->select('medicines.*', 'products.name as product_name')
+        ->orderBy('products.name')
         ->paginate(10);
 
 
-        return view('reports.detailed_stock', compact('detailedAccessoryStock', 'detailedPhoneStock'));
+        return view('reports.detailed_stock', compact('detailedCosmeticStock', 'detailedMedicineStock'));
     }
 
 
     /**
-     * Update the quantity of a specific accessory.
+     * Update the quantity of a specific cosmetic.
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function updateAccessoryStock(Request $request, $id)
+    public function updateCosmeticStock(Request $request, $id)
     {
 
         $request->validate([
@@ -1396,41 +1388,41 @@ class ReportController extends Controller
             'comment' => 'nullable|string|max:255',
         ]);
 
-        $accessory = Accessory::findOrFail($id);
-        $oldQuantity = $accessory->quantity;
+        $cosmetic = Cosmetic::findOrFail($id);
+        $oldQuantity = $cosmetic->quantity;
 
         // Update the quantity
-        $accessory->quantity = $request->input('value');
-        $accessory->save();
+        $cosmetic->quantity = $request->input('value');
+        $cosmetic->save();
         $userId = Auth()->user()->id ?? null;
 
         // Log the stock adjustment
         StockAdjustment::create([
-            'accessory_id' => $accessory->id,
+            'cosmetic_id' => $cosmetic->id,
             'old_quantity' => $oldQuantity,
-            'new_quantity' => $accessory->quantity,
+            'new_quantity' => $cosmetic->quantity,
             'comment' => $request->input('comment'),
             'adjusted_by_user_id' => $userId,
         ]);
 
-        return response()->json(['message' => 'Accessory stock updated successfully!', 'new_quantity' => $accessory->quantity]);
+        return response()->json(['message' => 'Cosmetic stock updated successfully!', 'new_quantity' => $cosmetic->quantity]);
     }
-    public function updatePhoneImei(Request $request, $id)
+    public function updateMedicineImei(Request $request, $id)
     {
         // Example logic:
-        // $request->validate(['new_imei' => 'required|string|unique:phones,imei,'.$id]);
-        // $phone = Phone::findOrFail($id);
-        // $phone->imei = $request->new_imei;
-        // $phone->save();
-        // return response()->json(['message' => 'Phone IMEI updated successfully!']);
+        // $request->validate(['new_imei' => 'required|string|unique:medicines,imei,'.$id]);
+        // $medicine = Medicine::findOrFail($id);
+        // $medicine->imei = $request->new_imei;
+        // $medicine->save();
+        // return response()->json(['message' => 'Medicine IMEI updated successfully!']);
         return response()->json(['message' => 'This feature is not yet implemented.'], 400);
     }
 
-    public function removePhone(Request $request, $id)
+    public function removeMedicine(Request $request, $id)
     {
         try {
-            // 1. Find the phone by its ID
-            $phone = Phone::findOrFail($id);
+            // 1. Find the medicine by its ID
+            $medicine = Medicine::findOrFail($id);
 
             // 2. Validate that a comment is provided for removal
             $request->validate([
@@ -1442,21 +1434,21 @@ class ReportController extends Controller
             $userId = Auth()->user()->id ?? null;
 
             StockAdjustment::create([
-                'phone_id' => $phone->id,
+                'medicine_id' => $medicine->id,
                 'comment' => $request->input('comment'),
                 'adjusted_by_user_id' => $userId,
             ]);
 
-            // 4. Update the phone's status (this logic seems to be missing from your code)
+            // 4. Update the medicine's status (this logic seems to be missing from your code)
             // For example, you might want to set a status to 'removed' or delete the record.
-            // phone->status = 'removed';
-            // phone->save();
+            // medicine->status = 'removed';
+            // medicine->save();
 
             // 5. Return a success response
-            return response()->json(['message' => 'Phone removed from stock successfully!'], 200);
+            return response()->json(['message' => 'Medicine removed from stock successfully!'], 200);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(['message' => 'Phone not found.'], 404);
+            return response()->json(['message' => 'Medicine not found.'], 404);
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Return validation errors if a comment is missing
             return response()->json(['message' => $e->validator->errors()->first()], 422);

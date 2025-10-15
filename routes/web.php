@@ -1,13 +1,13 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\PhoneController;
+use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\SaleController; // Import SaleController
 use App\Http\Controllers\InstallmentController; // Import InstallmentController
 use App\Http\Controllers\ReportController; // Import InstallmentController
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\BrandController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\CategoryController ;
@@ -16,7 +16,7 @@ use App\Http\Controllers\BarcodeController;
 
 use App\Models\InstallmentPayment;
 use App\Models\InstallmentPlan;
-use App\Models\Phone;
+use App\Models\Medicine;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockLevel;
@@ -29,7 +29,7 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    $totalPhones = Phone::where('status', 'available')->count();
+    $totalMedicines = Medicine::where('status', 'available')->count();
 
 
     // 2. Monthly Sales (Current Month's Revenue)
@@ -58,16 +58,16 @@ Route::get('/dashboard', function () {
     $totalRevenueThisMonth = $monthlySales; // Already calculated
 
     $totalCogsThisMonth = 0;
-    $soldPhonesThisMonth = SaleItem::whereHas('sale', function ($query) use ($currentMonth, $currentYear) {
+    $soldMedicinesThisMonth = SaleItem::whereHas('sale', function ($query) use ($currentMonth, $currentYear) {
         $query->whereMonth('sale_date', $currentMonth)
             ->whereYear('sale_date', $currentYear);
     })
-        ->with('phone')
+        ->with('medicine')
         ->get();
 
-    foreach ($soldPhonesThisMonth as $saleItem) {
-        if ($saleItem->phone) {
-            $totalCogsThisMonth += $saleItem->phone->purchase_price;
+    foreach ($soldMedicinesThisMonth as $saleItem) {
+        if ($saleItem->medicine) {
+            $totalCogsThisMonth += $saleItem->medicine->purchase_price;
         }
     }
 
@@ -90,19 +90,19 @@ Route::get('/dashboard', function () {
     $salesChartLabels = $salesData->pluck('date')->map(fn($date) => Carbon::parse($date)->format('j M'))->toArray();
     $salesChartData = $salesData->pluck('total_sales')->toArray();
 
-    // 6. Inventory Distribution Chart Data (Available Phones by Brand)
-    $inventoryDistribution = Phone::where('status', 'available')
-        ->select('brand_id', DB::raw('count(*) as count'))
-        ->with('brand')
-        ->groupBy('brand_id')
+    // 6. Inventory Distribution Chart Data (Available Medicines by Product)
+    $inventoryDistribution = Medicine::where('status', 'available')
+        ->select('products_id', DB::raw('count(*) as count'))
+        ->with('products')
+        ->groupBy('products_id')
         ->get();
 
-    $inventoryChartLabels = $inventoryDistribution->pluck('brand.name')->toArray();
+    $inventoryChartLabels = $inventoryDistribution->pluck('products.name')->toArray();
     $inventoryChartData = $inventoryDistribution->pluck('count')->toArray();
 
     // 7. Low Stock Products
     $lowStockProducts = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')
-        ->with('brand')
+        ->with('products')
         ->get();
 
 
@@ -112,56 +112,56 @@ Route::get('/dashboard', function () {
     // New: Total Sales for the Year
     $totalYearlySales = Sale::whereYear('sale_date', $currentYear)->sum('final_amount');
 
-    // New: Total Sold Phones
-    $totalSoldPhones = Phone::where('status', 'sold')->count();
+    // New: Total Sold Medicines
+    $totalSoldMedicines = Medicine::where('status', 'sold')->count();
 
     // New: Total Active Installment Plans
     $totalActiveInstallments = InstallmentPlan::where('status', 'active')->count();
 
-    // New: Average Selling Price of ALL phones (could be refined to average *sold* price)
-    $averageSellingPrice = Phone::avg('selling_price');
+    // New: Average Selling Price of ALL medicines (could be refined to average *sold* price)
+    $averageSellingPrice = Medicine::avg('selling_price');
 
     // New: Recent Activities (combining sales, received, payments)
-    $recentSales = Sale::with('saleItems.phone.brand')
+    $recentSales = Sale::with('saleItems.medicine.products')
         ->latest('sale_date')
         ->take(5)
         ->get()
         ->map(function($sale) {
-            $phoneNames = $sale->saleItems->map(fn($item) => $item->phone->brand->name . ' ' . $item->phone->model)->implode(', ');
+            $medicineNames = $sale->saleItems->map(fn($item) => $item->medicine->products->name)->implode(', ');
             return [
                 'type' => 'sale',
-                'description' => "✔️ {$phoneNames} sold to {$sale->customer_name} - $" . number_format($sale->final_amount, 2),
+                'description' => "✔️ {$medicineNames} sold to {$sale->customer_name} - $" . number_format($sale->final_amount, 2),
                 'date' => $sale->sale_date,
                 'link' => route('sales.show', $sale->id)
             ];
         });
 
-    $recentReceivedPhones = Phone::with('brand')
+    $recentReceivedMedicines = Medicine::with('products')
         ->latest('received_at')
         ->take(5)
         ->get()
-        ->map(function($phone) {
+        ->map(function($medicine) {
             return [
                 'type' => 'received',
-                'description' => "📦 1 {$phone->brand->name} {$phone->model} ({$phone->color}) received into inventory (IMEI: {$phone->imei})",
-                'date' => $phone->received_at,
-                'link' => route('phones.index') // Link to general phone inventory
+                'description' => "📦 1 {$medicine->products->name} ) received into inventory (IMEI: {$medicine->imei})",
+                'date' => $medicine->received_at,
+                'link' => route('medicines.index') // Link to general medicine inventory
             ];
         });
 
-    $recentInstallmentPayments = InstallmentPayment::with('installmentPlan.sale.saleItems.phone')
+    $recentInstallmentPayments = InstallmentPayment::with('installmentPlan.sale.saleItems.medicine')
         ->latest('payment_date')
         ->take(5)
         ->get()
         ->map(function($payment) {
-            $phoneName = 'N/A';
+            $medicineName = 'N/A';
             if ($payment->installmentPlan && $payment->installmentPlan->sale && $payment->installmentPlan->sale->saleItems->isNotEmpty()) {
-                $firstPhone = $payment->installmentPlan->sale->saleItems->first()->phone;
-                $phoneName = $firstPhone->brand->name . ' ' . $firstPhone->model;
+                $firstMedicine = $payment->installmentPlan->sale->saleItems->first()->medicine;
+                $medicineName = $firstMedicine->products->name . ' ' . $firstMedicine->model;
             }
             return [
                 'type' => 'payment',
-                'description' => "💵 Installment payment received for {$phoneName} - $" . number_format($payment->amount_paid, 2),
+                'description' => "💵 Installment payment received for {$medicineName} - $" . number_format($payment->amount_paid, 2),
                 'date' => $payment->payment_date,
                 'link' => route('sales.show', $payment->installmentPlan->sale->id) // Link to the sale details
             ];
@@ -170,14 +170,14 @@ Route::get('/dashboard', function () {
     // Combine all recent activities and sort by date
     $recentActivities = collect()
         ->concat($recentSales)
-        ->concat($recentReceivedPhones)
+        ->concat($recentReceivedMedicines)
         ->concat($recentInstallmentPayments)
         ->sortByDesc('date')
         ->take(8); // Limit to top 8 recent activities for display
 
 
     return view('dashboard', compact(
-        'totalPhones',
+        'totalMedicines',
         'monthlySales',
         'pendingInstallmentsAmount',
         'profitMarginPercentage',
@@ -188,7 +188,7 @@ Route::get('/dashboard', function () {
         'lowStockProducts',
         'notificationCount',
         'totalYearlySales', // New stat
-        'totalSoldPhones', // New stat
+        'totalSoldMedicines', // New stat
         'totalActiveInstallments', // New stat
         'averageSellingPrice', // New stat
         'recentActivities' // New dynamic activity list
@@ -206,9 +206,9 @@ Route::middleware('auth')->group(function () {
 
 // ... other routes ...
 
-Route::get('/phones/receive', [PhoneController::class, 'showReceiveForm'])->name('phones.receive.form');
-Route::post('/phones/receive', [PhoneController::class, 'storeReceivedPhones'])->name('phones.receive.store');
-Route::get('/phones', [PhoneController::class, 'index'])->name('phones.index');
+Route::get('/medicines/receive', [MedicineController::class, 'showReceiveForm'])->name('medicines.receive.form');
+Route::post('/medicines/receive', [MedicineController::class, 'storeReceivedMedicines'])->name('medicines.receive.store');
+Route::get('/medicines', [MedicineController::class, 'index'])->name('medicines.index');
 
 // Sales Routes
 Route::get('/sales/create', [SaleController::class, 'create'])->name('sales.create');
@@ -231,13 +231,6 @@ Route::get('/installments/{installmentPlan}/pay', [InstallmentController::class,
 Route::post('/installments/{installmentPlan}/pay', [InstallmentController::class, 'recordPayment'])->name('installments.pay.store');
 Route::get('/installments', [InstallmentController::class, 'index'])->name('installments.index');
 Route::post('/installment/payment', [InstallmentController::class, 'store'])->name('installment.payment.store');
-// Reporting Routes
-//Route::get('/reports/index', [ReportController::class, 'index'])->name('reports.index');
-//Route::get('/reports/sales', [ReportController::class, 'salesReport'])->name('reports.sales');
-//Route::get('/reports/stock', [ReportController::class, 'stockReport'])->name('reports.stock');
-//Route::get('/reports/profit-loss', [ReportController::class, 'profitLossReport'])->name('reports.profit_loss'); // New P&L route
-//Route::get('/index', [UserController::class, 'index'])->name('users.index');
-
 Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
 Route::post('/users', [UserController::class, 'store'])->name('users.store');
 Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
@@ -247,7 +240,7 @@ Route::get('/users', [UserController::class, 'index'])->name('users.index');
 Route::get('/create_permission', [RoleController::class, 'createPermission'])->name('roles.create_permission');
 Route::post('/store_permission', [RoleController::class, 'storePermission'])->name('roles.store_permission');
 Route::resource('roles', RoleController::class);
-Route::resource('brands', BrandController::class);
+Route::resource('products', ProductController::class);
 Route::resource('categories', categoryController::class);
 Route::resource('expenses', ExpenseController::class);
 
@@ -280,8 +273,8 @@ Route::post('/reports/stock/update-quantity', [ReportController::class, 'updateS
 Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
 Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
 Route::get('/reports/detailed-stock', [ReportController::class, 'detailedStock'])->name('reports.detailed-stock');
-Route::post('/reports/stock/update-accessory/{id}', [ReportController::class, 'updateAccessoryStock'])->name('stock.update-accessory');
-Route::post('/reports/stock/remove-phone/{id}', [ReportController::class, 'removePhone'])->name('stock.remove.phone');
+Route::post('/reports/stock/update-cosmetic/{id}', [ReportController::class, 'updateAccessoryStock'])->name('stock.update-cosmetic');
+Route::post('/reports/stock/remove-medicine/{id}', [ReportController::class, 'removeMedicine'])->name('stock.remove.medicine');
 Route::get('/dashboard', [ReportController::class, 'home'])->name('dashboard');
 
 // To view all installment plans

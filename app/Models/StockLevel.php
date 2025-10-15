@@ -12,9 +12,7 @@ class StockLevel extends Model
 
     // Define which attributes are mass assignable
     protected $fillable = [
-        'brand_id',
-        'model',
-        'color',
+        'product_id',
         'current_stock',
         'low_stock_threshold',
         'last_updated_at',
@@ -30,7 +28,7 @@ class StockLevel extends Model
      */
     public function brand()
     {
-        return $this->belongsTo(Brand::class);
+        return $this->belongsTo(Product::class);
     }
 
     /**
@@ -38,9 +36,9 @@ class StockLevel extends Model
      *
      * @return BelongsTo
      */
-    public function phone(): BelongsTo
+    public function medicine(): BelongsTo
     {
-        return $this->belongsTo(Phone::class);
+        return $this->belongsTo(Medicine::class);
     }
 
     /**
@@ -48,8 +46,8 @@ class StockLevel extends Model
      *
      * @return BelongsTo
      */
-    public function accessory(): BelongsTo
+    public function cosmetic(): BelongsTo
     {
-        return $this->belongsTo(Accessory::class);
+        return $this->belongsTo(Cosmetic::class);
     }
 }

@@ -31,7 +31,7 @@
     </style>
 
     <!-- Watermark -->
-	
+
 	@if(isset($settings['organization_logo_path']))
     <img src="{{ asset('storage/' . $settings['organization_logo_path']) }}"
          alt="Watermark"
@@ -39,16 +39,16 @@
          style="transform: translate(-50%, -90%);" />
 @endif
 
-	
 
-    
+
+
 
     <!-- Hexagon Buttons and Arrows Wrapper -->
     <!-- Hexagon Buttons and Arrows Wrapper -->
     <div class="relative">
         <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 relative z-10">
-            @can('receive phones')
-                <a href="{{ route('phones.receive.form') }}"
+            @can('receive medicines')
+                <a href="{{ route('medicines.receive.form') }}"
                    class="hexagon-shape flex items-center justify-center gap-1 w-full text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-1 transition duration-200 mt-6">
                     <i class="fas fa-download text-[14px]"></i> Receive
                 </a>
@@ -89,8 +89,8 @@
                         <th colspan="2" class="pb-1">KEY METRICS (Current Month)</th>
                     </tr>
                     <tr>
-                        <td>Total Phones:</td>
-                        <td><b>{{ number_format($totalPhones) }}</b></td>
+                        <td>Total Products:</td>
+                        <td><b>{{ number_format($totalMedicines) }}</b></td>
                     </tr>
                     <tr>
                         <td>Monthly Sales:</td>
@@ -109,7 +109,7 @@
     <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
         @php
             $cards = [
-                ['icon' => '📱', 'label' => 'Phones', 'value' => number_format($totalPhones), 'color' => 'indigo'],
+                ['icon' => '📱', 'label' => 'Pproducts', 'value' => number_format($totalMedicines), 'color' => 'indigo'],
                 ['icon' => '�', 'label' => 'Sales (' . \Carbon\Carbon::now()->format('M') . ')', 'value' =>   number_format($monthlySales, 2), 'color' => 'green'],
                 ['icon' => '⏳', 'label' => 'Pending', 'value' =>   number_format($pendingInstallmentsAmount, 2), 'color' => 'yellow'],
                 ['icon' => '📈', 'label' => 'Profit', 'value' => number_format($profitMarginPercentage, 2) . '%', 'color' => $profitMarginPercentage >= 0 ? 'green' : 'red'],
@@ -139,48 +139,19 @@
 
         <!-- Inventory Chart -->
         <div class="p-2 bg-white rounded-md shadow-sm border border-gray-200">
-            <h2 class="text-xs font-semibold mb-1 text-gray-800">Inventory by Brand</h2>
+            <h2 class="text-xs font-semibold mb-1 text-gray-800">Inventory by Product</h2>
             <div class="h-48 overflow-hidden">
                 <canvas id="inventoryChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Quick Actions and Activity -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-1 p-3 bg-white rounded-md shadow-sm border border-gray-200">
-            <h2 class="text-sm font-bold mb-3 text-gray-800 flex items-center gap-1">
-                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round"
-                                               d="M5 13l4 4L19 7" /></svg>
-                Quick Actions
-            </h2>
-            <div class="space-y-1">
-                @can('receive phones')
-                    <a href="{{ route('phones.receive.form') }}"
-                       class="flex items-center justify-center gap-2 w-full text-sm bg-indigo-600 hover:bg-indigo-700 text-white py-1.5 px-3 rounded transition duration-200">
-                        <i class="fas fa-download"></i> Receive Phones
-                    </a>
-                @endcan
 
-                @can('create sales')
-                    <a href="{{ route('sales.create') }}"
-                       class="flex items-center justify-center gap-2 w-full text-sm bg-green-600 hover:bg-green-700 text-white py-1.5 px-3 rounded transition duration-200">
-                        <i class="fas fa-dollar-sign"></i> Record Sale
-                    </a>
-                @endcan
-
-                @can('create expenses')
-                    <a href="{{ route('expenses.create') }}"
-                       class="flex items-center justify-center gap-2 w-full text-sm bg-red-500 hover:bg-red-600 text-white py-1.5 px-3 rounded transition duration-200">
-                        <i class="fas fa-receipt"></i> Record Expense
-                    </a>
-                @endcan
-            </div>
-        </div>
 
         <!-- Recent Activity -->
-        <div class="lg:col-span-2 p-2 bg-white rounded-md shadow border border-gray-200">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        @if($recentActivities)
+        <div class=" p-2 bg-white rounded-md shadow border border-gray-200">
             <h2 class="text-xs font-semibold text-gray-800 mb-1 flex items-center gap-1">
                 <svg class="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2"
                      viewBox="0 0 24 24">
@@ -208,11 +179,11 @@
                 {{ $recentActivities->links('pagination::tailwind') }}
             </div>
         </div>
-    </div>
 
+@endif
     <!-- Low Stock Table -->
     @can('view stock reports')
-        <div class="p-4 bg-white rounded-lg shadow overflow-x-auto">
+        <div class="p-2 bg-white rounded-lg shadow overflow-x-auto">
             <h2 class="font-semibold mb-4">Low Stock Products Overview</h2>
             @if ($lowStockProducts->isEmpty())
                 <p class="text-center text-gray-600">No products are currently low in stock.</p>
@@ -231,12 +202,8 @@
                     @foreach ($lowStockProducts as $item)
                         <tr>
                             <td class="p-2">
-                                {{-- Display the brand name from the loaded relationship, and the model directly from the stock level item. --}}
-                                {{ $item->brand->name ?? 'N/A' }} {{ $item->model }} ({{ $item->color }})
-                            </td>
-                            <td class="p-2">
-                                {{-- The debug dump indicates the StockLevel table stores phone data, so we'll assume the category is "Phone". --}}
-                                Phone
+                                {{-- The debug dump indicates the StockLevel table stores phone data, so we'll assume the category is "Medicine". --}}
+                                Medicine
                             </td>
                             <td class="p-2">{{ $item->current_stock }} units</td>
                             <td class="p-2">{{ $item->low_stock_threshold }} units</td>
@@ -248,6 +215,7 @@
             @endif
         </div>
     @endcan
+    </div>
 @endsection
 
 @push('scripts')

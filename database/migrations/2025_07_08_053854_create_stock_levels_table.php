@@ -13,16 +13,14 @@ return new class extends Migration
     {
         Schema::create('stock_levels', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('brand_id')->constrained('brands')->onDelete('cascade');
-            $table->string('model');
-            $table->string('color');
+            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
             $table->integer('current_stock')->default(0);
             $table->integer('low_stock_threshold')->default(5); // Default threshold
             $table->timestamp('last_updated_at')->useCurrent();
             $table->timestamps();
 
-            // Add a unique constraint to ensure only one stock level entry per brand, model, and color combination
-            $table->unique(['brand_id', 'model', 'color']);
+            // Add a unique constraint to ensure only one stock level entry per product, model, and color combination
+            $table->unique(['product_id']);
         });
     }
 

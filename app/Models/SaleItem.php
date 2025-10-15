@@ -12,14 +12,14 @@ class SaleItem extends Model
     // Define which attributes are mass assignable
     protected $fillable = [
         'sale_id',
-        'phone_id',
+        'medicine_id',
         'unit_price',
-        'accessory_id',
+        'cosmetic_id',
         'quantity',
         'is_sold',
         'unit_cost'
     ];
-    protected $with = ['phone', 'accessory'];
+    protected $with = ['medicine', 'cosmetic'];
     /**
      * Get the sale that owns the sale item.
      */
@@ -29,16 +29,16 @@ class SaleItem extends Model
     }
 
     /**
-     * Get the phone associated with the sale item.
+     * Get the medicine associated with the sale item.
      */
-    public function phone()
+    public function medicine()
     {
-        return $this->belongsTo(Phone::class);
+        return $this->belongsTo(Medicine::class);
     }
 
-    public function accessory()
+    public function cosmetic()
     {
-        return $this->belongsTo(Accessory::class);
+        return $this->belongsTo(Cosmetic::class);
     }
 
 }

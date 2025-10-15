@@ -23,7 +23,7 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
 
     public function index()
     {
-        $installmentPlans = InstallmentPlan::with(['sale.saleItems.phone', 'installmentPayments'])
+        $installmentPlans = InstallmentPlan::with(['sale.saleItems.medicine', 'installmentPayments'])
             ->orderBy('next_payment_date', 'asc')
             ->paginate(5);
         return view('installments.index', compact('installmentPlans'));
@@ -38,7 +38,7 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
     public function showPaymentForm(InstallmentPlan $installmentPlan)
     {
         // Load related sale and phone data for display
-        $installmentPlan->load(['sale.saleItems.phone', 'installmentPayments']);
+        $installmentPlan->load(['sale.saleItems.medicine', 'installmentPayments']);
 
         // Calculate total paid and remaining amount
         $totalPaid = $installmentPlan->installmentPayments->sum('amount_paid');

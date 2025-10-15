@@ -1,8 +1,8 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\Accessory;
-use App\Models\Phone;
+use App\Models\Cosmetic;
+use App\Models\Medicine;
 use App\Models\Setting;
 use App\Models\ReturnLog;
 use App\Models\Sale;
@@ -31,29 +31,28 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     }
     public function find($code)
     {
-        $phone = \App\Models\Phone::where('imei', $code)->first();
-        if ($phone) {
+        $medicine = \App\Models\Medicine::where('imei', $code)->first();
+        if ($medicine) {
             return response()->json([
                 'success' => true,
-                'type' => 'phone',
+                'type' => 'medicine',
                 'item' => [
-                    'id' => $phone->id,
-                    'name' => $phone->name,
-                    'imei' => $phone->imei,
+                    'id' => $medicine->id,
+                    'name' => $medicine->name,
                 ]
             ]);
         }
 
-        $accessory = \App\Models\Accessory::where('barcode', $code)
+        $cosmetic = \App\Models\Cosmetic::where('barcode', $code)
             ->orWhere('id', $code)->first();
-        if ($accessory) {
+        if ($cosmetic) {
             return response()->json([
                 'success' => true,
-                'type' => 'accessory',
+                'type' => 'cosmetic',
                 'item' => [
-                    'id' => $accessory->id,
-                    'name' => $accessory->name,
-                    'barcode' => $accessory->barcode,
+                    'id' => $cosmetic->id,
+                    'name' => $cosmetic->name,
+                    'barcode' => $cosmetic->barcode,
                 ]
             ]);
         }
@@ -64,8 +63,8 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
 
     public function index()
     {
-        // Eager load saleItems and their associated phones, and installmentPlan if it exists
-        $sales = Sale::with(['saleItems.phone', 'installmentPlan'])
+        // Eager load saleItems and their associated medicines, and installmentPlan if it exists
+        $sales = Sale::with(['saleItems.medicine', 'installmentPlan'])
             ->orderBy('sale_date', 'desc')
             ->paginate(5);
 
@@ -87,18 +86,17 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
      */
     public function create()
     {
-        // Fetch only available phones for selection in the sales form
-        $availablePhones = Phone::where('status', 'available')
-            ->select('phones.*')
-            ->leftJoin('sale_items', 'phones.id', '=', 'sale_items.phone_id')
-            ->whereNull('sale_items.phone_id')
-            ->orderBy('model')
+        // Fetch only available medicines for selection in the sales form
+        $availableMedicines = Medicine::where('status', 'available')
+            ->select('medicines.*')
+            ->leftJoin('sale_items', 'medicines.id', '=', 'sale_items.medicine_id')
+            ->whereNull('sale_items.medicine_id')
             ->get();
 
 
 
-        $availableAccessories = Accessory::where('status', 'in_stock')->where('quantity','>=',1)->orderBy('created_at')->get();
-        return view('sales.create', compact('availableAccessories','availablePhones'));
+        $availableCosmetics = Cosmetic::where('status', 'in_stock')->where('quantity','>=',1)->orderBy('created_at')->get();
+        return view('sales.create', compact('availableCosmetics','availableMedicines'));
     }
     public function printReceipt()
     {
@@ -107,7 +105,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     }
     public function printSingleReceipt(SaleReceipt $receipt)
     {
-        $receipt->load(['sale.saleItems.phone', 'sale.saleItems.accessory']);
+        $receipt->load(['sale.saleItems.medicine', 'sale.saleItems.cosmetic']);
         $settings = Setting::all()->pluck('value', 'key')->toArray();
         return view('sales.print_receipt', compact('receipt', 'settings'));
     }
@@ -126,7 +124,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
         // 1. Basic validation for customer, discount, and the new credit_sale flag
         $validated = $request->validate([
             'customer_name' => 'required|string|max:255',
-            'customer_phone' => 'nullable|string|max:255',
+            'customer_medicine' => 'nullable|string|max:255',
             'customer_email' => 'nullable|email|max:255',
             'discount_amount' => 'required|numeric|min:0',
             'payment_option' => 'nullable|numeric|min:0',
@@ -137,50 +135,50 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             'total_installments' => 'required_if:is_installment,true|nullable|integer|min:1',
             'installment_amount' => 'required_if:is_installment,true|nullable|numeric|min:0.01',
             'start_date' => 'required_if:is_installment,true|nullable|date',
-            'phone_imeis' => 'nullable|array',
-            'accessories' => 'nullable|array',
-            'accessories.*.id' => 'required_with:accessories|integer|exists:accessories,id',
-            'accessories.*.quantity' => 'required_with:accessories|integer|min:1',
+            'medicine_imeis' => 'nullable|array',
+            'cosmetics' => 'nullable|array',
+            'cosmetics.*.id' => 'required_with:cosmetics|integer|exists:cosmetics,id',
+            'cosmetics.*.quantity' => 'required_with:cosmetics|integer|min:1',
         ]);
 
         // Custom validation: Ensure at least one item is selected.
-        if (empty($request->input('phone_imeis')) && empty($request->input('accessories'))) {
-            throw ValidationException::withMessages(['items' => 'At least one phone or accessory must be selected.']);
+        if (empty($request->input('medicine_imeis')) && empty($request->input('cosmetics'))) {
+            throw ValidationException::withMessages(['items' => 'At least one medicine or cosmetic must be selected.']);
         }
 
-        // 2. Validate phones and accessories stock before creating a sale
+        // 2. Validate medicines and cosmetics stock before creating a sale
         $totalAmount = 0;
-        $phonesToSell = [];
-        $accessoriesToSell = [];
+        $medicinesToSell = [];
+        $cosmeticsToSell = [];
 
-        // Validate and get phone details
-        $phoneImeis = array_unique($request->input('phone_imeis', []));
-        if (!empty($phoneImeis)) {
-            $phones = Phone::whereIn('imei', $phoneImeis)->where('is_sold', false)->get();
-            if ($phones->count() !== count($phoneImeis)) {
-                throw ValidationException::withMessages(['items' => 'One or more selected phones are either not found or already sold.']);
+        // Validate and get medicine details
+        $medicineImeis = array_unique($request->input('medicine_imeis', []));
+        if (!empty($medicineImeis)) {
+            $medicines = Medicine::where('is_sold', false)->get();
+            if ($medicines->count() !== count($medicineImeis)) {
+                throw ValidationException::withMessages(['items' => 'One or more selected medicines are either not found or already sold.']);
             }
-            $phonesToSell = $phones;
-            foreach ($phonesToSell as $phone) {
-                $totalAmount += $phone->selling_price;
+            $medicinesToSell = $medicines;
+            foreach ($medicinesToSell as $medicine) {
+                $totalAmount += $medicine->selling_price;
             }
         }
 
-        // Validate and get accessory details
-        $accessories = $request->input('accessories', []);
-        if (!empty($accessories)) {
-            foreach ($accessories as $accessoryData) {
-                $accessory = Accessory::findOrFail($accessoryData['id']);
-                $quantity = $accessoryData['quantity'];
+        // Validate and get cosmetic details
+        $cosmetics = $request->input('cosmetics', []);
+        if (!empty($cosmetics)) {
+            foreach ($cosmetics as $cosmeticData) {
+                $cosmetic = Cosmetic::findOrFail($cosmeticData['id']);
+                $quantity = $cosmeticData['quantity'];
 
                 // Stock validation check
-                if ($accessory->quantity < $quantity) {
+                if ($cosmetic->quantity < $quantity) {
                     throw ValidationException::withMessages([
-                        'accessories' => "Accessory {$accessory->name} does not have {$quantity} units available in stock."
+                        'cosmetics' => "Cosmetic {$cosmetic->name} does not have {$quantity} units available in stock."
                     ]);
                 }
-                $accessoriesToSell[] = ['accessory' => $accessory, 'quantity' => $quantity];
-                $totalAmount += ($accessory->selling_price * $quantity);
+                $cosmeticsToSell[] = ['cosmetic' => $cosmetic, 'quantity' => $quantity];
+                $totalAmount += ($cosmetic->selling_price * $quantity);
             }
         }
 
@@ -213,15 +211,15 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
         try {
             DB::beginTransaction();
 
-            // Re-validate and get phones inside the transaction with a lock
-            $phoneImeis = array_unique($request->input('phone_imeis', []));
-            if (!empty($phoneImeis)) {
-                $phonesToSell = Phone::whereIn('imei', $phoneImeis)
+            // Re-validate and get medicines inside the transaction with a lock
+            $medicineImeis = array_unique($request->input('medicine_imeis', []));
+            if (!empty($medicineImeis)) {
+                $medicinesToSell = Medicine::whereIn('imei', $medicineImeis)
                     ->where('is_sold', false)
                     ->lockForUpdate() // Lock the selected rows to prevent race conditions
                     ->get();
-                if ($phonesToSell->count() !== count($phoneImeis)) {
-                    throw ValidationException::withMessages(['items' => 'One or more selected phones are either not found or already sold.']);
+                if ($medicinesToSell->count() !== count($medicineImeis)) {
+                    throw ValidationException::withMessages(['items' => 'One or more selected medicines are either not found or already sold.']);
                 }
             }
             // 3. Create the Sale record with the calculated total amount and payment details
@@ -245,7 +243,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
 
             $sale = Sale::create([
                 'customer_name' => $validated['customer_name'],
-                'customer_phone' => $validated['customer_phone'],
+                'customer_medicine' => $validated['customer_medicine'],
                 'customer_email' => $validated['customer_email'],
                 'total_amount' => $totalAmount,
                 'discount_amount' => $validated['discount_amount'],
@@ -258,30 +256,30 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             ]);
 
             // 4. Create sale items and update stock
-            foreach ($phonesToSell as $phone) {
+            foreach ($medicinesToSell as $medicine) {
                 $sale->saleItems()->create([
-                    'phone_id' => $phone->id,
-                    'accessory_id' => null,
-                    'unit_price' => $phone->selling_price,
-                    'unit_cost' => $phone->purchase_price,
+                    'medicine_id' => $medicine->id,
+                    'cosmetic_id' => null,
+                    'unit_price' => $medicine->selling_price,
+                    'unit_cost' => $medicine->purchase_price,
                     'quantity' => 1,
                 ]);
-                $phone->update(['is_sold' => true]);
+                $medicine->update(['is_sold' => true]);
             }
 
-            foreach ($accessoriesToSell as $item) {
-                $accessory = $item['accessory'];
+            foreach ($cosmeticsToSell as $item) {
+                $cosmetic = $item['cosmetic'];
                 $quantity = $item['quantity'];
 
                 $sale->saleItems()->create([
-                    'accessory_id' => $accessory->id,
-                    'phone_id' => null,
-                    'unit_price' => $accessory->selling_price,
-                    'unit_cost' => $accessory->purchase_price,
+                    'cosmetic_id' => $cosmetic->id,
+                    'medicine_id' => null,
+                    'unit_price' => $cosmetic->selling_price,
+                    'unit_cost' => $cosmetic->purchase_price,
                     'quantity' => $quantity,
                 ]);
                 // Decrease the stock
-                $accessory->decrement('quantity', $quantity);
+                $cosmetic->decrement('quantity', $quantity);
             }
 
             // 5. Handle installment details if applicable
@@ -332,7 +330,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     public function show(Sale $sale)
     {
         // Eager load related data for the sale details page
-        $sale->load(['saleItems.phone', 'installmentPlan.installmentPayments']);
+        $sale->load(['saleItems.medicine', 'installmentPlan.installmentPayments']);
         return view('sales.show', compact('sale'));
     }
 
@@ -387,17 +385,17 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     {
         $validatedData = $request->validate([
             'invoice_number' => 'required|string',
-            'customer_phone' => 'nullable|string',
+            'customer_medicine' => 'nullable|string',
         ]);
 
-        $query = Sale::with(['saleItems.phone', 'saleItems.accessory']);
+        $query = Sale::with(['saleItems.medicine', 'saleItems.cosmetic']);
 
         $query->join('sale_receipts', 'sales.id', '=', 'sale_receipts.sale_id');
         $query->where('sale_receipts.receipt_number', $validatedData['invoice_number']);
 
-        // If a customer phone is provided, add that condition
-        if ($validatedData['customer_phone']) {
-            $query->where('sales.customer_phone', $validatedData['customer_phone']);
+        // If a customer medicine is provided, add that condition
+        if ($validatedData['customer_medicine']) {
+            $query->where('sales.customer_medicine', $validatedData['customer_medicine']);
         }
 
         // Get the first matching sale, ensuring we only select from the sales table
@@ -425,17 +423,17 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
 
                 if ($saleItem) {
                     // Revert the stock
-                    if ($saleItem->phone_id) {
-                        $phone = Phone::find($saleItem->phone_id);
-                        if ($phone) {
-                            $phone->status = 'available';
-                            $phone->save();
+                    if ($saleItem->medicine_id) {
+                        $medicine = Medicine::find($saleItem->medicine_id);
+                        if ($medicine) {
+                            $medicine->status = 'available';
+                            $medicine->save();
                         }
-                    } elseif ($saleItem->accessory_id) {
-                        $accessory = Accessory::find($saleItem->accessory_id);
-                        if ($accessory) {
-                            $accessory->quantity += $saleItem->quantity;
-                            $accessory->save();
+                    } elseif ($saleItem->cosmetic_id) {
+                        $cosmetic = Cosmetic::find($saleItem->cosmetic_id);
+                        if ($cosmetic) {
+                            $cosmetic->quantity += $saleItem->quantity;
+                            $cosmetic->save();
                         }
                     }
 

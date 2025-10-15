@@ -11,8 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('phones', function (Blueprint $table) {
-            $table->string('condition')->default('new');
+        Schema::create('products', function (Blueprint $table) {
+            $table->id(); // Primary key, auto-incrementing
+            $table->string('name')->unique(); // Brand name, must be unique
+            $table->timestamps(); // created_at and updated_at columns
         });
     }
 
@@ -21,8 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('phones', function (Blueprint $table) {
-            $table->dropColumn('condition');
-        });
+        Schema::dropIfExists('products');
     }
 };

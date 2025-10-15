@@ -4,7 +4,7 @@
     <div class="container mx-auto p-4 md:p-8">
         <h1 class="text-3xl font-bold mb-6 text-gray-800">Detailed Inventory</h1>
         <p class="text-gray-600 mb-6">
-            This view allows you to see each unique batch of accessories and individual phones for precise stock adjustments.
+            This view allows you to see each unique batch of cosmetics and individual medicines for precise stock adjustments.
         </p>
 
         <!-- Navigation back to summary -->
@@ -14,10 +14,10 @@
             </a>
         </div>
 
-        <!-- Detailed Accessories Table -->
+        <!-- Detailed Cosmetics Table -->
         <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-800">In-Stock Accessories (by batch)</h2>
+                <h2 class="text-xl font-semibold text-gray-800">In-Stock Cosmetics (by batch)</h2>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -32,36 +32,36 @@
                     </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($detailedAccessoryStock as $accessory)
+                    @forelse($detailedCosmeticStock as $cosmetic)
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $accessory->id }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $accessory->name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($accessory->purchase_price, 2) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($accessory->selling_price, 2) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" id="quantity-accessory-{{ $accessory->id }}">{{ number_format($accessory->quantity) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $cosmetic->id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $cosmetic->name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($cosmetic->purchase_price, 2) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($cosmetic->selling_price, 2) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" id="quantity-cosmetic-{{ $cosmetic->id }}">{{ number_format($cosmetic->quantity) }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button onclick="showItemAdjustmentModal({{ $accessory->id }}, '{{ $accessory->name }}', '{{ $accessory->quantity }}', 'accessory')" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200">
+                                <button onclick="showItemAdjustmentModal({{ $cosmetic->id }}, '{{ $cosmetic->name }}', '{{ $cosmetic->quantity }}', 'cosmetic')" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200">
                                     <i class="fas fa-edit mr-1"></i> Adjust
                                 </button>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No in-stock accessories found.</td>
+                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No in-stock cosmetics found.</td>
                         </tr>
                     @endforelse
                     </tbody>
                 </table>
             </div>
             <div class="px-6 py-4 border-t border-gray-200">
-                {{ $detailedAccessoryStock->links() }}
+                {{ $detailedCosmeticStock->links() }}
             </div>
         </div>
 
-        <!-- Detailed Phones Table (New) -->
+        <!-- Detailed Medicines Table (New) -->
         <div class="bg-white rounded-xl shadow-lg overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-800">In-Stock Phones (by IMEI)</h2>
+                <h2 class="text-xl font-semibold text-gray-800">In-Stock Medicines (by BARCODE)</h2>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -76,32 +76,32 @@
                     </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($detailedPhoneStock as $phone)
+                    @forelse($detailedMedicineStock as $medicine)
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $phone->id }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $phone->brand_name }} {{ $phone->model }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($phone->purchase_price, 2) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($phone->selling_price, 2) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" id="imei-phone-{{ $phone->id }}">{{ $phone->imei }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $medicine->id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $medicine->brand_name }} {{ $medicine->model }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($medicine->purchase_price, 2) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($medicine->selling_price, 2) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" id="imei-medicine-{{ $medicine->id }}">{{ $medicine->imei }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2">
-                                <button onclick="showItemAdjustmentModal({{ $phone->id }}, '{{ $phone->brand_name }} {{ $phone->model }}', '{{ $phone->imei }}', 'phone')" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200">
-                                    <i class="fas fa-edit mr-1"></i> Edit IMEI
+                                <button onclick="showItemAdjustmentModal({{ $medicine->id }}, '{{ $medicine->brand_name }} {{ $medicine->model }}', '{{ $medicine->imei }}', 'medicine')" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200">
+                                    <i class="fas fa-edit mr-1"></i> Edit BARCODE
                                 </button>
-                                <button onclick="removePhoneFromStock({{ $phone->id }})" class="text-red-600 hover:text-red-900 transition-colors duration-200">
+                                <button onclick="removeMedicineFromStock({{ $medicine->id }})" class="text-red-600 hover:text-red-900 transition-colors duration-200">
                                     <i class="fas fa-trash-alt mr-1"></i> Remove
                                 </button>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No in-stock phones found.</td>
+                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No in-stock medicines found.</td>
                         </tr>
                     @endforelse
                     </tbody>
                 </table>
             </div>
             <div class="px-6 py-4 border-t border-gray-200">
-                {{ $detailedPhoneStock->links() }}
+                {{ $detailedMedicineStock->links() }}
             </div>
         </div>
     </div>
@@ -152,16 +152,16 @@
             const adjustmentForm = document.getElementById('adjustmentForm');
 
             // Dynamically set label, input type, and form action
-            if (itemType === 'accessory') {
+            if (itemType === 'cosmetic') {
                 newValueLabel.innerText = 'New Quantity';
                 newValueInput.type = 'number';
                 newValueInput.value = currentValue;
-                adjustmentForm.action = `/reports/stock/update-accessory/${id}`;
-            } else if (itemType === 'phone') {
+                adjustmentForm.action = `/reports/stock/update-cosmetic/${id}`;
+            } else if (itemType === 'medicine') {
                 newValueLabel.innerText = 'New IMEI';
                 newValueInput.type = 'text';
                 newValueInput.value = currentValue;
-                adjustmentForm.action = `/reports/stock/update-phone-imei/${id}`;
+                adjustmentForm.action = `/reports/stock/update-medicine-imei/${id}`;
             }
 
             modal.classList.remove('hidden');
@@ -172,7 +172,7 @@
             modal.classList.add('hidden');
         }
 
-        async function removePhoneFromStock(id) {
+        async function removeMedicineFromStock(id) {
             Swal.fire({
                 title: 'Are you sure?',
                 text: "You won't be able to revert this! Please provide a reason for removal.",
@@ -192,7 +192,7 @@
                 if (result.isConfirmed) {
                     const comment = result.value;
                     try {
-                        const response = await fetch(`/reports/stock/remove-phone/${id}`, {
+                        const response = await fetch(`/reports/stock/remove-medicine/${id}`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -206,11 +206,11 @@
                         if (response.ok) {
                             Swal.fire(
                                 'Removed!',
-                                'The phone has been removed from stock.',
+                                'The medicine has been removed from stock.',
                                 'success'
                             );
                             // Find the row by its unique ID and remove it from the table
-                            const row = document.getElementById(`imei-phone-${id}`).closest('tr');
+                            const row = document.getElementById(`imei-medicine-${id}`).closest('tr');
                             row.remove();
                         } else {
                             Swal.fire(
@@ -242,7 +242,7 @@
             const comment = formData.get('comment');
 console.log(1);
             // Dynamically get the element ID to update
-            const elementId = itemType === 'accessory' ? `quantity-accessory-${id}` : `imei-phone-${id}`;
+            const elementId = itemType === 'cosmetic' ? `quantity-cosmetic-${id}` : `imei-medicine-${id}`;
 
             try {
                 const response = await fetch(form.action, {

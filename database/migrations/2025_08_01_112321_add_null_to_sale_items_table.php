@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sale_items', function (Blueprint $table) {
-            $table->unsignedBigInteger('phone_id')->nullable()->change();
-            $table->unsignedBigInteger('accessory_id')->nullable()->change();
+            $table->unsignedBigInteger('medicine_id')->nullable()->change();
+            $table->unsignedBigInteger('cosmetic_id')->nullable()->change();
         });
     }
 
@@ -23,8 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('sale_items', function (Blueprint $table) {
-            $table->unsignedBigInteger('phone_id')->nullable(false)->change();
-            $table->unsignedBigInteger('accessory_id')->nullable(false)->change();
+            $table->unsignedBigInteger('medicine_id')->nullable(false)->change();
+            $table->unsignedBigInteger('cosmetic_id')->nullable(false)->change();
         });
     }
 };

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('stock_adjustments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('accessory_id')->constrained()->onDelete('cascade');
+            $table->foreignId('cosmetic_id')->constrained()->onDelete('cascade');
             $table->unsignedInteger('old_quantity');
             $table->unsignedInteger('new_quantity');
             $table->string('comment')->nullable();

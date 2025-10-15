@@ -15,12 +15,12 @@ class StockAdjustment extends Model
      * @var array
      */
     protected $fillable = [
-        'accessory_id',
+        'cosmetic_id',
         'old_quantity',
         'new_quantity',
         'comment',
         'adjusted_by_user_id',
-        'phone_id'
+        'medicine_id'
     ];
 
     /**
@@ -28,7 +28,7 @@ class StockAdjustment extends Model
      */
     public function accessory()
     {
-        return $this->belongsTo(Accessory::class);
+        return $this->belongsTo(Cosmetic::class);
     }
 
     /**

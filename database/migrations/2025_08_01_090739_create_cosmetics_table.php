@@ -11,9 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('model', function (Blueprint $table) {
+        Schema::create('cosmetics', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->foreignId('product_id')->nullable()->constrained();
+            $table->string('unit')->default('piece'); // Added the 'unit' column
+            $table->decimal('purchase_price', 8, 2);
+            $table->decimal('selling_price', 8, 2);
+            $table->string('status');
             $table->timestamps();
         });
     }
@@ -23,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('model');
+        Schema::dropIfExists('cosmetics');
     }
 };

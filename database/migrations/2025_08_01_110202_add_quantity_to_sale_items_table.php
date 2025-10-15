@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sale_items', function (Blueprint $table) {
-            $table->foreignId('accessory_id')->nullable()->after('phone_id')->constrained()->cascadeOnDelete();
-            $table->integer('quantity')->default(1)->after('accessory_id');
+            $table->foreignId('cosmetic_id')->nullable()->after('medicine_id')->constrained()->cascadeOnDelete();
+            $table->integer('quantity')->default(1)->after('cosmetic_id');
         });
     }
 
@@ -23,8 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('sale_items', function (Blueprint $table) {
-            $table->dropForeign(['accessory_id']);
-            $table->dropColumn('accessory_id');
+            $table->dropForeign(['cosmetic_id']);
+            $table->dropColumn('cosmetic_id');
             $table->dropColumn('quantity');
         });
     }

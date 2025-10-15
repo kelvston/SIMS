@@ -64,10 +64,10 @@
     <div class="space-y-2 mb-4">
         @foreach($receipt->sale->saleItems as $item)
             <div class="flex justify-between text-sm">
-                @if ($item->phone)
-                    <p class="text-gray-700">Phone: {{ $item->phone->model }} (IMEI: {{ $item->phone->imei }})</p>
+                @if ($item->medicine)
+                    <p class="text-gray-700">Medicine:  (BARCODE: {{ $item->medicine->barcode }})</p>
                 @else
-                    <p class="text-gray-700">Accessory: {{ $item->accessory->name }}</p>
+                    <p class="text-gray-700">Cosmetic: {{ $item->cosmetic->name }}</p>
                 @endif
                 <p class="text-gray-700">x{{ $item->quantity }} @ {{ number_format($item->unit_price, 2) }}</p>
             </div>

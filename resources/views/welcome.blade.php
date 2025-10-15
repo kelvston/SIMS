@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - PhoneStore Pro</title>
-{{--    <script src="https://cdn.tailwindcss.com"></script>--}}
-{{--    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">--}}
+    <title>Login - Phage Pro</title>
     <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}">
     <script src="{{ asset('assets/js/tailwind.min.js') }}"></script>
     <script src="{{ asset('assets/js/chart.min.js') }}"></script>
@@ -95,7 +93,7 @@
         <h1 class="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-br from-yellow-200 via-orange-500 to-yellow-800">
             Enrich Your Digital Transformation
         </h1>
-        <p class="text-white/80 mt-1 text-sm">Powered by PhoneStore Pro</p>
+        <p class="text-white/80 mt-1 text-sm">Powered by PhagePharmacy Pro</p>
     </div>
 
     <div class="flex flex-col md:flex-row items-center justify-center gap-6 w-full">

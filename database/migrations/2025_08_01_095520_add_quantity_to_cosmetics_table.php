@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('phone_models', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->foreignId('brand_id')->constrained('brands')->onDelete('cascade');
-            $table->timestamps();
+        Schema::table('cosmetics', function (Blueprint $table) {
+            $table->integer('quantity')->default(0)->after('unit');
         });
     }
 
@@ -24,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('phone_models');
+        Schema::table('cosmetics', function (Blueprint $table) {
+            $table->dropColumn('quantity');
+        });
     }
 };

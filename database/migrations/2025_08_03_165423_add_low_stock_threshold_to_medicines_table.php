@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('colors', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->foreignId('phone_model_id')->constrained('phone_models')->onDelete('cascade');
-            $table->timestamps();
+        Schema::table('cosmetics', function (Blueprint $table) {
+            $table->integer('low_stock_threshold')->default(5);
         });
     }
 
@@ -24,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('colors');
+        Schema::table('cosmetics', function (Blueprint $table) {
+            //
+        });
     }
 };

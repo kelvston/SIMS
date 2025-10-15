@@ -11,10 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('brands', function (Blueprint $table) {
-            $table->id(); // Primary key, auto-incrementing
-            $table->string('name')->unique(); // Brand name, must be unique
-            $table->timestamps(); // created_at and updated_at columns
+        Schema::table('medicines', function (Blueprint $table) {
+            $table->string('condition')->default('new');
         });
     }
 
@@ -23,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('brands');
+        Schema::table('medicines', function (Blueprint $table) {
+            $table->dropColumn('condition');
+        });
     }
 };

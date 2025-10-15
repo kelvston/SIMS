@@ -67,14 +67,14 @@
 
             {{-- Accessories Sold --}}
             @php
-                $accessoriesSold = $sale->saleItems->filter(fn($item) => $item->accessory !== null);
+                $cosmeticsSold = $sale->saleItems->filter(fn($item) => $item->accessory !== null);
             @endphp
             <h3 class="text-xl font-semibold text-gray-600 mb-2">Accessories Sold</h3>
-            @if ($accessoriesSold->isEmpty())
-                <p class="text-gray-600">No accessories associated with this sale.</p>
+            @if ($cosmeticsSold->isEmpty())
+                <p class="text-gray-600">No cosmetics associated with this sale.</p>
             @else
                 <ul class="list-disc list-inside space-y-2">
-                    @foreach ($accessoriesSold as $item)
+                    @foreach ($cosmeticsSold as $item)
                         <li class="text-gray-700">
                             <strong>{{ $item->accessory->name }}</strong>
                             (Quantity: {{ $item->quantity }}) -

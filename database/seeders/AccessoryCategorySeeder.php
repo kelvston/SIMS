@@ -28,7 +28,7 @@ class AccessoryCategorySeeder extends Seeder
         ];
 
         foreach ($categories as $category) {
-            DB::table('accessory_categories')->insert([
+            DB::table('cosmetic_categories')->insert([
                 'name' => $category,
                 'created_at' => now(),
                 'updated_at' => now(),

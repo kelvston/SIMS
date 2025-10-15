@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@yield('title', 'PhoneStore Pro')</title>
+    <title>@yield('title', 'Phage Pro')</title>
     <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}">
     <script src="{{ asset('assets/js/tailwind.min.js') }}"></script>
     <script src="{{ asset('assets/js/chart.min.js') }}"></script>
@@ -95,15 +95,15 @@
 <div class="flex min-h-screen overflow-hidden">
     <!-- Sidebar for desktop -->
     <aside class="fixed inset-y-0 left-0 w-60 bg-[#AD5D29] text-white p-4 hidden lg:flex flex-col z-40 overflow-hidden" x-data="{ manageOpen: false }">
-        <h2 class="text-xl font-bold mb-6">PhoneStore Pro</h2>
+        <h2 class="text-xl font-bold mb-6">Phage Pro</h2>
         <nav class="space-y-2 overflow-hidden">
             @can('view dashboard')
                 <a href="{{ route('dashboard') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                     <span class="mr-2">📊</span> Dashboard
                 </a>
             @endcan
-            @can('view phones')
-                <a href="{{ route('phones.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+            @can('view products')
+                <a href="{{ route('medicines.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                     <span class="mr-2">📱</span> Inventory
                 </a>
             @endcan
@@ -156,8 +156,8 @@
 {{--            @can('view dashboard')--}}
 {{--                <a href="{{ route('dashboard') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Dashboard</a>--}}
 {{--            @endcan--}}
-{{--            @can('view phones')--}}
-{{--                <a href="{{ route('phones.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Inventory</a>--}}
+{{--            @can('view medicines')--}}
+{{--                <a href="{{ route('medicines.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Inventory</a>--}}
 {{--            @endcan--}}
 {{--            @can('view sales')--}}
 {{--                <a href="{{ route('sales.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Sales</a>--}}

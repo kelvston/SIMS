@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Brand;
+use App\Models\Product;
 use App\Models\PhoneModel;
 use App\Models\Color;
 
@@ -153,7 +153,7 @@ class BrandModelColorSeeder extends Seeder
 
 
         foreach ($data as $brandName => $models) {
-            $brand = Brand::firstOrCreate(['name' => $brandName]);
+            $brand = Product::firstOrCreate(['name' => $brandName]);
 
             foreach ($models as $modelName => $colors) {
                 $model = PhoneModel::create([

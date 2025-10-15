@@ -11,13 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('phones', function (Blueprint $table) {
-            $table->id(); // Primary key
-            $table->string('imei')->unique(); // IMEI, must be unique for each phone
-            $table->string('model'); // Phone model (e.g., iPhone 15 Pro Max)
-            $table->foreignId('brand_id')->constrained('brands')->onDelete('cascade'); // Foreign key to brands table
-            $table->string('color');
-            $table->string('storage_capacity'); // e.g., '128GB', '256GB'
+        Schema::create('medicines', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('product_id')->constrained('products')->onDelete('cascade'); // Foreign key to brands table
             $table->decimal('purchase_price', 10, 2); // Price at which the phone was bought
             $table->decimal('selling_price', 10, 2); // Price at which the phone will be sold
             $table->enum('status', ['available', 'sold', 'under_installment', 'damaged'])->default('available'); // Current status of the phone
@@ -31,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('phones');
+        Schema::dropIfExists('medicines');
     }
 };

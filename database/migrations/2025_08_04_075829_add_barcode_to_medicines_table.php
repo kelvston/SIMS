@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('accessories', function (Blueprint $table) {
+        Schema::table('cosmetics', function (Blueprint $table) {
             $table->unsignedBigInteger('barcode')->nullable();
         });
     }
@@ -21,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('accessories', function (Blueprint $table) {
+        Schema::table('cosmetics', function (Blueprint $table) {
             $table->dropColumn('barcode');
         });
     }

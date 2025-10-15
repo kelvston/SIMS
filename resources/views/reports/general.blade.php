@@ -46,12 +46,12 @@
                 <div class="text-3xl font-bold text-gray-900">{{ number_format($summary['totalSalesCount']) }}</div>
             </div>
             <div class="bg-white rounded-lg shadow p-6">
-                <div class="text-sm text-gray-500">Phones in Stock</div>
-                <div class="text-3xl font-bold text-gray-900">{{ number_format($summary['totalPhonesInStock']) }}</div>
+                <div class="text-sm text-gray-500">Medicines in Stock</div>
+                <div class="text-3xl font-bold text-gray-900">{{ number_format($summary['totalMedicinesInStock']) }}</div>
             </div>
             <div class="bg-white rounded-lg shadow p-6">
-                <div class="text-sm text-gray-500">Phones Sold</div>
-                <div class="text-3xl font-bold text-gray-900">{{ number_format($summary['totalSoldPhones']) }}</div>
+                <div class="text-sm text-gray-500">Medicines Sold</div>
+                <div class="text-3xl font-bold text-gray-900">{{ number_format($summary['totalSoldMedicines']) }}</div>
             </div>
             <div class="bg-white rounded-lg shadow p-6">
                 <div class="text-sm text-gray-500">Active Installments</div>
