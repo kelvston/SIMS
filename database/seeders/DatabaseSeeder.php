@@ -17,17 +17,17 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-//        DB::table('users')->updateOrInsert(
-//            ['email' => 'admin@example.com'], // use your existing user email or unique identifier
-//            [
-//                'name' => 'Admin User',
-//                'email' => 'admin@example.com',
-//                'phone_number' => '0610723234',
-//                'password' => Hash::make('admin@123'),
-//                'created_at' => now(),
-//                'updated_at' => now(),
-//            ]
-//        );
+        DB::table('users')->updateOrInsert(
+            ['email' => 'admin@yoga.com'], // use your existing user email or unique identifier
+            [
+                'name' => 'Admin User',
+                'email' => 'admin@yoga.com',
+                'phone_number' => '0784252900',
+                'password' => Hash::make('admin@123'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
         $this->call([
 //            RolesAndPermissionsSeeder::class, // Add your new seeder here
             BrandModelColorSeeder::class, // Add your new seeder here

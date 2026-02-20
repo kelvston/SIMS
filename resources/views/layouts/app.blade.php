@@ -117,9 +117,33 @@
                 </a>
             @endcan
             @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])
-                <a href="{{ route('reports.sales') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
-                    <span class="mr-2">📈</span> Reports
-                </a>
+                    <button @click="manageOpen = !manageOpen"
+                            class="w-full text-left py-2 px-3 rounded hover:bg-[#C87137] flex justify-between items-center transition"
+                            :aria-expanded="manageOpen.toString()" aria-controls="manage-menu">
+                        <span><span class="mr-2">⚙️</span> Reports</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-300"
+                             :class="{'rotate-180': manageOpen}" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                             stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div id="manage-menu" x-show="manageOpen" x-collapse class="pl-4 space-y-1 mt-1 overflow-hidden">
+                        @can('manage users')
+                            <a href="{{ route('reports.sales') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                                <span class="mr-2">👥</span> Sales Report
+                            </a>
+                        @endcan
+                        @can('manage roles')
+                            <a href="{{ route('reports.stock') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                                <span class="mr-2">🔐</span> Stock Report
+                            </a>
+                        @endcan
+                        @can('manage brands')
+                            <a href="{{ route('reports.profit_loss') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                                <span class="mr-2">🏷️</span> Profit/loss
+                            </a>
+                        @endcan
+                    </div>
             @endcanany
             @canany(['manage users', 'manage roles', 'manage brands'])
                 <button @click="manageOpen = !manageOpen"
