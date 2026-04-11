@@ -1,0 +1,2 @@
+[10-Apr-2026 08:38:49 America/Boise] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[10-Apr-2026 08:55:39 America/Boise] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
