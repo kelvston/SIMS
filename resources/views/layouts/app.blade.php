@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@yield('title', 'Phage Pro')</title>
-    <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}">
-    <script src="{{ asset('assets/js/tailwind.min.js') }}"></script>
-    <script src="{{ asset('assets/js/chart.min.js') }}"></script>
+    <title>@yield('title', 'PhoneStore Pro')</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -77,9 +77,9 @@
 
 
     </style>
+    @stack('styles')
 </head>
 <body class="bg-gray-100 font-sans">
-
 <!-- Page Loader -->
 <div id="page-loader"
      class="fixed inset-0 z-50 bg-white flex items-center justify-center">
@@ -95,15 +95,15 @@
 <div class="flex min-h-screen overflow-hidden">
     <!-- Sidebar for desktop -->
     <aside class="fixed inset-y-0 left-0 w-60 bg-[#AD5D29] text-white p-4 hidden lg:flex flex-col z-40 overflow-hidden" x-data="{ manageOpen: false }">
-        <h2 class="text-xl font-bold mb-6">Phage Pro</h2>
+        <h2 class="text-xl font-bold mb-6">PhoneStore Pro</h2>
         <nav class="space-y-2 overflow-hidden">
             @can('view dashboard')
                 <a href="{{ route('dashboard') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                     <span class="mr-2">📊</span> Dashboard
                 </a>
             @endcan
-            @can('view products')
-                <a href="{{ route('medicines.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+            @can('view phones')
+                <a href="{{ route('phones.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                     <span class="mr-2">📱</span> Inventory
                 </a>
             @endcan
@@ -118,16 +118,66 @@
                 </a>
             @endcan
             @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])
-                <a href="{{ route('reports.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
-                    <span class="mr-2">📈</span> Reports
-                </a>
-            @endcanany
-                @canany(['manage users', 'manage roles', 'manage brands'])
-                <a href="{{ route('manage.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
-                    <span class="mr-2">📈</span> Manage
-                </a>
-                @endcanany
 
+                    <button @click="manageOpen = !manageOpen"
+                            class="w-full text-left py-2 px-3 rounded hover:bg-[#C87137] flex justify-between items-center transition"
+                            :aria-expanded="manageOpen.toString()" aria-controls="manage-menu">
+                        <span><span class="mr-2">⚙️</span> Reports</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-300"
+                             :class="{'rotate-180': manageOpen}" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                             stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div id="manage-menu" x-show="manageOpen" x-collapse class="pl-4 space-y-1 mt-1 overflow-hidden">
+                        @can('manage users')
+                            <a href="{{ route('reports.sales') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                                <span class="mr-2">👥</span> Sales Report
+                            </a>
+                        @endcan
+                        @can('manage roles')
+                            <a href="{{ route('reports.stock') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                                <span class="mr-2">🔐</span> Stock Report
+                            </a>
+                                <a href="{{ route('reports.general') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">  <span class="mr-2">👥</span>General Report</a>
+
+                            @endcan
+                        @can('manage brands')
+                            <a href="{{ route('reports.profit_loss') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                                <span class="mr-2">🏷️</span> Profit/loss
+                            </a>
+                        @endcan
+                    </div>
+            @endcanany
+            @canany(['manage users', 'manage roles', 'manage brands'])
+                <button @click="manageOpen = !manageOpen"
+                        class="w-full text-left py-2 px-3 rounded hover:bg-[#C87137] flex justify-between items-center transition"
+                        :aria-expanded="manageOpen.toString()" aria-controls="manage-menu">
+                    <span><span class="mr-2">⚙️</span> Manage</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-300"
+                         :class="{'rotate-180': manageOpen}" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                         stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div id="manage-menu" x-show="manageOpen" x-collapse class="pl-4 space-y-1 mt-1 overflow-hidden">
+                    @can('manage users')
+                        <a href="{{ route('users.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                            <span class="mr-2">👥</span> Manage Users
+                        </a>
+                    @endcan
+                    @can('manage roles')
+                        <a href="{{ route('roles.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                            <span class="mr-2">🔐</span> Manage Roles
+                        </a>
+                    @endcan
+                    @can('manage brands')
+                        <a href="{{ route('brands.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                            <span class="mr-2">🏷️</span> Manage Brands
+                        </a>
+                    @endcan
+                </div>
+            @endcanany
             @can('view expenses')
                 <a href="{{ route('expenses.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                     <span class="mr-2">💸</span> Expenses
@@ -150,39 +200,39 @@
     </aside>
 
     <!-- Sidebar for mobile -->
-{{--    <aside id="mobileSidebar" class="sidebar-mobile text-white p-4 lg:hidden overflow-hidden">--}}
-{{--        <h2 class="text-xl font-bold mb-6">PhoneStore Pro</h2>--}}
-{{--        <nav class="space-y-2 overflow-hidden">--}}
-{{--            @can('view dashboard')--}}
-{{--                <a href="{{ route('dashboard') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Dashboard</a>--}}
-{{--            @endcan--}}
-{{--            @can('view medicines')--}}
-{{--                <a href="{{ route('medicines.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Inventory</a>--}}
-{{--            @endcan--}}
-{{--            @can('view sales')--}}
-{{--                <a href="{{ route('sales.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Sales</a>--}}
-{{--            @endcan--}}
-{{--            @can('view installments')--}}
-{{--                <a href="{{ route('installments.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Installments</a>--}}
-{{--            @endcan--}}
-{{--            @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])--}}
-{{--                <a href="{{ route('reports.sales') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Reports</a>--}}
-{{--            @endcanany--}}
-{{--            @can('manage users')--}}
-{{--                <a href="{{ route('users.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Users</a>--}}
-{{--            @endcan--}}
-{{--            @can('manage roles')--}}
-{{--                <a href="{{ route('roles.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Roles</a>--}}
-{{--            @endcan--}}
-{{--            @can('manage brands')--}}
-{{--                <a href="{{ route('brands.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Brands</a>--}}
-{{--            @endcan--}}
-{{--            <form method="POST" action="{{ route('logout') }}" class="block">--}}
-{{--                @csrf--}}
-{{--                <button type="submit" class="w-full text-left py-2 px-3 rounded hover:bg-gray-700">Log Out</button>--}}
-{{--            </form>--}}
-{{--        </nav>--}}
-{{--    </aside>--}}
+    <aside id="mobileSidebar" class="sidebar-mobile text-white p-4 lg:hidden overflow-hidden">
+        <h2 class="text-xl font-bold mb-6">PhoneStore Pro</h2>
+        <nav class="space-y-2 overflow-hidden">
+            @can('view dashboard')
+                <a href="{{ route('dashboard') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Dashboard</a>
+            @endcan
+            @can('view phones')
+                <a href="{{ route('phones.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Inventory</a>
+            @endcan
+            @can('view sales')
+                <a href="{{ route('sales.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Sales</a>
+            @endcan
+            @can('view installments')
+                <a href="{{ route('installments.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Installments</a>
+            @endcan
+            @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])
+                <a href="{{ route('reports.sales') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Reports</a>
+            @endcanany
+            @can('manage users')
+                <a href="{{ route('users.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Users</a>
+            @endcan
+            @can('manage roles')
+                <a href="{{ route('roles.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Roles</a>
+            @endcan
+            @can('manage brands')
+                <a href="{{ route('brands.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Brands</a>
+            @endcan
+            <form method="POST" action="{{ route('logout') }}" class="block">
+                @csrf
+                <button type="submit" class="w-full text-left py-2 px-3 rounded hover:bg-gray-700">Log Out</button>
+            </form>
+        </nav>
+    </aside>
 
     <!-- Main content -->
     <div class="flex-1 flex flex-col lg:ml-60">
@@ -220,8 +270,7 @@
     </div>
 </div>
 
-{{--<script src="//unpkg.com/alpinejs" defer></script>--}}
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="//unpkg.com/alpinejs" defer></script>
 <script>
     document.getElementById('menuToggle').addEventListener('click', () => {
         document.getElementById('mobileSidebar').classList.toggle('active');
@@ -234,6 +283,8 @@
         }
     });
 </script>
+<!-- Vite JS -->
+@vite(['resources/js/app.js'])
 @stack('scripts')
 </body>
 </html>
