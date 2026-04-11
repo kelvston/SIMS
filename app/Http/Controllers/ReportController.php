@@ -15,6 +15,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
+ use Barryvdh\DomPDF\Facade\Pdf;
+ use Illuminate\Support\Facades\Mail;
+ use App\Mail\GeneralReportMail;
 use Spatie\Permission\Exceptions\UnauthorizedException; // Import for better error handling
 
 class ReportController extends Controller // <<< IMPORTANT: Ensure it extends App\Http\Controllers\Controller
@@ -28,6 +31,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $this->middleware('permission:view profit loss reports')->only('profitLossReport');
         // Dashboard can be accessed by anyone with 'view dashboard' permission
         $this->middleware('permission:view dashboard')->only('home');
+        $this->middleware('permission:view general reports')->only(['generalReport', 'downloadGeneralReport', 'sendGeneralReportEmail']);
     }
 
 
@@ -340,5 +344,341 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             'endDate',
             'totalExpenses' // NEW: Pass total expenses to the report
         ));
+    }
+    private function buildGeneralReportData(Request $request): array
+    {
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate   = $request->input('end_date',   Carbon::now()->toDateString());
+
+        // ── Revenue & Sales ───────────────────────────────────────────────
+        $salesQuery = Sale::query()
+            ->whereDate('sale_date', '>=', $startDate)
+            ->whereDate('sale_date', '<=', $endDate);
+
+        $totalRevenue         = (clone $salesQuery)->sum('final_amount');
+        $totalDiscounts       = (clone $salesQuery)->sum('discount_amount');
+        $totalSalesCount      = (clone $salesQuery)->count();
+        $installmentSales     = (clone $salesQuery)->where('is_installment', true)->count();
+        $fullPaymentSales     = (clone $salesQuery)->where('is_installment', false)->count();
+
+        // ── Cost of Goods Sold ────────────────────────────────────────────
+        $soldItems = SaleItem::whereHas('sale', function ($q) use ($startDate, $endDate) {
+            $q->whereDate('sale_date', '>=', $startDate)
+                ->whereDate('sale_date', '<=', $endDate);
+        })->with('phone')->get();
+
+        $totalCogs = $soldItems->sum(fn($item) => optional($item->phone)->purchase_price ?? 0);
+
+        // ── Expenses ──────────────────────────────────────────────────────
+        $expensesQuery = Expense::query()
+            ->whereDate('expense_date', '>=', $startDate)
+            ->whereDate('expense_date', '<=', $endDate);
+
+        $totalExpenses        = (clone $expensesQuery)->sum('amount');
+        $expensesByCategory   = (clone $expensesQuery)
+            ->select('category', DB::raw('SUM(amount) as total'))
+            ->groupBy('category')
+            ->orderByDesc('total')
+            ->get();
+
+        // ── Profit ────────────────────────────────────────────────────────
+        $grossProfit          = $totalRevenue - $totalCogs;
+        $netProfit            = $grossProfit - $totalExpenses;
+        $profitMargin         = $totalRevenue > 0
+            ? round(($netProfit / $totalRevenue) * 100, 2)
+            : 0;
+
+        // ── Inventory ─────────────────────────────────────────────────────
+        $availablePhones      = Phone::where('status', 'available')->count();
+        $soldPhones           = Phone::where('status', 'sold')->count();
+        $inventoryValue       = Phone::where('status', 'available')->sum('purchase_price');
+
+        $stockByBrand = Phone::where('status', 'available')
+            ->select('brand_id', DB::raw('count(*) as count'), DB::raw('SUM(purchase_price) as value'))
+            ->with('brand')
+            ->groupBy('brand_id')
+            ->get();
+
+        $lowStockItems = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')
+            ->with('brand')
+            ->get();
+
+        // ── Installments ──────────────────────────────────────────────────
+        $activePlans          = InstallmentPlan::where('status', 'active')
+            ->with(['sale', 'installmentPayments'])
+            ->get();
+
+        $pendingInstallments  = 0;
+        foreach ($activePlans as $plan) {
+            $paid = $plan->installmentPayments->sum('amount_paid');
+            $remaining = $plan->sale->final_amount - $paid;
+            if ($remaining > 0) {
+                $pendingInstallments += $remaining;
+            }
+        }
+        $activeInstallmentCount = $activePlans->count();
+
+        // ── Daily Sales Trend (for chart in blade view) ───────────────────
+        $dailySales = Sale::select(
+            DB::raw('DATE(sale_date) as date'),
+            DB::raw('SUM(final_amount) as total'),
+            DB::raw('COUNT(*) as count')
+        )
+            ->whereDate('sale_date', '>=', $startDate)
+            ->whereDate('sale_date', '<=', $endDate)
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        // ── Top Selling Brands ────────────────────────────────────────────
+        $topBrands = SaleItem::whereHas('sale', function ($q) use ($startDate, $endDate) {
+            $q->whereDate('sale_date', '>=', $startDate)
+                ->whereDate('sale_date', '<=', $endDate);
+        })
+            ->join('phones', 'sale_items.phone_id', '=', 'phones.id')
+            ->join('brands', 'phones.brand_id', '=', 'brands.id')
+            ->select('brands.name as brand_name', DB::raw('COUNT(*) as units_sold'), DB::raw('SUM(phones.selling_price) as revenue'))
+            ->groupBy('brands.name')
+            ->orderByDesc('units_sold')
+            ->limit(5)
+            ->get();
+
+        // ── Recent Sales ──────────────────────────────────────────────────
+        $recentSales = Sale::with('saleItems.phone.brand')
+            ->whereDate('sale_date', '>=', $startDate)
+            ->whereDate('sale_date', '<=', $endDate)
+            ->orderByDesc('sale_date')
+            ->limit(10)
+            ->get();
+
+        return compact(
+            'startDate', 'endDate',
+            'totalRevenue', 'totalDiscounts', 'totalSalesCount', 'installmentSales', 'fullPaymentSales',
+            'totalCogs', 'totalExpenses', 'expensesByCategory',
+            'grossProfit', 'netProfit', 'profitMargin',
+            'availablePhones', 'soldPhones', 'inventoryValue', 'stockByBrand', 'lowStockItems',
+            'pendingInstallments', 'activeInstallmentCount',
+            'dailySales', 'topBrands', 'recentSales'
+        );
+    }
+
+    /**
+     * Show the general report in the browser.
+     */
+    public function generalReport(Request $request)
+    {
+        $data = $this->buildGeneralReportData($request);
+        return view('reports.general', $data);
+    }
+
+    /**
+     * Download the general report as a PDF.
+     */
+    public function downloadGeneralReport(Request $request)
+    {
+        $data = $this->buildGeneralReportData($request);
+
+        $pdf = Pdf::loadView('reports.general_pdf', $data)
+            ->setPaper('a4', 'portrait')
+            ->setOptions([
+                'defaultFont'  => 'sans-serif',
+                'isRemoteEnabled' => false,
+                'isHtml5ParserEnabled' => true,
+            ]);
+
+        $filename = 'general-report-' . $data['startDate'] . '-to-' . $data['endDate'] . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Send the general report PDF to the admin email.
+     */
+    public function sendGeneralReportEmail(Request $request)
+    {
+        $data = $this->buildGeneralReportData($request);
+
+        $pdf = Pdf::loadView('reports.general_pdf', $data)
+            ->setPaper('a4', 'portrait')
+            ->setOptions([
+                'defaultFont'  => 'sans-serif',
+                'isRemoteEnabled' => false,
+                'isHtml5ParserEnabled' => true,
+            ]);
+
+        $pdfContent = $pdf->output();
+        $filename   = 'general-report-' . $data['startDate'] . '-to-' . $data['endDate'] . '.pdf';
+        $adminEmail = config('mail.admin_email', env('ADMIN_EMAIL', 'admin@example.com'));
+
+        Mail::to($adminEmail)->send(new GeneralReportMail($data, $pdfContent, $filename));
+
+        return back()->with('success', "General report has been emailed to {$adminEmail} successfully.");
+    }
+
+    /**
+     * Get sales data for DataTable AJAX
+     */
+    /**
+     * Get sales data for DataTable AJAX
+     */
+    public function getSalesData(Request $request)
+    {
+        try {
+            // Debug: Log the incoming request
+            \Log::info('DataTables Request:', $request->all());
+
+            $startDate = $request->get('start_date');
+            $endDate = $request->get('end_date');
+
+            // Validate and set default dates if empty or invalid
+            if (empty($startDate) || !strtotime($startDate)) {
+                $startDate = Carbon::now()->startOfMonth()->format('Y-m-d');
+                \Log::info('Using default start_date: ' . $startDate);
+            }
+
+            if (empty($endDate) || !strtotime($endDate)) {
+                $endDate = Carbon::now()->format('Y-m-d');
+                \Log::info('Using default end_date: ' . $endDate);
+            }
+
+            // Debug: Log the dates being used
+            \Log::info('Query with dates:', ['start' => $startDate, 'end' => $endDate]);
+
+            // Build the query with proper date handling
+            $sales = Sale::with(['saleItems.phone.brand'])
+                ->where('sale_date', '>=', $startDate . ' 00:00:00')
+                ->where('sale_date', '<=', $endDate . ' 23:59:59')
+                ->orderBy('sale_date', 'desc');
+
+            // Debug: Check if query has any results
+            $count = $sales->count();
+            \Log::info('Total records found: ' . $count);
+
+            // If using Yajra DataTables
+            if (class_exists(\Yajra\DataTables\DataTables::class)) {
+                return \Yajra\DataTables\DataTables::of($sales)
+                    ->addColumn('phones_sold', function($sale) {
+                        $phones = [];
+                        foreach ($sale->saleItems as $item) {
+                            if ($item->phone && $item->phone->brand) {
+                                $phones[] = e($item->phone->brand->name) . ' ' . e($item->phone->model);
+                            }
+                        }
+                        return implode('<br>', $phones);
+                    })
+                    ->addColumn('final_amount', function($sale) {
+                        return '$' . number_format($sale->final_amount, 2);
+                    })
+                    ->addColumn('discount_amount', function($sale) {
+                        return '$' . number_format($sale->discount_amount, 2);
+                    })
+                    ->addColumn('sale_date', function($sale) {
+                        return $sale->sale_date instanceof Carbon ? $sale->sale_date->format('Y-m-d H:i') : date('Y-m-d H:i', strtotime($sale->sale_date));
+                    })
+                    ->addColumn('type', function($sale) {
+                        $badgeClass = $sale->is_installment ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800';
+                        $typeText = $sale->is_installment ? 'Installment' : 'Full Payment';
+                        return '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ' . $badgeClass . '">' . $typeText . '</span>';
+                    })
+                    ->rawColumns(['phones_sold', 'type'])
+                    ->make(true);
+            }
+
+            // Fallback
+            $perPage = $request->get('length', 10);
+            $page = ($request->get('start', 0) / $perPage) + 1;
+            $searchValue = $request->get('search')['value'] ?? '';
+
+            if (!empty($searchValue)) {
+                $sales->where(function($q) use ($searchValue) {
+                    $q->where('customer_name', 'like', "%{$searchValue}%")
+                        ->orWhere('id', 'like', "%{$searchValue}%");
+                });
+            }
+
+            $totalRecords = $sales->count();
+            $salesData = $sales->paginate($perPage, ['*'], 'page', $page);
+
+            return response()->json([
+                'draw' => intval($request->get('draw')),
+                'recordsTotal' => $totalRecords,
+                'recordsFiltered' => $totalRecords,
+                'data' => $salesData->map(function($sale) {
+                    return [
+                        'id' => $sale->id,
+                        'customer_name' => $sale->customer_name,
+                        'phones_sold' => implode(', ', $sale->saleItems->map(function($item) {
+                            return optional($item->phone)->brand->name . ' ' . optional($item->phone)->model;
+                        })->toArray()),
+                        'final_amount' => '$' . number_format($sale->final_amount, 2),
+                        'discount_amount' => '$' . number_format($sale->discount_amount, 2),
+                        'sale_date' => $sale->sale_date instanceof Carbon ? $sale->sale_date->format('Y-m-d H:i') : date('Y-m-d H:i', strtotime($sale->sale_date)),
+                        'type' => $sale->is_installment ? 'Installment' : 'Full Payment'
+                    ];
+                })
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('DataTables Error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'error' => $e->getMessage(),
+                'draw' => intval($request->get('draw', 1)),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => []
+            ], 200); // Return 200 but with error to show in DataTables
+        }
+    }
+
+    /**
+     * Get sales summary for AJAX
+     */
+    /**
+     * Get sales summary for AJAX
+     */
+    public function getSalesSummary(Request $request)
+    {
+        try {
+            $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
+            $endDate = $request->get('end_date', Carbon::now()->format('Y-m-d'));
+
+            // Use separate queries to avoid ambiguity
+            $totalSalesAmount = Sale::whereDate('sale_date', '>=', $startDate)
+                ->whereDate('sale_date', '<=', $endDate)
+                ->sum('final_amount');
+
+            $totalDiscountAmount = Sale::whereDate('sale_date', '>=', $startDate)
+                ->whereDate('sale_date', '<=', $endDate)
+                ->sum('discount_amount');
+
+            $totalInstallmentSales = Sale::whereDate('sale_date', '>=', $startDate)
+                ->whereDate('sale_date', '<=', $endDate)
+                ->where('is_installment', true)
+                ->count();
+
+            $totalFullPaymentSales = Sale::whereDate('sale_date', '>=', $startDate)
+                ->whereDate('sale_date', '<=', $endDate)
+                ->where('is_installment', false)
+                ->count();
+
+            return response()->json([
+                'totalSalesAmount' => number_format($totalSalesAmount, 2),
+                'totalDiscountAmount' => number_format($totalDiscountAmount, 2),
+                'totalInstallmentSales' => $totalInstallmentSales,
+                'totalFullPaymentSales' => $totalFullPaymentSales,
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Summary Error: ' . $e->getMessage());
+            return response()->json([
+                'error' => $e->getMessage(),
+                'totalSalesAmount' => '0.00',
+                'totalDiscountAmount' => '0.00',
+                'totalInstallmentSales' => 0,
+                'totalFullPaymentSales' => 0,
+            ], 500);
+        }
     }
 }

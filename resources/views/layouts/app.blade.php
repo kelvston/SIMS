@@ -77,6 +77,7 @@
 
 
     </style>
+    @stack('styles')
 </head>
 <body class="bg-gray-100 font-sans">
 <!-- Page Loader -->
@@ -117,6 +118,7 @@
                 </a>
             @endcan
             @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])
+
                     <button @click="manageOpen = !manageOpen"
                             class="w-full text-left py-2 px-3 rounded hover:bg-[#C87137] flex justify-between items-center transition"
                             :aria-expanded="manageOpen.toString()" aria-controls="manage-menu">
@@ -137,7 +139,9 @@
                             <a href="{{ route('reports.stock') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                                 <span class="mr-2">🔐</span> Stock Report
                             </a>
-                        @endcan
+                                <a href="{{ route('reports.general') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">  <span class="mr-2">👥</span>General Report</a>
+
+                            @endcan
                         @can('manage brands')
                             <a href="{{ route('reports.profit_loss') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                                 <span class="mr-2">🏷️</span> Profit/loss
@@ -279,6 +283,8 @@
         }
     });
 </script>
+<!-- Vite JS -->
+@vite(['resources/js/app.js'])
 @stack('scripts')
 </body>
 </html>

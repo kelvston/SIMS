@@ -55,7 +55,8 @@ Route::get('/phones', [PhoneController::class, 'index'])->name('phones.index');
 Route::get('/sales/create', [SaleController::class, 'create'])->name('sales.create');
 Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
 Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
-Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show'); // For viewing a single sale detail
+Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
+// For viewing a single sale detail
 
 // Installment Routes
 Route::get('/installments/{installmentPlan}/pay', [InstallmentController::class, 'showPaymentForm'])->name('installments.pay.form');
@@ -66,6 +67,8 @@ Route::post('/installment/payment', [InstallmentController::class, 'store'])->na
 Route::get('/reports/sales', [ReportController::class, 'salesReport'])->name('reports.sales');
 Route::get('/reports/stock', [ReportController::class, 'stockReport'])->name('reports.stock');
 Route::get('/reports/profit-loss', [ReportController::class, 'profitLossReport'])->name('reports.profit_loss'); // New P&L route
+Route::get('/reports/sales-data', [ReportController::class, 'getSalesData'])->name('reports.sales.data');
+Route::get('/reports/sales-summary', [ReportController::class, 'getSalesSummary'])->name('reports.sales.summary');
 //Route::get('/index', [UserController::class, 'index'])->name('users.index');
 //Route::get('/users', [UserController::class, 'create'])->name('users.create');
 //Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
@@ -85,7 +88,11 @@ Route::resource('roles', RoleController::class);
 Route::resource('brands', BrandController::class);
 Route::resource('expenses', ExpenseController::class);
 
-
+Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function () {
+    Route::get('/general',          [ReportController::class, 'generalReport'])         ->name('general');
+    Route::get('/general/download', [ReportController::class, 'downloadGeneralReport']) ->name('general.download');
+    Route::post('/general/email',   [ReportController::class, 'sendGeneralReportEmail'])->name('general.email');
+});
 
 
 Route::get('/dashboard', [ReportController::class, 'home'])->name('dashboard');
