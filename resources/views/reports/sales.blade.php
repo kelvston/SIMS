@@ -154,37 +154,34 @@
                                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->sale_date->format('M d, Y') }}</td>
                                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->customer_name }}</td>
                                     <td class="px-2 py-4 text-sm text-gray-900">
-                                        @if($item->phone)
-                                            <div class="font-medium text-gray-900">{{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }}</div>
-                                            <div class="text-gray-500">IMEI: {{ $item->phone->imei }}</div>
-                                        @elseif($item->accessory)
-                                            {{ $item->accessory->name }}
+                                        @if ($item->cashews)
+                                            <li>{{ $item->cashews->product->name ?? 'N/A' }} (Qty: {{ $item->quantity }})</li>
+                                        @else
+                                            <li>Unknown Item (Qty: {{ $item->quantity }})</li>
                                         @endif
                                     </td>
                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {{ number_format($item->unit_price, 2) }}
+{{--                                        {{ number_format($item->unit_price, 2) }}--}}
+                                       {{ number_format(($item->cashews->unit_price * $item->quantity) ?? 0, 2) }}
                                     </td>
 
                                     <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        @if($item->phone)
-                                            {{ number_format(($item->phone->purchase_price * $item->quantity) ?? 0, 2) }}
-                                        @elseif($item->accessory)
-                                            {{ number_format(($item->accessory->purchase_price * $item->quantity) ?? 0, 2) }}
+                                        @if($item->cashews)
+                                            {{ number_format(($item->cashews->selling_price * $item->quantity) ?? 0, 2) }}
                                         @endif
                                     </td>
 
                                     {{-- Profit Column --}}
-                                    <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm 
-                                        {{ 
-                                            ($item->phone && (($item->unit_price - $item->phone->purchase_price) * $item->quantity) > 0) || 
-                                            ($item->accessory && (($item->unit_price - $item->accessory->cost_price) * $item->quantity) > 0) 
-                                                ? 'text-green-600 font-semibold' 
-                                                : 'text-red-600 font-semibold' 
+                                    <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm
+                                        {{
+                                            ($item->cashews && ((($item->cashews->selling_price * $item->quantity) - ($item->cashews->unit_price* $item->quantity)) ) > 0) ||
+                                            ($item->cashews && ((($item->cashews->selling_price * $item->quantity) - ($item->cashews->unit_price* $item->quantity))) < 0)
+
+                                                ? 'text-green-600 font-semibold'
+                                                : 'text-red-600 font-semibold'
                                         }}">
-                                        @if($item->phone)
-                                            {{ number_format((($item->unit_price - $item->phone->purchase_price) * $item->quantity) ?? 0, 2) }}
-                                        @elseif($item->accessory)
-                                            {{ number_format((($item->unit_price - $item->accessory->cost_price) * $item->quantity) ?? 0, 2) }}
+                                        @if($item->cashews)
+                                            {{ number_format((($item->cashews->selling_price * $item->quantity) - ($item->cashews->unit_price* $item->quantity)) ?? 0, 2) }}
                                         @endif
 </td>
 

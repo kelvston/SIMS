@@ -36,13 +36,10 @@
 
         <form action="{{ route('sales.store') }}" method="POST" class="bg-white p-8 rounded-lg shadow-md mb-6 relative">
             @csrf
-            <img src="{{ asset('images/watermark.png') }}"
-                 alt="Watermark"
-                 class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-                 style="transform: translate(-50%, -60%);" />
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                    <label for="customer_name" class="block text-gray-700 text-sm font-bold mb-2">Customer Name:</label>
+                    <label for="customer_name" class="block text-gray-700 text-sm font-bold mb-2">Customer Name (Optional):</label>
                     <input type="text" name="customer_name" id="customer_name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('customer_name') border-red-500 @enderror" value="{{ old('customer_name') }}" placeholder="Customer's Full Name">
                     @error('customer_name')
                     <p class="text-red-500 text-xs italic">{{ $message }}</p>
@@ -50,9 +47,9 @@
                 </div>
 
                 <div>
-                    <label for="customer_medicine" class="block text-gray-700 text-sm font-bold mb-2">Customer Phone (Optional):</label>
-                    <input type="text" name="customer_medicine" id="customer_medicine" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('customer_medicine') border-red-500 @enderror" value="{{ old('customer_medicine') }}" placeholder="e.g., +2557XXXXXXXX">
-                    @error('customer_medicine')
+                    <label for="customer_cashew" class="block text-gray-700 text-sm font-bold mb-2">Customer Cashew (Optional):</label>
+                    <input type="text" name="customer_cashew" id="customer_cashew" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('customer_cashew') border-red-500 @enderror" value="{{ old('customer_cashew') }}" placeholder="e.g., +2557XXXXXXXX">
+                    @error('customer_cashew')
                     <p class="text-red-500 text-xs italic">{{ $message }}</p>
                     @enderror
                 </div>
@@ -68,27 +65,15 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <!-- Medicines to Sell Section -->
+                <!-- Cashews to Sell Section -->
                 <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Medicines to Sell (BARCODE):</label>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Product to Sell:</label>
                     <div class="relative">
-                        <input type="text" id="medicineSearchInput" placeholder="Search by BARCODE or model..." class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                        <div id="medicine-search-results" class="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 shadow-lg max-h-48 overflow-y-auto hidden"></div>
+                        <input type="text" id="cashewSearchInput" placeholder="Search by BARCODE or model..." class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        <div id="cashew-search-results" class="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 shadow-lg max-h-48 overflow-y-auto hidden"></div>
                     </div>
-                    <div id="medicine-barcode-inputs" class="mt-2">
-                        <!-- Dynamic medicine inputs will be added here -->
-                    </div>
-                </div>
-
-                <!-- Cosmetics to Sell Section -->
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Cosmetics to Sell:</label>
-                    <div class="relative">
-                        <input type="text" id="cosmeticSearchInput" placeholder="Search by name or product..." class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                        <div id="cosmetic-search-results" class="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 shadow-lg max-h-48 overflow-y-auto hidden"></div>
-                    </div>
-                    <div id="cosmetic-inputs" class="mt-2">
-                        <!-- Dynamic cosmetic inputs will be added here -->
+                    <div id="cashew-barcode-inputs" class="mt-2">
+                        <!-- Dynamic cashew inputs will be added here -->
                     </div>
                 </div>
             </div>
@@ -130,12 +115,12 @@
                             <span class="ml-2 text-gray-700">Bank</span>
                         </label>
 
-                        <!-- Phone -->
+                        <!-- Cashew -->
                         <label class="inline-flex items-center cursor-pointer">
                             <input type="radio" name="payment_option" value="3"
                                    class="form-radio h-5 w-5 text-blue-600"
                                 {{ old('payment_option') == 3 ? 'checked' : '' }}>
-                            <span class="ml-2 text-gray-700">Phone</span>
+                            <span class="ml-2 text-gray-700">Cashew</span>
                         </label>
                     </div>
 
@@ -185,19 +170,13 @@
 
 
     <script>
-        // Pass available Medicines and cosmetics data to JavaScript
-        const availableMedicines = @json($availableMedicines);
-        const availableCosmetics = @json($availableCosmetics);
+        // Pass available Cashewsdata to JavaScript
+        const availableCashews = @json($availableCashews);
 
         const form = document.querySelector('form');
-        const medicineSearchInput = document.getElementById('medicineSearchInput');
-        const medicineSearchResults = document.getElementById('medicine-search-results');
-        const medicineImeiInputs = document.getElementById('medicine-barcode-inputs');
-
-        const cosmeticSearchInput = document.getElementById('cosmeticSearchInput');
-        const cosmeticSearchResults = document.getElementById('cosmetic-search-results');
-        const cosmeticInputs = document.getElementById('cosmetic-inputs');
-        let cosmeticIndex = 0;
+        const cashewSearchInput = document.getElementById('cashewSearchInput');
+        const cashewSearchResults = document.getElementById('cashew-search-results');
+        const cashewImeiInputs = document.getElementById('cashew-barcode-inputs');
 
         // --- BARCODE SCANNER IMPLEMENTATION ---
         let barcode = '';
@@ -231,173 +210,146 @@
         });
 
         function processScannedBarcode(code) {
-            // Check if we're focused on cosmetic search
-            const isCosmeticFocused = document.activeElement === cosmeticSearchInput;
-            const isPhoneFocused = document.activeElement === medicineSearchInput;
+            const cashew = availableCashews.find(p => p.barcode && p.barcode === code);
 
-            // If focused on cosmetic search, only look for cosmetics
-            if (isCosmeticFocused) {
-                const cosmetic = availableCosmetics.find(a =>
-                    a.barcode === code || a.id.toString() === code
-                );
-                if (cosmetic) {
-                    addCosmeticInput(cosmetic);
-                    showToast(`Added cosmetic: ${cosmetic.name}`, 'success');
-                    return;
-                }
-                showToast(`No cosmetic found for barcode: ${code}`, 'error');
+            if (cashew) {
+                addCashewInput(cashew);
+                showToast(`Added by barcode: ${cashew.product_name}`, 'success');
                 return;
             }
 
-            // If focused on medicine search, only look for Medicines
-            if (isPhoneFocused) {
-                const medicine = availableMedicines.find(p => p.barcode === code);
-                if (medicine) {
-                    addPhoneInput(medicine);
-                    showToast(`Added medicine: (${medicine.barcode})`, 'success');
-                    return;
-                }
-                showToast(`No medicine found for barcode: ${code}`, 'error');
-                return;
-            }
-
-            // Default behavior when not focused on any search input
-            // First try Medicines
-            const medicine = availableMedicines.find(p => p.barcode === code);
-            if (medicine) {
-                addPhoneInput(medicine);
-                showToast(`Added medicine: (${medicine.barcode})`, 'success');
-                return;
-            }
-
-            // Then try cosmetics
-            const cosmetic = availableCosmetics.find(a =>
-                a.barcode === code || a.id.toString() === code
-            );
-            if (cosmetic) {
-                addCosmeticInput(cosmetic);
-                showToast(`Added cosmetic: ${cosmetic.name}`, 'success');
-                return;
-            }
-
-            showToast(`No product found for barcode: ${code}`, 'error');
+            showToast(`No barcode match. Try search instead.`, 'error');
         }
 
         // --- AUTO-SEARCH FUNCTIONS ---
-        // For Medicines
-        medicineSearchInput.addEventListener('input', (event) => {
-            const searchTerm = event.target.value.toLowerCase();
+        // For Cashews
+        cashewSearchInput.addEventListener('input', (event) => {
+            const searchTerm = (event.target.value || '').toLowerCase();
+
             if (searchTerm.length > 0) {
-                const filteredMedicines = availableMedicines.filter(medicine => {
-                    const productName = medicine.product ? medicine.product.name.toLowerCase() : '';
-                    return medicine.barcode.toLowerCase().includes(searchTerm) ||
-                        productName.includes(searchTerm);
+                const filteredCashews = availableCashews.filter(cashew => {
+                    const name = (cashew.product_name || '').toLowerCase();
+                    const barcode = (cashew.barcode || '').toLowerCase();
+
+                    return name.includes(searchTerm) || barcode.includes(searchTerm);
                 });
-                renderPhoneResults(filteredMedicines);
+
+                renderCashewResults(filteredCashews);
             } else {
-                medicineSearchResults.classList.add('hidden');
+                cashewSearchResults.classList.add('hidden');
             }
         });
 
-        // For Cosmetics (NEW - matches medicine search functionality)
-        cosmeticSearchInput.addEventListener('input', (event) => {
-            const searchTerm = event.target.value.toLowerCase();
-            if (searchTerm.length > 0) {
-                const filteredCosmetics = availableCosmetics.filter(cosmetic => {
-                    const productName = cosmetic.product ? cosmetic.product.name.toLowerCase() : '';
-                    return cosmetic.name.toLowerCase().includes(searchTerm) ||
-                        productName.includes(searchTerm) ||
-                        (cosmetic.barcode && cosmetic.barcode.toString().includes(searchTerm)) ||
-                        (cosmetic.id && cosmetic.id.toString().includes(searchTerm));
-                });
-                renderCosmeticResults(filteredCosmetics);
-            } else {
-                cosmeticSearchResults.classList.add('hidden');
-            }
-        });
+        function renderCashewResults(results) {
+            cashewSearchResults.innerHTML = '';
 
-        function renderPhoneResults(results) {
-            medicineSearchResults.innerHTML = '';
-            if (results.length > 0) {
-                results.forEach(medicine => {
-                    const productName = medicine.product ? medicine.product.name : 'N/A';
-                    const resultItem = document.createElement('div');
-                    resultItem.className = 'p-2 cursor-pointer hover:bg-gray-200';
-                    resultItem.textContent = `${medicine.barcode} - ${productName}) - $${parseFloat(medicine.selling_price).toFixed(2)}`;
-                    resultItem.dataset.barcode = medicine.barcode;
-                    medicineSearchResults.appendChild(resultItem);
-                });
-                medicineSearchResults.classList.remove('hidden');
-            } else {
-                medicineSearchResults.classList.add('hidden');
-            }
+            results.forEach(cashew => {
+                const div = document.createElement('div');
+                div.className = 'p-2 cursor-pointer hover:bg-gray-200';
+
+                const barcodeText = cashew.barcode ? `(${cashew.barcode})` : '';
+
+                div.textContent =
+                    `${cashew.product_name} ${barcodeText} - Tsh ${cashew.selling_price}`;
+
+                div.dataset.id = cashew.id;
+
+                cashewSearchResults.appendChild(div);
+            });
+
+            cashewSearchResults.classList.remove('hidden');
         }
 
-        function renderCosmeticResults(results) {
-            cosmeticSearchResults.innerHTML = '';
-            if (results.length > 0) {
-                results.forEach(cosmetic => {
-                    const productName = cosmetic.product ? cosmetic.product.name : 'N/A';
-                    const resultItem = document.createElement('div');
-                    resultItem.className = 'p-2 cursor-pointer hover:bg-gray-200';
-                    resultItem.textContent = `${cosmetic.name} - ${productName} - $${parseFloat(cosmetic.selling_price).toFixed(2)}`;
-                    resultItem.dataset.id = cosmetic.id;
-                    cosmeticSearchResults.appendChild(resultItem);
-                });
-                cosmeticSearchResults.classList.remove('hidden');
-            } else {
-                cosmeticSearchResults.classList.add('hidden');
-            }
-        }
 
         // --- ADD ITEM FUNCTIONS ---
-        function addPhoneInput(medicine) {
-            // Check if already added
-            if (document.querySelector(`input[name="medicine_barcodes[]"][value="${medicine.barcode}"]`)) {
-                showToast('This medicine is already in the list', 'warning');
+        function addCashewInput(cashew) {
+            const key = cashew.id ?? cashew.barcode;
+
+            if (document.querySelector(`[data-key="${key}"]`)) {
+                showToast('This product is already added', 'warning');
                 return;
             }
 
             const div = document.createElement('div');
-            div.className = 'flex items-center gap-2 medicine-item-group mb-2';
+            div.className = 'flex items-center gap-2 cashew-item-group mb-2';
+            div.dataset.key = key;
+
+            // ✅ IMPORTANT: store price here
+            div.dataset.price = cashew.selling_price || 0;
+
             div.innerHTML = `
-            <input type="hidden" name="medicine_barcodes[]" value="${medicine.barcode}">
-            <input type="text" value="${medicine.barcode} - ${medicine.model}" readonly class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-100">
-            <button type="button" onclick="removeInput(this)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">Remove</button>
-        `;
-            medicineImeiInputs.appendChild(div);
+        <input type="hidden" name="cashew_ids[]" value="${cashew.id ?? ''}">
+
+        <input type="text"
+            value="${cashew.product_name} ${cashew.barcode ? '(' + cashew.barcode + ')' : ''} - Tsh ${cashew.selling_price}"
+            readonly
+            class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-100">
+
+        <input type="number"
+            name="quantities[]"
+            min="1"
+            value="1"
+            class="qty w-20 border rounded px-2 py-2 text-center">
+
+<!--        <div class="mt-4 p-2 border-2 border-green-500 bg-green-50 text-green-700 text-sm font-bold rounded-lg shadow">-->
+<!--            Total: Tsh <span id="totalAmount">0</span>-->
+<!--        </div>-->
+            <div class="mt-4 p-2 border-2 border-green-500 bg-green-50 text-green-700 text-sm font-bold rounded-lg shadow">
+                Total: Tsh <span class="rowTotal">0</span>
+            </div>
+
+        <button type="button"
+            onclick="removeInput(this)"
+            class="bg-red-500 text-white px-4 py-2 rounded">
+            Remove
+        </button>
+    `;
+
+            cashewImeiInputs.appendChild(div);
+
+            // ✅ call AFTER adding element
+            calculateTotal();
         }
 
-        function addCosmeticInput(cosmetic) {
-            // Check if already added
-            const existingCosmetics = document.querySelectorAll('input[name^="cosmetics"]');
-            for (let i = 0; i < existingCosmetics.length; i++) {
-                if (existingCosmetics[i].value === cosmetic.id.toString()) {
-                    showToast(`Cosmetic ${cosmetic.name} is already in the list`, 'warning');
-                    return;
-                }
+        document.addEventListener('input', function (e) {
+            if (e.target.name === 'quantities[]') {
+                calculateTotal();
             }
-            const div = document.createElement('div');
-            const productName = cosmetic.product ? cosmetic.product.name : 'N/A';
-            div.innerHTML = `
-    <input type="hidden" name="cosmetics[${cosmeticIndex}][id]" value="${cosmetic.id}">
-    <input type="text" value="${cosmetic.name} - ${productName} - $${parseFloat(cosmetic.selling_price).toFixed(2)}" readonly
-           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-100">
-    <button type="button" onclick="removeInput(this)"
-            class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
-        Remove
-    </button>
-    <input type="number" name="cosmetics[${cosmeticIndex}][quantity]" value="1" min="1"
-           class="w-20 text-center shadow appearance-none border rounded py-2 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-`;
+        });
 
-            cosmeticInputs.appendChild(div);
-            cosmeticIndex++;
+        // function calculateTotal() {
+        //     let total = 0;
+        //
+        //     document.querySelectorAll('.cashew-item-group').forEach(row => {
+        //         const price = parseFloat(row.dataset.price || 0);
+        //         const qtyInput = row.querySelector('input[name="quantities[]"]');
+        //
+        //         const qty = parseInt(qtyInput?.value || 0);
+        //
+        //         total += price * qty;
+        //     });
+        //
+        //     document.getElementById('totalAmount').textContent = total.toFixed(2);
+        // }
+
+        function calculateTotal() {
+            let grandTotal = 0;
+            document.querySelectorAll('.cashew-item-group').forEach(row => {
+                const price = parseFloat(row.dataset.price || 0);
+                const qtyInput = row.querySelector('input[name="quantities[]"]');
+                const qty = parseInt(qtyInput?.value || 0);
+                const rowTotal = price * qty;
+                grandTotal += rowTotal;
+                // Update this specific row's total span
+                row.querySelector('.rowTotal').textContent = rowTotal.toFixed(2);
+            });
         }
 
         // --- UTILITY FUNCTIONS ---
+
         function removeInput(button) {
-            button.closest('.medicine-item-group, .cosmetic-item-group').remove();
+            button.closest('.cashew-item-group').remove();
+            calculateTotal();
         }
 
         function showToast(message, type) {
@@ -424,37 +376,25 @@
         });
 
         // Handle selection from search results
-        medicineSearchResults.addEventListener('click', (event) => {
-            const barcode = event.target.dataset.barcode;
-            if (barcode) {
-                const selectedMedicine = availableMedicines.find(p => p.barcode === barcode);
-                if (selectedMedicine) {
-                    addMedicineInput(selectedMedicine);
-                    medicineSearchInput.value = '';
-                    medicineSearchResults.classList.add('hidden');
-                }
+        cashewSearchResults.addEventListener('click', (event) => {
+            const item = event.target.closest('div');
+            if (!item) return;
+
+            const id = item.dataset.id;
+            const selected = availableCashews.find(c => c.id == id);
+
+            if (selected) {
+                addCashewInput(selected);
+                cashewSearchInput.value = '';
+                cashewSearchResults.classList.add('hidden');
             }
         });
 
-        cosmeticSearchResults.addEventListener('click', (event) => {
-            const id = parseInt(event.target.dataset.id);
-            if (id) {
-                const selectedCosmetic = availableCosmetics.find(a => a.id === id);
-                if (selectedCosmetic) {
-                    addCosmeticInput(selectedCosmetic);
-                    cosmeticSearchInput.value = '';
-                    cosmeticSearchResults.classList.add('hidden');
-                }
-            }
-        });
 
         // Close search results when clicking outside
         document.addEventListener('click', (event) => {
-            if (!medicineSearchInput.contains(event.target) && !medicineSearchResults.contains(event.target)) {
-                medicineSearchResults.classList.add('hidden');
-            }
-            if (!cosmeticSearchInput.contains(event.target) && !cosmeticSearchResults.contains(event.target)) {
-                cosmeticSearchResults.classList.add('hidden');
+            if (!cashewSearchInput.contains(event.target) && !cashewSearchResults.contains(event.target)) {
+                cashewSearchResults.classList.add('hidden');
             }
         });
 

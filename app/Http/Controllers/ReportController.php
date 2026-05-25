@@ -4,11 +4,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cashew;
 use App\Models\Expense;
+use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\StockAdjustment;
 use App\Models\StockLevel;
-use App\Models\Phone;
 use App\Models\InstallmentPlan;
 use App\Models\InstallmentPayment;
 use Illuminate\Http\Request;
@@ -38,7 +40,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
     public function home()
     {
         // 1. Total Phones (Available in Stock)
-        $totalPhones = Phone::where('status', 'available')->count();
+        $totalPhones = Cashew::where('status', 'available')->count();
 
         // 2. Monthly Sales (Current Month's Revenue)
         $currentMonth = Carbon::now()->month;
@@ -66,16 +68,17 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $totalRevenueThisMonth = $monthlySales; // Already calculated
 
         $totalCogsThisMonth = 0;
-        $soldPhonesThisMonth = SaleItem::whereHas('sale', function ($query) use ($currentMonth, $currentYear) {
+
+        $soldCashewsThisMonth = SaleItem::whereHas('sale', function ($query) use ($currentMonth, $currentYear) {
             $query->whereMonth('sale_date', $currentMonth)
                 ->whereYear('sale_date', $currentYear);
         })
-            ->with('phone')
+            ->with('cashew')
             ->get();
 
-        foreach ($soldPhonesThisMonth as $saleItem) {
-            if ($saleItem->phone) {
-                $totalCogsThisMonth += $saleItem->phone->purchase_price;
+        foreach ($soldCashewsThisMonth as $saleItem) {
+            if ($saleItem->cashew) {
+                $totalCogsThisMonth += $saleItem->cashews->unit_price;
             }
         }
 
@@ -104,18 +107,17 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $salesChartData = $salesData->pluck('total_sales')->toArray();
 
         // 6. Inventory Distribution Chart Data (Available Phones by Brand)
-        $inventoryDistribution = Phone::where('status', 'available')
-            ->select('brand_id', DB::raw('count(*) as count'))
-            ->with('brand')
-            ->groupBy('brand_id')
+        $inventoryDistribution = Cashew::select('product_id', DB::raw('count(*) as count'))
+            ->with('product')
+            ->groupBy('product_id')
             ->get();
 
-        $inventoryChartLabels = $inventoryDistribution->pluck('brand.name')->toArray();
+        $inventoryChartLabels = $inventoryDistribution->pluck('products.name')->toArray();
         $inventoryChartData = $inventoryDistribution->pluck('count')->toArray();
 
         // 7. Low Stock Products
         $lowStockProducts = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')
-            ->with('brand')
+            ->with('product')
             ->get();
 
         // Count for notifications (e.g., low stock items)
@@ -125,43 +127,42 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $totalYearlySales = Sale::whereYear('sale_date', $currentYear)->sum('final_amount');
 
         // New: Total Sold Phones
-        $totalSoldPhones = Phone::where('status', 'sold')->count();
+        $totalSoldPhones = Cashew::where('status', 'sold')->count();
 
         // New: Total Active Installment Plans
         $totalActiveInstallments = InstallmentPlan::where('status', 'active')->count();
 
-        // New: Average Selling Price of ALL phones (could be refined to average *sold* price)
-        $averageSellingPrice = Phone::avg('selling_price');
+        // New: Average Selling Price of ALL cashews (could be refined to average *sold* price)
+        $averageSellingPrice = Cashew::avg('selling_price');
 
         // New: Recent Activities (combining sales, received, payments, expenses)
-        $recentSales = Sale::with('saleItems.phone.brand')
+        $recentSales = Sale::with('saleItems.cashew.product')
             ->latest('sale_date')
             ->take(5)
             ->get()
             ->map(function($sale) {
-                $phoneNames = $sale->saleItems->map(fn($item) => $item->phone->brand->name . ' ' . $item->phone->model)->implode(', ');
+                $cashewNames = $sale->saleItems;
+//                dd($cashewNames);
                 return [
                     'type' => 'sale',
-                    'description' => "✔️ {$phoneNames} sold to {$sale->customer_name} - $" . number_format($sale->final_amount, 2),
+                    'description' => "✔️ {$cashewNames} sold to {$sale->customer_name} - $" . number_format($sale->final_amount, 2),
                     'date' => $sale->sale_date,
                     'link' => route('sales.show', $sale->id)
                 ];
             });
 
-        $recentReceivedPhones = Phone::with('brand')
+        $recentReceivedPhones = Cashew::with('product')
             ->latest('received_at')
             ->take(5)
             ->get()
-            ->map(function($phone) {
+            ->map(function($cashew) {
                 return [
-                    'type' => 'received',
-                    'description' => "📦 1 {$phone->brand->name} {$phone->model} ({$phone->color}) received into inventory (IMEI: {$phone->imei})",
-                    'date' => $phone->received_at,
-                    'link' => route('phones.index') // Link to general phone inventory
+                    'date' => $cashew->received_at,
+                    'link' => route('cashews.index')
                 ];
             });
 
-        $recentInstallmentPayments = InstallmentPayment::with('installmentPlan.sale.saleItems.phone')
+        $recentInstallmentPayments = InstallmentPayment::with('installmentPlan.sale.saleItems.product')
             ->latest('payment_date')
             ->take(5)
             ->get()
@@ -213,10 +214,11 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             $page,
             ['path' => request()->url(), 'query' => request()->query()]
         );
+        $product_count =Cashew::all()->count();
 
 
         return view('dashboard', compact(
-            'totalPhones',
+            'product_count',
             'monthlySales',
             'pendingInstallmentsAmount',
             'profitMarginPercentage',
@@ -249,7 +251,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             $salesQuery->whereDate('sale_date', '<=', $endDate);
         }
 
-        $sales = $salesQuery->with('saleItems.phone.brand')
+        $sales = $salesQuery->with('saleItems.cashews.product')
             ->orderBy('sale_date', 'desc')
             ->paginate(10);
 
@@ -276,15 +278,87 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
      *
      * @return \Illuminate\View\View
      */
-    public function stockReport()
+//    public function stockReport()
+//    {
+//
+//        $stockLevels = StockLevel::with('brand')->orderBy('current_stock', 'asc')->paginate(10);
+//
+//        // Calculate summary statistics for stock
+//        $totalStockItems = StockLevel::sum('current_stock');
+//        $lowStockCount = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')->count();
+//
+//        return view('reports.stock', compact('stockLevels', 'totalStockItems', 'lowStockCount'));
+//    }
+
+    public function stockReport(Request $request)
     {
-        $stockLevels = StockLevel::with('brand')->orderBy('current_stock', 'asc')->paginate(10);
+        $productId = $request->input('product_id');
 
-        // Calculate summary statistics for stock
-        $totalStockItems = StockLevel::sum('current_stock');
-        $lowStockCount = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')->count();
+        // For the filter dropdown
+        $products = Product::orderBy('name')->get();
 
-        return view('reports.stock', compact('stockLevels', 'totalStockItems', 'lowStockCount'));
+        // Medicine stock query
+        $medicineQuery = Cashew::with('product'); // adjust model/relationship as needed
+        if ($productId) {
+            $medicineQuery->where('product_id', $productId);
+        }
+        $medicineStock = $medicineQuery->get();
+
+        if ($request->boolean('download')) {
+            $filename = 'stock-report-' . now()->format('Y-m-d-His') . '.csv';
+
+            return response()->streamDownload(function () use ($medicineStock) {
+                $handle = fopen('php://output', 'w');
+
+                fputcsv($handle, [
+                    'Product',
+                    'Quantity',
+                    'Cost Value',
+                    'Selling Price',
+                    'Profit',
+                    'Profit %',
+                ]);
+
+                foreach ($medicineStock as $stock) {
+                    $costValue = $stock->unit_price * $stock->quantity;
+                    $sellingValue = $stock->selling_price * $stock->quantity;
+                    $profit = $sellingValue - $costValue;
+                    $profitPercent = $stock->unit_price > 0
+                        ? (($stock->selling_price - $stock->unit_price) / $stock->unit_price) * 100
+                        : 0;
+
+                    fputcsv($handle, [
+                        $stock->product->name ?? 'N/A',
+                        $stock->quantity,
+                        number_format($costValue, 2, '.', ''),
+                        number_format($sellingValue, 2, '.', ''),
+                        number_format($profit, 2, '.', ''),
+                        number_format($profitPercent, 1, '.', '') . '%',
+                    ]);
+                }
+
+                fclose($handle);
+            }, $filename, [
+                'Content-Type' => 'text/csv',
+            ]);
+        }
+
+        // Summary statistics from the same stock source used by the table.
+        $totalStockItems = $medicineStock->sum(fn ($stock) => (int) $stock->quantity);
+        $totalStockValue = $medicineStock->sum(fn ($stock) => (float) $stock->unit_price * (int) $stock->quantity);
+        $lowStockCount = $medicineStock
+            ->filter(fn ($stock) => (int) $stock->quantity <= (int) $stock->low_stock_threshold)
+            ->count();
+        $totalMedicineItems = $medicineStock->count();
+
+        return view('reports.stock', compact(
+            'products',
+            'medicineStock',
+            'totalStockItems',
+            'totalStockValue',
+            'lowStockCount',
+            'totalMedicineItems',
+        ));
     }
 
     /**
@@ -310,8 +384,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             $expensesQuery->whereDate('expense_date', '<=', $endDate); // Filter expenses
         }
 
-        // Eager load sale items and their associated phones to get purchase prices
-        $sales = $salesQuery->with('saleItems.phone')->get();
+        // Eager load sale items and their associated cashews to get purchase prices
+        $sales = $salesQuery->with('saleItems.cashews')->get();;
         $expenses = $expensesQuery->get(); // NEW: Get filtered expenses
 
         $totalRevenue = $sales->sum('final_amount');
@@ -319,9 +393,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         foreach ($sales as $sale) {
             foreach ($sale->saleItems as $saleItem) {
-                // Ensure the phone relationship exists before accessing purchase_price
-                if ($saleItem->phone) {
-                    $totalCostOfGoodsSold += $saleItem->phone->purchase_price;
+                if ($saleItem->cashews) {
+                    $totalCostOfGoodsSold += $saleItem->cashews->unit_price * $saleItem->quantity;
                 }
             }
         }
@@ -334,7 +407,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         if ($totalRevenue > 0) {
             $grossProfitMarginPercentage = ($grossProfit / $totalRevenue) * 100;
         }
-
+        $netProfit            = $grossProfit - $totalExpenses;
         return view('reports.profit_loss', compact(
             'totalRevenue',
             'totalCostOfGoodsSold',
@@ -342,7 +415,10 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             'grossProfitMarginPercentage',
             'startDate',
             'endDate',
-            'totalExpenses' // NEW: Pass total expenses to the report
+            'totalExpenses',
+        'expenses',
+        'sales',
+        'netProfit'// NEW: Pass total expenses to the report
         ));
     }
     private function buildGeneralReportData(Request $request): array
@@ -361,13 +437,37 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $installmentSales     = (clone $salesQuery)->where('is_installment', true)->count();
         $fullPaymentSales     = (clone $salesQuery)->where('is_installment', false)->count();
 
+        $productCostMap = Cashew::query()
+            ->select(
+                'product_id',
+                DB::raw('SUM(CAST(quantity AS REAL)) as stock_quantity'),
+                DB::raw('SUM(CAST(unit_price AS REAL) * CAST(quantity AS REAL)) as stock_cost')
+            )
+            ->groupBy('product_id')
+            ->get()
+            ->mapWithKeys(function ($stock) {
+                $stockQuantity = (float) $stock->stock_quantity;
+                $stockCost = (float) $stock->stock_cost;
+
+                return [
+                    $stock->product_id => $stockQuantity > 0 ? $stockCost / $stockQuantity : 0,
+                ];
+            });
+
         // ── Cost of Goods Sold ────────────────────────────────────────────
         $soldItems = SaleItem::whereHas('sale', function ($q) use ($startDate, $endDate) {
             $q->whereDate('sale_date', '>=', $startDate)
                 ->whereDate('sale_date', '<=', $endDate);
-        })->with('phone')->get();
+        })->with('product')->get();
 
-        $totalCogs = $soldItems->sum(fn($item) => optional($item->phone)->purchase_price ?? 0);
+        $totalCogs = $soldItems->sum(function ($item) use ($productCostMap) {
+            $quantity = (int) $item->quantity;
+            $unitCost = $item->unit_cost !== null
+                ? (float) $item->unit_cost
+                : (float) ($productCostMap[$item->product_id] ?? 0);
+
+            return $unitCost * $quantity;
+        });
 
         // ── Expenses ──────────────────────────────────────────────────────
         $expensesQuery = Expense::query()
@@ -389,18 +489,25 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             : 0;
 
         // ── Inventory ─────────────────────────────────────────────────────
-        $availablePhones      = Phone::where('status', 'available')->count();
-        $soldPhones           = Phone::where('status', 'sold')->count();
-        $inventoryValue       = Phone::where('status', 'available')->sum('purchase_price');
+        $availableStockUnits = (int) Cashew::where('status', 'available')->sum('quantity');
+        $soldUnitsInPeriod = (int) $soldItems->sum(fn ($item) => (int) $item->quantity);
+        $inventoryValue = Cashew::where('status', 'available')
+            ->selectRaw('SUM(CAST(unit_price AS REAL) * CAST(quantity AS REAL)) as total_value')
+            ->value('total_value') ?? 0;
 
-        $stockByBrand = Phone::where('status', 'available')
-            ->select('brand_id', DB::raw('count(*) as count'), DB::raw('SUM(purchase_price) as value'))
-            ->with('brand')
-            ->groupBy('brand_id')
+        $stockByProduct = Cashew::where('status', 'available')
+            ->select(
+                'product_id',
+                DB::raw('SUM(CAST(quantity AS REAL)) as count'),
+                DB::raw('SUM(CAST(unit_price AS REAL) * CAST(quantity AS REAL)) as value')
+            )
+            ->with('product')
+            ->groupBy('product_id')
             ->get();
 
-        $lowStockItems = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')
-            ->with('brand')
+        $lowStockItems = Cashew::with('product')
+            ->where('status', 'available')
+            ->whereRaw('CAST(quantity AS INTEGER) <= low_stock_threshold')
             ->get();
 
         // ── Installments ──────────────────────────────────────────────────
@@ -411,7 +518,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $pendingInstallments  = 0;
         foreach ($activePlans as $plan) {
             $paid = $plan->installmentPayments->sum('amount_paid');
-            $remaining = $plan->sale->final_amount - $paid;
+            $remaining = optional($plan->sale)->final_amount - $paid;
             if ($remaining > 0) {
                 $pendingInstallments += $remaining;
             }
@@ -430,26 +537,37 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             ->orderBy('date')
             ->get();
 
-        // ── Top Selling Brands ────────────────────────────────────────────
-        $topBrands = SaleItem::whereHas('sale', function ($q) use ($startDate, $endDate) {
-            $q->whereDate('sale_date', '>=', $startDate)
-                ->whereDate('sale_date', '<=', $endDate);
-        })
-            ->join('phones', 'sale_items.phone_id', '=', 'phones.id')
-            ->join('brands', 'phones.brand_id', '=', 'brands.id')
-            ->select('brands.name as brand_name', DB::raw('COUNT(*) as units_sold'), DB::raw('SUM(phones.selling_price) as revenue'))
-            ->groupBy('brands.name')
-            ->orderByDesc('units_sold')
-            ->limit(5)
-            ->get();
+        // ── Top Selling Products ──────────────────────────────────────────
+        $topProducts = $soldItems
+            ->groupBy('product_id')
+            ->map(function ($items) {
+                $firstItem = $items->first();
+
+                return (object) [
+                    'product_name' => optional($firstItem->product)->name ?? 'Unknown',
+                    'units_sold' => (int) $items->sum(fn ($item) => (int) $item->quantity),
+                    'revenue' => (float) $items->sum(fn ($item) => (float) $item->unit_price * (int) $item->quantity),
+                ];
+            })
+            ->sortByDesc('units_sold')
+            ->take(5)
+            ->values();
 
         // ── Recent Sales ──────────────────────────────────────────────────
-        $recentSales = Sale::with('saleItems.phone.brand')
+        $recentSales = Sale::with('saleItems.product')
             ->whereDate('sale_date', '>=', $startDate)
             ->whereDate('sale_date', '<=', $endDate)
             ->orderByDesc('sale_date')
             ->limit(10)
             ->get();
+
+        $stockAdjustments = StockAdjustment::with('cashew','cashew.product','adjustedBy')
+            ->get();
+
+        $availablePhones = $availableStockUnits;
+        $soldPhones = $soldUnitsInPeriod;
+        $stockByBrand = $stockByProduct;
+        $topBrands = $topProducts;
 
         return compact(
             'startDate', 'endDate',
@@ -458,7 +576,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             'grossProfit', 'netProfit', 'profitMargin',
             'availablePhones', 'soldPhones', 'inventoryValue', 'stockByBrand', 'lowStockItems',
             'pendingInstallments', 'activeInstallmentCount',
-            'dailySales', 'topBrands', 'recentSales'
+            'dailySales', 'topBrands', 'recentSales','stockAdjustments'
         );
     }
 
@@ -545,7 +663,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             \Log::info('Query with dates:', ['start' => $startDate, 'end' => $endDate]);
 
             // Build the query with proper date handling
-            $sales = Sale::with(['saleItems.phone.brand'])
+            $sales = Sale::with(['saleItems.cashews.product'])
                 ->where('sale_date', '>=', $startDate . ' 00:00:00')
                 ->where('sale_date', '<=', $endDate . ' 23:59:59')
                 ->orderBy('sale_date', 'desc');
@@ -560,8 +678,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                     ->addColumn('phones_sold', function($sale) {
                         $phones = [];
                         foreach ($sale->saleItems as $item) {
-                            if ($item->phone && $item->phone->brand) {
-                                $phones[] = e($item->phone->brand->name) . ' ' . e($item->phone->model);
+                            if ($item->cashews && $item->cashews->product) {
+                                $phones[] = e($item->cashews->product->name);
                             }
                         }
                         return implode('<br>', $phones);
@@ -608,7 +726,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                         'id' => $sale->id,
                         'customer_name' => $sale->customer_name,
                         'phones_sold' => implode(', ', $sale->saleItems->map(function($item) {
-                            return optional($item->phone)->brand->name . ' ' . optional($item->phone)->model;
+                            return optional($item->cashews)->product->name;
                         })->toArray()),
                         'final_amount' => '$' . number_format($sale->final_amount, 2),
                         'discount_amount' => '$' . number_format($sale->discount_amount, 2),
@@ -678,6 +796,40 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                 'totalDiscountAmount' => '0.00',
                 'totalInstallmentSales' => 0,
                 'totalFullPaymentSales' => 0,
+            ], 500);
+        }
+    }
+
+    public function stockUpdate(Request $request)
+    {
+        try {
+            $request->validate([
+                'id'           => 'required',
+                'new_quantity' => 'required|integer|min:0',
+                'comment'      => 'nullable|string|max:500',
+            ]);
+
+            $stock = Cashew::findOrFail($request->id);
+            $oldQuantity = $stock->quantity;
+
+            $stock->quantity = $request->new_quantity;
+            $stock->save();
+
+            StockAdjustment::create([
+                'stock_item_id'       => $stock->id,
+                'old_quantity'        => $oldQuantity,
+                'new_quantity'        => $request->new_quantity,
+                'comment'             => $request->comment,
+                'adjusted_by_user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'message' => "Stock updated from {$oldQuantity} to {$request->new_quantity} units.",
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

@@ -244,11 +244,11 @@
                     <p>{{ \Carbon\Carbon::parse($startDate)->format('d M Y') }} &mdash; {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }} &nbsp;·&nbsp; Generated {{ now()->format('d M Y, H:i') }}</p>
                 </div>
                 <div class="rpt-hero-actions">
-                    <a href="{{ route('reports.general.download', request()->query()) }}" class="btn-pdf">
+                    <a href="{{ route('general.download', request()->query()) }}" class="btn-pdf">
                         <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
                         Download PDF
                     </a>
-                    <form method="POST" action="{{ route('reports.general.email') }}" style="display:inline">
+                    <form method="POST" action="{{ route('general.email') }}" style="display:inline">
                         @csrf
                         @foreach(request()->query() as $k => $v)
                             <input type="hidden" name="{{ $k }}" value="{{ $v }}">
@@ -309,9 +309,9 @@
                 <div class="kpi-label">Total Expenses</div>
             </div>
             <div class="kpi-card c-slate">
-                <span class="kpi-icon">📱</span>
+                <span class="kpi-icon">📦</span>
                 <div class="kpi-value c-slate">{{ $availablePhones }}</div>
-                <div class="kpi-label">Phones in Stock</div>
+                <div class="kpi-label">Units in Stock</div>
             </div>
             <div class="kpi-card c-navy">
                 <span class="kpi-icon">🏦</span>
@@ -397,22 +397,22 @@
                     <tr><td>Full Payment Sales</td><td class="r">{{ $fullPaymentSales }}</td></tr>
                     <tr><td>Installment Sales</td><td class="r">{{ $installmentSales }}</td></tr>
                     <tr><td>Active Installment Plans</td><td class="r">{{ $activeInstallmentCount }}</td></tr>
-                    <tr style="background:#fefce8"><td style="font-weight:600">Receivable (Installments)</td><td class="r" style="color:var(--amber);font-weight:700">${{ number_format($pendingInstallments, 2) }}</td></tr>
+                    <tr style="background:#fefce8"><td style="font-weight:600">Receivable (Installments)</td><td class="r" style="color:var(--amber);font-weight:700">Tsh {{ number_format($pendingInstallments, 2) }}</td></tr>
                     </tbody>
                 </table>
             </div>
 
             <div class="rpt-panel">
                 <div class="rpt-panel-header">
-                    <span class="dot" style="background:var(--amber)"></span> Top Selling Brands
+                    <span class="dot" style="background:var(--amber)"></span> Top Selling Products
                 </div>
                 <table class="rpt-table">
-                    <thead><tr><th>#</th><th>Brand</th><th class="r">Units</th><th class="r">Revenue</th></tr></thead>
+                    <thead><tr><th>#</th><th>Product</th><th class="r">Units</th><th class="r">Revenue</th></tr></thead>
                     <tbody>
                     @forelse($topBrands as $i => $brand)
                         <tr>
                             <td style="color:var(--text-muted);font-size:12px;font-weight:600">{{ $i + 1 }}</td>
-                            <td style="font-weight:600">{{ $brand->brand_name }}</td>
+                            <td style="font-weight:600">{{ $brand->product_name }}</td>
                             <td class="r">{{ $brand->units_sold }}</td>
                             <td class="r" style="color:var(--emerald)">Tsh {{ number_format($brand->revenue, 2) }}</td>
                         </tr>
@@ -429,14 +429,14 @@
         <div class="full-panel fade-up">
             <div class="rpt-panel">
                 <div class="rpt-panel-header">
-                    <span class="dot" style="background:var(--navy)"></span> Stock by Brand
+                    <span class="dot" style="background:var(--navy)"></span> Stock by Product
                 </div>
                 <table class="rpt-table">
-                    <thead><tr><th>Brand</th><th class="r">Units in Stock</th><th class="r">Stock Value (Cost)</th></tr></thead>
+                    <thead><tr><th>Product</th><th class="r">Units in Stock</th><th class="r">Stock Value (Cost)</th></tr></thead>
                     <tbody>
                     @forelse($stockByBrand as $stock)
                         <tr>
-                            <td style="font-weight:500">{{ optional($stock->brand)->name ?? 'Unknown' }}</td>
+                            <td style="font-weight:500">{{ optional($stock->product)->name ?? 'Unknown' }}</td>
                             <td class="r">{{ $stock->count }}</td>
                             <td class="r">Tsh {{ number_format($stock->value, 2) }}</td>
                         </tr>
@@ -444,7 +444,7 @@
                         <tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">No inventory data.</td></tr>
                     @endforelse
                     </tbody>
-                    <tfoot><tr><td>Total</td><td class="r">{{ $availablePhones }}</td><td class="r">${{ number_format($inventoryValue, 2) }}</td></tr></tfoot>
+                    <tfoot><tr><td>Total</td><td class="r">{{ $availablePhones }}</td><td class="r">Tsh {{ number_format($inventoryValue, 2) }}</td></tr></tfoot>
                 </table>
             </div>
         </div>
@@ -452,7 +452,7 @@
         @if($lowStockItems->isNotEmpty())
             <div class="alert-low-stock fade-up">
                 ⚠️ <strong>Low Stock Alert:</strong>
-                {{ $lowStockItems->map(fn($s) => optional($s->brand)->name . ' (' . $s->current_stock . ' units)')->implode(' · ') }}
+                {{ $lowStockItems->map(fn($s) => optional($s->product)->name . ' (' . $s->quantity . ' units)')->implode(' · ') }}
             </div>
         @endif
 
@@ -477,9 +477,9 @@
                                 <td style="color:var(--text-muted);white-space:nowrap;font-size:12px">{{ \Carbon\Carbon::parse($sale->sale_date)->format('d M Y') }}</td>
                                 <td style="font-weight:500">{{ $sale->customer_name }}</td>
                                 <td style="color:var(--text-muted);font-size:12px;max-width:200px">
-                                    {{ $sale->saleItems->map(fn($i) => optional(optional($i->phone)->brand)->name . ' ' . optional($i->phone)->model)->implode(', ') }}
+                                    {{ $sale->saleItems->map(fn($i) => (optional($i->product)->name ?? 'Unknown') . ' x ' . $i->quantity)->implode(', ') }}
                                 </td>
-                                <td class="r" style="color:var(--emerald);font-weight:600">${{ number_format($sale->final_amount, 2) }}</td>
+                                <td class="r" style="color:var(--emerald);font-weight:600">Tsh {{ number_format($sale->final_amount, 2) }}</td>
                                 <td class="r">
                                 <span class="badge-pill {{ $sale->is_installment ? 'badge-install' : 'badge-full' }}">
                                     {{ $sale->is_installment ? 'Installment' : 'Full' }}
@@ -494,7 +494,59 @@
                 </div>
             </div>
         </div>
-
+        {{--stock adjustment report--}}
+        <p class="section-label fade-up">Stock Adjustment Report</p>
+        <div class="full-panel fade-up">
+            <div class="rpt-panel">
+                <div class="rpt-panel-header">
+                    <span class="dot" style="background:var(--accent)"></span> Adjusted Products
+                </div>
+                <div style="overflow-x:auto">
+                    <table class="rpt-table">
+                        <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Item</th>
+                            <th style="text-align:right">Old Qty</th>
+                            <th style="text-align:right">New Qty</th>
+                            <th style="text-align:right">Cost</th>
+                            <th>Adjusted By</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @forelse($stockAdjustments as $adjustment)
+                            <tr>
+                                <td style="color:var(--text-muted);white-space:nowrap;font-size:12px">
+                                    {{ \Carbon\Carbon::parse($adjustment->created_at)->format('d M Y') }}
+                                </td>
+                                <td style="color:var(--emerald);font-weight:600">
+                                    {{ $adjustment->cashew->product->name }}
+                                </td>
+                                <td style="text-align:right;color:var(--emerald);font-weight:600">
+                                    {{ $adjustment->old_quantity }}
+                                </td>
+                                <td style="text-align:right;color:var(--emerald);font-weight:600">
+                                    {{ $adjustment->new_quantity }}
+                                </td>
+                                <td style="text-align:right;color:var(--emerald);font-weight:600">
+                                    Tsh {{ number_format((($adjustment->old_quantity) - ($adjustment->new_quantity)) * $adjustment->cashew->unit_price, 2) }}
+                                </td>
+                                <td style="color:var(--text-muted)">
+                                    {{ $adjustment->adjustedBy->name }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">
+                                    No adjustments in this period.
+                                </td>
+                            </tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     @push('scripts')

@@ -91,9 +91,9 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2M12 3C6.477 3 2 7.477 2 13s4.477 10 10 10 10-4.477 10-10S17.523 3 12 3z"/>
         </svg>
         <h1 class="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-br from-yellow-200 via-orange-500 to-yellow-800">
-            Enrich Your Digital Transformation
+            CASHEW MANAGEMENT SYSTEM -TARI
         </h1>
-        <p class="text-white/80 mt-1 text-sm">Powered by PhagePharmacy Pro</p>
+        <p class="text-white/80 mt-1 text-sm">Powered by TARI</p>
     </div>
 
     <div class="flex flex-col md:flex-row items-center justify-center gap-6 w-full">
@@ -140,7 +140,7 @@
 
         <!-- Dashboard Image Preview -->
         <div class="w-full max-w-md">
-            <img src="images/phonepro1.png" alt="PhoneStore Dashboard Preview"
+            <img src="images/phonepro1.png" alt="Cashew Dashboard Preview"
                  class="rounded-2xl shadow-lg w-full object-cover border-2 border-white/30">
         </div>
     </div>

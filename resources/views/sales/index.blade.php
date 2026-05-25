@@ -5,10 +5,6 @@
 
 @section('content')
     <div class="container mx-auto bg-white p-6 rounded-lg shadow-md relative">
-        <img src="{{ asset('images/watermark.png') }}"
-             alt="Watermark"
-             class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-             style="transform: translate(-50%, -50%);" />
 
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">All Sales</h1>
 
@@ -21,9 +17,9 @@
                 <a href="{{ route('sales.create') }}" class="bg-gray-700 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
                     Create New Sale
                 </a>
-                <a href="{{ route('sales.print') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
-                    Print Receipt
-                </a>
+{{--                <a href="{{ route('sales.print') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">--}}
+{{--                    Print Receipt--}}
+{{--                </a>--}}
             </div>
         @endcan
 
@@ -124,10 +120,10 @@
                             <td class="px-4 py-3 text-sm text-gray-900">
                                 <ul class="list-disc list-inside">
                                     @foreach ($sale->saleItems as $item)
-                                        @if ($item->phone)
-                                            <li>{{ $item->phone->brand->name }} {{ $item->phone->model }} (IMEI: {{ $item->phone->imei }})</li>
-                                        @elseif ($item->accessory)
-                                            <li>{{ $item->accessory->name }} (Qty: {{ $item->quantity }})</li>
+                                        @if ($item->cashews)
+                                            <li>{{ $item->cashews->product->name ?? 'N/A' }} (Qty: {{ $item->quantity }})</li>
+                                        @else
+                                            <li>Unknown Item (Qty: {{ $item->quantity }})</li>
                                         @endif
                                     @endforeach
                                 </ul>
@@ -153,6 +149,7 @@
                             <td class="px-4 py-3 text-sm font-medium">
                                 <div class="flex items-center space-x-2">
                                     <a href="{{ route('sales.show', $sale->id) }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-sm transition-colors duration-200">View</a>
+                                    <a href="{{ route('sales.print', $sale->id) }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-sm transition-colors duration-200">receipt</a>
                                     @if ($sale->amount_due > 0 && !$sale->is_installment)
                                         <a href="{{ route('sales.pay.form', $sale->id) }}" class="text-green-600 hover:text-green-900 font-semibold text-sm transition-colors duration-200">Pay</a>
                                     @endif

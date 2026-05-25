@@ -15,7 +15,7 @@ class StockAdjustment extends Model
      * @var array
      */
     protected $fillable = [
-        'cosmetic_id',
+        'stock_item_id',
         'old_quantity',
         'new_quantity',
         'comment',
@@ -37,5 +37,8 @@ class StockAdjustment extends Model
     public function adjustedBy()
     {
         return $this->belongsTo(User::class, 'adjusted_by_user_id');
+    }
+    public function cashew(){
+        return $this->belongsTo(Cashew::class, 'stock_item_id',);
     }
 }

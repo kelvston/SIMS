@@ -56,8 +56,8 @@
                                         <li>
                                             <div class="font-semibold text-sm">{{ $sale['date'] }} — Sale #{{ $sale['id'] }}</div>
 
-                                            @if (!empty($sale['phones']))
-                                                <div class="text-xs">Phones: {{ implode(', ', $sale['phones']) }}</div>
+                                            @if (!empty($sale['cashews']))
+                                                <div class="text-xs">Phones: {{ implode(', ', $sale['cashews']) }}</div>
                                             @endif
 
                                             @if (!empty($sale['accessories']))

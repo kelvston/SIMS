@@ -44,7 +44,7 @@ class Medicine extends Model
     public function stockLevel()
     {
         return $this->hasOne(StockLevel::class, 'model', 'model')
-            ->whereColumn('stock_levels.product_id', 'phones.product_id');
+            ->whereColumn('stock_levels.product_id', 'cashews.product_id');
     }
 
     public function MedicineCategory()

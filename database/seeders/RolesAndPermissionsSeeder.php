@@ -18,10 +18,10 @@
 //
 //        // --- Create Permissions ---
 //        // Inventory Permissions
-//        Permission::firstOrCreate(['name' => 'view phones']);
-//        Permission::firstOrCreate(['name' => 'receive phones']);
-//        Permission::firstOrCreate(['name' => 'edit phones']); // For future update/delete
-//        Permission::firstOrCreate(['name' => 'delete phones']); // For future delete
+//        Permission::firstOrCreate(['name' => 'view cashews']);
+//        Permission::firstOrCreate(['name' => 'receive cashews']);
+//        Permission::firstOrCreate(['name' => 'edit cashews']); // For future update/delete
+//        Permission::firstOrCreate(['name' => 'delete cashews']); // For future delete
 //
 //        // Sales Permissions
 //        Permission::firstOrCreate(['name' => 'view sales']);
@@ -51,7 +51,7 @@
 //        // 2. Sales Manager Role
 //        $salesManagerRole = Role::firstOrCreate(['name' => 'sales_manager']);
 //        $salesManagerRole->givePermissionTo([
-//            'view phones', 'receive phones',
+//            'view cashews', 'receive cashews',
 //            'view sales', 'create sales', 'edit sales',
 //            'view installments', 'record installment payments',
 //            'view sales reports', 'view stock reports', 'view profit loss reports',
@@ -60,7 +60,7 @@
 //        // 3. Staff Role (e.g., for daily operations)
 //        $staffRole = Role::firstOrCreate(['name' => 'staff']);
 //        $staffRole->givePermissionTo([
-//            'view phones', 'receive phones',
+//            'view cashews', 'receive cashews',
 //            'view sales', 'create sales',
 //            'view installments', 'record installment payments',
 //        ]);
@@ -68,7 +68,7 @@
 //        // 4. Viewer Role (can only see reports and inventory)
 //        $viewerRole = Role::firstOrCreate(['name' => 'viewer']);
 //        $viewerRole->givePermissionTo([
-//            'view phones',
+//            'view cashews',
 //            'view sales',
 //            'view installments',
 //            'view sales reports',
@@ -113,10 +113,10 @@ class RolesAndPermissionsSeeder extends Seeder
         // --- Create Permissions ---
 
         // Inventory Permissions
-        Permission::firstOrCreate(['name' => 'view phones']);
-        Permission::firstOrCreate(['name' => 'receive phones']);
-        Permission::firstOrCreate(['name' => 'edit phones']);
-        Permission::firstOrCreate(['name' => 'delete phones']);
+        Permission::firstOrCreate(['name' => 'view cashews']);
+        Permission::firstOrCreate(['name' => 'receive cashews']);
+        Permission::firstOrCreate(['name' => 'edit cashews']);
+        Permission::firstOrCreate(['name' => 'delete cashews']);
 
         // Sales Permissions
         Permission::firstOrCreate(['name' => 'view sales']);
@@ -152,7 +152,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $salesManagerRole = Role::firstOrCreate(['name' => 'sales_manager']);
         $salesManagerRole->givePermissionTo([
-            'view phones', 'receive phones',
+            'view cashews', 'receive cashews',
             'view sales', 'create sales', 'edit sales',
             'view installments', 'record installment payments',
             'view sales reports', 'view stock reports', 'view profit loss reports',
@@ -160,19 +160,19 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $staffRole = Role::firstOrCreate(['name' => 'staff']);
         $staffRole->givePermissionTo([
-            'view phones', 'receive phones',
+            'view cashews', 'receive cashews',
             'view sales', 'create sales',
             'view installments', 'record installment payments',
         ]);
 
         $viewerRole = Role::firstOrCreate(['name' => 'viewer']);
         $viewerRole->givePermissionTo([
-            'view phones', 'view sales', 'view installments',
+            'view cashews', 'view sales', 'view installments',
             'view sales reports', 'view stock reports', 'view profit loss reports',
         ]);
 
         // --- Assign all roles and permissions to the first admin user ---
-        $user = \App\Models\User::where('email', 'admin@yoga.com')->first();
+        $user = \App\Models\User::where('email', 'admin@tari.com')->first();
 
         if ($user) {
             $user->syncRoles(Role::all());

@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@yield('title', 'PhoneStore Pro')</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <title>@yield('title', 'POS')</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -80,6 +82,9 @@
     @stack('styles')
 </head>
 <body class="bg-gray-100 font-sans">
+@php
+//   dd($settings['organization_name']);
+@endphp
 <!-- Page Loader -->
 <div id="page-loader"
      class="fixed inset-0 z-50 bg-white flex items-center justify-center">
@@ -95,15 +100,17 @@
 <div class="flex min-h-screen overflow-hidden">
     <!-- Sidebar for desktop -->
     <aside class="fixed inset-y-0 left-0 w-60 bg-[#AD5D29] text-white p-4 hidden lg:flex flex-col z-40 overflow-hidden" x-data="{ manageOpen: false }">
-        <h2 class="text-xl font-bold mb-6">PhoneStore Pro</h2>
+        <h2 class="text-xl font-bold mb-6">@if(isset($settings['organization_logo_path']) && $settings['organization_logo_path'])
+                <img src="{{ asset('storage/' . $settings['organization_logo_path']) }}" alt="Logo" class="logo">
+            @endif{{ $settings['organization_name'] ?? ' ' }}</h2>
         <nav class="space-y-2 overflow-hidden">
             @can('view dashboard')
                 <a href="{{ route('dashboard') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                     <span class="mr-2">📊</span> Dashboard
                 </a>
             @endcan
-            @can('view phones')
-                <a href="{{ route('phones.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+            @can('view cashews')
+                <a href="{{ route('cashews.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                     <span class="mr-2">📱</span> Inventory
                 </a>
             @endcan
@@ -142,14 +149,14 @@
                                 <a href="{{ route('reports.general') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">  <span class="mr-2">👥</span>General Report</a>
 
                             @endcan
-                        @can('manage brands')
+                        @can('manage products')
                             <a href="{{ route('reports.profit_loss') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                                 <span class="mr-2">🏷️</span> Profit/loss
                             </a>
                         @endcan
                     </div>
             @endcanany
-            @canany(['manage users', 'manage roles', 'manage brands'])
+            @canany(['manage users', 'manage roles', 'manage products'])
                 <button @click="manageOpen = !manageOpen"
                         class="w-full text-left py-2 px-3 rounded hover:bg-[#C87137] flex justify-between items-center transition"
                         :aria-expanded="manageOpen.toString()" aria-controls="manage-menu">
@@ -165,15 +172,19 @@
                         <a href="{{ route('users.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                             <span class="mr-2">👥</span> Manage Users
                         </a>
+
+                        <a href="{{ route('settings.edit') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                            <span class="mr-2">👥</span> Manage Settings
+                        </a>
                     @endcan
                     @can('manage roles')
                         <a href="{{ route('roles.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                             <span class="mr-2">🔐</span> Manage Roles
                         </a>
                     @endcan
-                    @can('manage brands')
-                        <a href="{{ route('brands.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
-                            <span class="mr-2">🏷️</span> Manage Brands
+                    @can('manage products')
+                        <a href="{{ route('products.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                            <span class="mr-2">🏷️</span> Manage Products
                         </a>
                     @endcan
                 </div>
@@ -201,13 +212,13 @@
 
     <!-- Sidebar for mobile -->
     <aside id="mobileSidebar" class="sidebar-mobile text-white p-4 lg:hidden overflow-hidden">
-        <h2 class="text-xl font-bold mb-6">PhoneStore Pro</h2>
+        <h2 class="text-xl font-bold mb-6">TARI - CASHEW</h2>
         <nav class="space-y-2 overflow-hidden">
             @can('view dashboard')
                 <a href="{{ route('dashboard') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Dashboard</a>
             @endcan
-            @can('view phones')
-                <a href="{{ route('phones.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Inventory</a>
+            @can('view cashews')
+                <a href="{{ route('cashews.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Inventory</a>
             @endcan
             @can('view sales')
                 <a href="{{ route('sales.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Sales</a>
@@ -224,8 +235,8 @@
             @can('manage roles')
                 <a href="{{ route('roles.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Roles</a>
             @endcan
-            @can('manage brands')
-                <a href="{{ route('brands.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Brands</a>
+            @can('manage products')
+                <a href="{{ route('products.index') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Manage Products</a>
             @endcan
             <form method="POST" action="{{ route('logout') }}" class="block">
                 @csrf

@@ -53,7 +53,7 @@
 {{--            </div>--}}
 {{--        @endif--}}
 
-{{--        <form action="{{ route('phones.receive.store') }}" method="POST" id="main-form">--}}
+{{--        <form action="{{ route('cashews.receive.store') }}" method="POST" id="main-form">--}}
 {{--            @csrf--}}
 {{--            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">--}}
 {{--                <!-- Streamlined Phones Section -->--}}
@@ -134,12 +134,12 @@
 {{--                <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full focus:outline-none focus:shadow-outline transition duration-300 ease-in-out shadow-lg">--}}
 {{--                    Receive Inventory--}}
 {{--                </button>--}}
-{{--                <a href="{{ route('phones.index') }}" class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">--}}
+{{--                <a href="{{ route('cashews.index') }}" class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">--}}
 {{--                    View All Phones--}}
 {{--                </a>--}}
 {{--            </div>--}}
 
-{{--            <!-- Dynamic hidden inputs for phones -->--}}
+{{--            <!-- Dynamic hidden inputs for cashews -->--}}
 {{--            <div id="phone-hidden-inputs"></div>--}}
 {{--        </form>--}}
 {{--    </div>--}}
@@ -402,7 +402,7 @@
 {{--                    for (const key in phoneDetails) {--}}
 {{--                        const input = document.createElement('input');--}}
 {{--                        input.type = 'hidden';--}}
-{{--                        input.name = `phones[0][${key}]`;--}}
+{{--                        input.name = `cashews[0][${key}]`;--}}
 {{--                        input.value = phoneDetails[key];--}}
 {{--                        phoneHiddenInputsContainer.appendChild(input);--}}
 {{--                    }--}}
@@ -412,7 +412,7 @@
 {{--                    imeisToAdd.forEach(imei => {--}}
 {{--                        const input = document.createElement('input');--}}
 {{--                        input.type = 'hidden';--}}
-{{--                        input.name = `phones[0][imeis][${imeiIndex}]`;--}}
+{{--                        input.name = `cashews[0][imeis][${imeiIndex}]`;--}}
 {{--                        input.value = imei;--}}
 {{--                        phoneHiddenInputsContainer.appendChild(input);--}}
 {{--                        imeiIndex++;--}}
@@ -540,7 +540,7 @@
             </div>
         @endif
 
-        <form action="{{ route('phones.receive.store') }}" method="POST" id="main-form">
+        <form action="{{ route('cashews.receive.store') }}" method="POST" id="main-form">
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
                 <!-- Streamlined Phones Section -->
@@ -648,12 +648,12 @@
                 <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full focus:outline-none focus:shadow-outline transition duration-300 ease-in-out shadow-lg">
                     Receive Inventory
                 </button>
-                <a href="{{ route('phones.index') }}" class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
+                <a href="{{ route('cashews.index') }}" class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
                     View All Phones
                 </a>
             </div>
 
-            <!-- Dynamic hidden inputs for phones -->
+            <!-- Dynamic hidden inputs for cashews -->
             <div id="phone-hidden-inputs"></div>
         </form>
     </div>

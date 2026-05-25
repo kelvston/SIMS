@@ -17,9 +17,10 @@ class SaleItem extends Model
         'cosmetic_id',
         'quantity',
         'is_sold',
-        'unit_cost'
+        'unit_cost',
+        'product_id'
     ];
-    protected $with = ['medicine', 'cosmetic'];
+    protected $with = ['cashew', ];
     /**
      * Get the sale that owns the sale item.
      */
@@ -31,14 +32,24 @@ class SaleItem extends Model
     /**
      * Get the medicine associated with the sale item.
      */
-    public function medicine()
+    public function cashew()
     {
-        return $this->belongsTo(Medicine::class);
+        return $this->belongsTo(Cashew::class);
+    }
+    public function products(){
+        return $this->belongsTo(Product::class);
     }
 
-    public function cosmetic()
+    public function product()
     {
-        return $this->belongsTo(Cosmetic::class);
+        return $this->belongsTo(Product::class);
     }
+
+    public function cashews()
+    {
+        return $this->belongsTo(Cashew::class, 'product_id', 'product_id');
+    }
+
+
 
 }

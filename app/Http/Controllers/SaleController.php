@@ -1,8 +1,10 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\Cashew;
 use App\Models\Cosmetic;
 use App\Models\Medicine;
+use App\Models\Product;
 use App\Models\Setting;
 use App\Models\ReturnLog;
 use App\Models\Sale;
@@ -64,10 +66,9 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     public function index()
     {
         // Eager load saleItems and their associated medicines, and installmentPlan if it exists
-        $sales = Sale::with(['saleItems.medicine', 'installmentPlan'])
+        $sales = Sale::with(['saleItems.cashews.product', 'installmentPlan'])
             ->orderBy('sale_date', 'desc')
             ->paginate(5);
-
 
         \Artisan::call('stock:check-low'); // Run the command
 
@@ -86,23 +87,36 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
      */
     public function create()
     {
-        // Fetch only available medicines for selection in the sales form
-        $availableMedicines = Medicine::where('status', 'available')
-            ->select('medicines.*')
-            ->leftJoin('sale_items', 'medicines.id', '=', 'sale_items.medicine_id')
-            ->whereNull('sale_items.medicine_id')
-            ->get();
+        // Fetch only available cashew for selection in the sales form
+//        $availableCashews = Product::select('products.*')
+//            ->leftJoin('cashews', 'products.id', '=', 'cashews.product_id')
+//            ->where('cashews.quantity', '>', 0)
+//            ->get();
+
+        $availableCashews = Cashew::with('product')
+            ->where('quantity', '>', 0)
+            ->get()
+            ->map(fn($c) => [
+                'id' => $c->product_id,
+                'barcode' => $c->barcode,
+                'product_name' => $c->product?->name ?? 'N/A',
+                'selling_price' => $c->selling_price,
+            ]);
 
 
 
         $availableCosmetics = Cosmetic::where('status', 'in_stock')->where('quantity','>=',1)->orderBy('created_at')->get();
-        return view('sales.create', compact('availableCosmetics','availableMedicines'));
+        return view('sales.create', compact('availableCosmetics','availableCashews'));
     }
-    public function printReceipt()
+    public function printReceipt($id)
     {
-        $receipts = SaleReceipt::with('sale')->latest()->get();
-        return view('sales.print', compact('receipts'));
+        $receipt = SaleReceipt::with('sale')->where('sale_id', $id)->firstOrFail();
+        $receipt->load(['sale.saleItems.cashews.product']);
+        $settings = Setting::all()->pluck('value', 'key')->toArray();
+
+        return view('sales.print_receipt', compact('receipt', 'settings'));
     }
+
     public function printSingleReceipt(SaleReceipt $receipt)
     {
         $receipt->load(['sale.saleItems.medicine', 'sale.saleItems.cosmetic']);
@@ -123,66 +137,48 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
 
         // 1. Basic validation for customer, discount, and the new credit_sale flag
         $validated = $request->validate([
-            'customer_name' => 'required|string|max:255',
-            'customer_medicine' => 'nullable|string|max:255',
-            'customer_email' => 'nullable|email|max:255',
-            'discount_amount' => 'required|numeric|min:0',
+            'customer_name' => 'nullable',
+            'customer_email' => 'nullable',
             'payment_option' => 'nullable|numeric|min:0',
-            // amount_paid is now only required if it's NOT a credit sale
+            'quantities' => 'required|array',
+            'cashew_ids' => 'required|array',
             'amount_paid' => 'required_without:credit_sale|nullable|numeric|min:0',
             'credit_sale' => 'nullable|boolean', // New validation for the credit_sale flag
             'is_installment' => 'nullable|boolean',
             'total_installments' => 'required_if:is_installment,true|nullable|integer|min:1',
             'installment_amount' => 'required_if:is_installment,true|nullable|numeric|min:0.01',
             'start_date' => 'required_if:is_installment,true|nullable|date',
-            'medicine_imeis' => 'nullable|array',
-            'cosmetics' => 'nullable|array',
-            'cosmetics.*.id' => 'required_with:cosmetics|integer|exists:cosmetics,id',
-            'cosmetics.*.quantity' => 'required_with:cosmetics|integer|min:1',
+            'discount_amount' => 'nullable|numeric|min:0',
         ]);
 
-        // Custom validation: Ensure at least one item is selected.
-        if (empty($request->input('medicine_imeis')) && empty($request->input('cosmetics'))) {
-            throw ValidationException::withMessages(['items' => 'At least one medicine or cosmetic must be selected.']);
-        }
 
-        // 2. Validate medicines and cosmetics stock before creating a sale
+        // 2. Validate product stock before creating a sale
         $totalAmount = 0;
-        $medicinesToSell = [];
-        $cosmeticsToSell = [];
+        $cashewsToSell = [];
 
-        // Validate and get medicine details
-        $medicineImeis = array_unique($request->input('medicine_imeis', []));
-        if (!empty($medicineImeis)) {
-            $medicines = Medicine::where('is_sold', false)->get();
-            if ($medicines->count() !== count($medicineImeis)) {
-                throw ValidationException::withMessages(['items' => 'One or more selected medicines are either not found or already sold.']);
+        // Validate and get cashew details
+        $totalAmount = 0;
+        $cashewIds = $request->input('cashew_ids', []);
+        $quantities = $request->input('quantities', []);
+        foreach ($cashewIds as $index => $productId) {
+            $qty = $quantities[$index] ?? 0;
+            $cashew = Cashew::where('product_id', $productId)->first();
+            if (!$cashew) {
+                throw ValidationException::withMessages([
+                    'items' => "Product not found for ID {$productId}"
+                ]);
             }
-            $medicinesToSell = $medicines;
-            foreach ($medicinesToSell as $medicine) {
-                $totalAmount += $medicine->selling_price;
+            if ($cashew->quantity < $qty) {
+                throw ValidationException::withMessages([
+                    'items' => "Not enough stock for the product "
+                ]);
             }
+            $totalAmount += $cashew->selling_price * $qty;
         }
 
-        // Validate and get cosmetic details
-        $cosmetics = $request->input('cosmetics', []);
-        if (!empty($cosmetics)) {
-            foreach ($cosmetics as $cosmeticData) {
-                $cosmetic = Cosmetic::findOrFail($cosmeticData['id']);
-                $quantity = $cosmeticData['quantity'];
-
-                // Stock validation check
-                if ($cosmetic->quantity < $quantity) {
-                    throw ValidationException::withMessages([
-                        'cosmetics' => "Cosmetic {$cosmetic->name} does not have {$quantity} units available in stock."
-                    ]);
-                }
-                $cosmeticsToSell[] = ['cosmetic' => $cosmetic, 'quantity' => $quantity];
-                $totalAmount += ($cosmetic->selling_price * $quantity);
-            }
-        }
 
         // Calculate final amount after discount
+
         $finalAmount = $totalAmount - $validated['discount_amount'];
         if ($finalAmount < 0) {
             throw ValidationException::withMessages(['discount_amount' => 'Discount cannot exceed the total amount.']);
@@ -211,15 +207,21 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
         try {
             DB::beginTransaction();
 
-            // Re-validate and get medicines inside the transaction with a lock
-            $medicineImeis = array_unique($request->input('medicine_imeis', []));
-            if (!empty($medicineImeis)) {
-                $medicinesToSell = Medicine::whereIn('imei', $medicineImeis)
-                    ->where('is_sold', false)
-                    ->lockForUpdate() // Lock the selected rows to prevent race conditions
-                    ->get();
-                if ($medicinesToSell->count() !== count($medicineImeis)) {
-                    throw ValidationException::withMessages(['items' => 'One or more selected medicines are either not found or already sold.']);
+            // Re-validate and get products inside the transaction with a lock
+            $cashewIds = $request->cashew_ids;
+            $quantities = $request->quantities;
+            foreach ($cashewIds as $index => $productId) {
+                $qty = $quantities[$index];
+                $cashew = Cashew::where('product_id', $productId)->lockForUpdate()->first();
+                if (!$cashew) {
+                    throw ValidationException::withMessages([
+                        'items' => "Product not found for ID {$productId}"
+                    ]);
+                }
+                if ($cashew->quantity < $qty) {
+                    throw ValidationException::withMessages([
+                        'items' => "Not enough stock for the product"
+                    ]);
                 }
             }
             // 3. Create the Sale record with the calculated total amount and payment details
@@ -243,7 +245,6 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
 
             $sale = Sale::create([
                 'customer_name' => $validated['customer_name'],
-                'customer_medicine' => $validated['customer_medicine'],
                 'customer_email' => $validated['customer_email'],
                 'total_amount' => $totalAmount,
                 'discount_amount' => $validated['discount_amount'],
@@ -253,34 +254,26 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 'is_installment' => $request->boolean('is_installment'),
                 'sale_date' => now(),
                 'payment_option' => $payment_option,
+                'user_id' => auth()->id(),
             ]);
 
             // 4. Create sale items and update stock
-            foreach ($medicinesToSell as $medicine) {
+            foreach ($validated['cashew_ids'] as $index => $productId) {
+                $cashew = Cashew::where('product_id', $productId)->first();
+                 $qty = $validated['quantities'][$index];
                 $sale->saleItems()->create([
-                    'medicine_id' => $medicine->id,
+                    'product_id' => $cashew->product_id,
                     'cosmetic_id' => null,
-                    'unit_price' => $medicine->selling_price,
-                    'unit_cost' => $medicine->purchase_price,
-                    'quantity' => 1,
+                    'unit_price' => $cashew->selling_price,
+                    'unit_cost' => $cashew->unit_price,
+                    'quantity' => $qty,
                 ]);
-                $medicine->update(['is_sold' => true]);
+                // reduce stock
+                $cashew->quantity -= $qty;
+                $cashew->save();
             }
 
-            foreach ($cosmeticsToSell as $item) {
-                $cosmetic = $item['cosmetic'];
-                $quantity = $item['quantity'];
 
-                $sale->saleItems()->create([
-                    'cosmetic_id' => $cosmetic->id,
-                    'medicine_id' => null,
-                    'unit_price' => $cosmetic->selling_price,
-                    'unit_cost' => $cosmetic->purchase_price,
-                    'quantity' => $quantity,
-                ]);
-                // Decrease the stock
-                $cosmetic->decrement('quantity', $quantity);
-            }
 
             // 5. Handle installment details if applicable
             if ($sale->is_installment) {

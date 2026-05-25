@@ -13,7 +13,7 @@ class Product extends Model
     protected $fillable = ['name'];
 
     /**
-     * Get the phones for the brand.
+     * Get the cashews for the brand.
      */
     public function medicines()
     {

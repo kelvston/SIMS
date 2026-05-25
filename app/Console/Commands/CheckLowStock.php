@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\StockLevel;
+use App\Models\Cashew;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
@@ -16,9 +16,10 @@ class CheckLowStock extends Command
     {
         Log::info('[CheckLowStock] Starting low stock check...');
 
-        $lowStockItems = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')
-            ->join('medicines', 'medicines.product_id', '=', 'stock_levels.product_id')
-            ->with('product')->where('status','=','available')
+        $lowStockItems = Cashew::with('product')
+            ->where('status', 'available')
+            ->whereRaw('CAST(quantity AS INTEGER) <= low_stock_threshold')
+            ->orderBy('quantity')
             ->get();
 
         if ($lowStockItems->isEmpty()) {
@@ -29,7 +30,8 @@ class CheckLowStock extends Command
         $alerts = [];
 
         foreach ($lowStockItems as $item) {
-            $message = "Low Stock Alert! Medicine: {$item->product->name}). Current stock: {$item->current_stock}, Threshold: {$item->low_stock_threshold}.";
+            $productName = optional($item->product)->name ?? 'Unknown product';
+            $message = "Low Stock Alert! Product: {$productName}. Current stock: {$item->quantity}, Threshold: {$item->low_stock_threshold}.";
             Log::warning("[CheckLowStock] {$message}");
             $alerts[] = $message;
         }

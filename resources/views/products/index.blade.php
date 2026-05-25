@@ -52,7 +52,7 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $product->created_at->format('Y-m-d H:i') }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <a href="{{ route('products.edit', $product->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                                <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this product? This will also delete all associated phones due to cascade delete in migrations.');">
+                                <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this product? This will also delete all associated cashews due to cascade delete in migrations.');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>

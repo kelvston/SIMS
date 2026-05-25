@@ -47,8 +47,8 @@
     <!-- Hexagon Buttons and Arrows Wrapper -->
     <div class="relative">
         <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 relative z-10">
-            @can('receive medicines')
-                <a href="{{ route('medicines.receive.form') }}"
+            @can('receive cashew')
+                <a href="{{ route('cashew.receive.form') }}"
                    class="hexagon-shape flex items-center justify-center gap-1 w-full text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-1 transition duration-200 mt-6">
                     <i class="fas fa-download text-[14px]"></i> Receive
                 </a>
@@ -90,15 +90,19 @@
                     </tr>
                     <tr>
                         <td>Total Products:</td>
-                        <td><b>{{ number_format($totalMedicines) }}</b></td>
+                        <td><b>{{ $product_count }}</b></td>
+                    </tr>
+                    <tr>
+                        <td>Units in Stock:</td>
+                        <td><b>{{ number_format($availableStockUnits) }}</b></td>
                     </tr>
                     <tr>
                         <td>Monthly Sales:</td>
-                        <td><b>{{ number_format($monthlySales, 2) }}</b></td>
+                        <td><b>Tsh {{ number_format($monthlySales, 2) }}</b></td>
                     </tr>
                     <tr>
                         <td>Pending Installments:</td>
-                        <td><b>{{ number_format($pendingInstallmentsAmount, 2) }}</b></td>
+                        <td><b>Tsh {{ number_format($pendingInstallmentsAmount, 2) }}</b></td>
                     </tr>
                 </table>
             </div>
@@ -109,9 +113,13 @@
     <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
         @php
             $cards = [
-                ['icon' => '📱', 'label' => 'Pproducts', 'value' => number_format($totalMedicines), 'color' => 'indigo'],
-                ['icon' => '�', 'label' => 'Sales (' . \Carbon\Carbon::now()->format('M') . ')', 'value' =>   number_format($monthlySales, 2), 'color' => 'green'],
-                ['icon' => '⏳', 'label' => 'Pending', 'value' =>   number_format($pendingInstallmentsAmount, 2), 'color' => 'yellow'],
+                ['icon' => '📦', 'label' => 'Products', 'value' => number_format($product_count), 'color' => 'indigo'],
+                ['icon' => '📊', 'label' => 'Stock Units', 'value' => number_format($availableStockUnits), 'color' => 'blue'],
+                ['icon' => '💰', 'label' => 'Sales (' . \Carbon\Carbon::now()->format('M') . ')', 'value' => 'Tsh ' . number_format($monthlySales, 2), 'color' => 'green'],
+                ['icon' => '🏦', 'label' => 'Inventory Value', 'value' => 'Tsh ' . number_format($inventoryValue, 2), 'color' => 'cyan'],
+                ['icon' => '💸', 'label' => 'Expenses', 'value' => 'Tsh ' . number_format($monthlyExpenses, 2), 'color' => 'red'],
+                ['icon' => '📈', 'label' => 'Net Profit', 'value' => 'Tsh ' . number_format($netProfit, 2), 'color' => $netProfit >= 0 ? 'green' : 'red'],
+                ['icon' => '⏳', 'label' => 'Pending', 'value' => 'Tsh ' . number_format($pendingInstallmentsAmount, 2), 'color' => 'yellow'],
                 ['icon' => '📈', 'label' => 'Profit', 'value' => number_format($profitMarginPercentage, 2) . '%', 'color' => $profitMarginPercentage >= 0 ? 'green' : 'red'],
             ];
         @endphp
@@ -148,43 +156,16 @@
 
 
 
-        <!-- Recent Activity -->
+    <!-- Recent Activity -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        @if($recentActivities)
-        <div class=" p-2 bg-white rounded-md shadow border border-gray-200">
-            <h2 class="text-xs font-semibold text-gray-800 mb-1 flex items-center gap-1">
-                <svg class="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M12 8v4l3 3M12 6a9 9 0 100 18 9 9 0 000-18z"/>
-                </svg>
-                Recent Activity
-            </h2>
-            <ul class="space-y-0.5 text-[11px] text-gray-700">
-                @forelse ($recentActivities as $activity)
-                    <li class="px-2 py-0.5 flex justify-between items-center hover:bg-gray-100 rounded transition">
-                        <a href="{{ $activity['link'] }}" class="text-blue-600 hover:underline truncate w-3/4">
-                            {{ $activity['description'] }}
-                        </a>
-                        <span class="text-[10px] text-gray-400 text-right w-1/4 whitespace-nowrap">
-                            {{ \Carbon\Carbon::parse($activity['date'])->diffForHumans() }}
-                        </span>
-                    </li>
-                @empty
-                    <li class="text-gray-500 text-xs px-2">No recent activity to display.</li>
-                @endforelse
-            </ul>
 
-            <div class="mt-1 text-xs px-2">
-                {{ $recentActivities->links('pagination::tailwind') }}
-            </div>
-        </div>
-
-@endif
     <!-- Low Stock Table -->
     @can('view stock reports')
         <div class="p-2 bg-white rounded-lg shadow overflow-x-auto">
-            <h2 class="font-semibold mb-4">Low Stock Products Overview</h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-semibold">Low Stock Products Overview</h2>
+                <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">{{ $notificationCount }} alerts</span>
+            </div>
             @if ($lowStockProducts->isEmpty())
                 <p class="text-center text-gray-600">No products are currently low in stock.</p>
             @else
@@ -192,7 +173,6 @@
                     <thead class="bg-gray-100">
                     <tr>
                         <th class="text-left p-2">Item</th>
-                        <th class="text-left p-2">Category</th>
                         <th class="text-left p-2">Stock</th>
                         <th class="text-left p-2">Threshold</th>
                         <th class="text-left p-2">Status</th>
@@ -201,13 +181,12 @@
                     <tbody>
                     @foreach ($lowStockProducts as $item)
                         <tr>
+                            <td class="p-2">{{ optional($item->product)->name ?? 'Unknown product' }}</td>
+                            <td class="p-2">{{ number_format($item->quantity) }} units</td>
+                            <td class="p-2">{{ number_format($item->low_stock_threshold) }} units</td>
                             <td class="p-2">
-                                {{-- The debug dump indicates the StockLevel table stores phone data, so we'll assume the category is "Medicine". --}}
-                                Medicine
+                                <span class="text-red-700 bg-red-100 px-2 py-1 rounded-full text-xs font-semibold">Low</span>
                             </td>
-                            <td class="p-2">{{ $item->current_stock }} units</td>
-                            <td class="p-2">{{ $item->low_stock_threshold }} units</td>
-                            <td class="p-2 text-red-600">Critical</td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -215,6 +194,29 @@
             @endif
         </div>
     @endcan
+
+        <div class="p-2 bg-white rounded-lg shadow overflow-x-auto">
+            <h2 class="font-semibold mb-4">Recent Activity</h2>
+            @if ($recentActivities->isEmpty())
+                <p class="text-center text-gray-600">No recent activity found.</p>
+            @else
+                <div class="space-y-2">
+                    @foreach ($recentActivities as $activity)
+                        <a href="{{ $activity['link'] }}" class="block border border-gray-100 rounded-md p-2 hover:bg-gray-50 transition">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-sm text-gray-800">{{ $activity['description'] }}</p>
+                                    <p class="text-xs text-gray-500">{{ ucfirst($activity['type']) }}</p>
+                                </div>
+                                <span class="text-xs text-gray-500 whitespace-nowrap">
+                                    {{ \Carbon\Carbon::parse($activity['date'])->format('d M H:i') }}
+                                </span>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </div>
     </div>
 @endsection
 
@@ -231,7 +233,7 @@
             data: {
                 labels: salesChartLabels,
                 datasets: [{
-                    label: 'Sales ($)',
+                    label: 'Sales (Tsh)',
                     data: salesChartData,
                     borderColor: '#4f46e5',
                     backgroundColor: 'rgba(79, 70, 229, 0.1)',
@@ -261,7 +263,7 @@
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                                return context.dataset.label + ': Tsh ' + context.parsed.y.toFixed(2);
                             }
                         }
                     }
@@ -316,4 +318,3 @@
         });
     </script>
 @endpush
-

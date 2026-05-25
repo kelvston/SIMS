@@ -6,7 +6,7 @@
 
         <!-- Filter Form -->
         <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <form action="{{ route('reports.profitloss') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+            <form action="{{ route('reports.profit_loss') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
                 <div>
                     <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
                     <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
@@ -20,11 +20,11 @@
                         <i class="fas fa-filter mr-2"></i>Filter
                     </button>
                     @if(request()->has('start_date') || request()->has('end_date'))
-                        <a href="{{ route('reports.profitloss') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
+                        <a href="{{ route('reports.profit_loss') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
                             <i class="fas fa-undo-alt mr-2"></i>Reset
                         </a>
                     @endif
-                    <a href="{{ route('reports.profitloss', array_merge(request()->query(), ['download' => 'true'])) }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
+                    <a href="{{ route('reports.profit_loss', array_merge(request()->query(), ['download' => 'true'])) }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
                         <i class="fas fa-download mr-2"></i>Download CSV
                     </a>
                 </div>

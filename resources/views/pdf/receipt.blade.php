@@ -105,7 +105,7 @@
     <header>
         {{-- Replace with your actual logo path or remove if none --}}
         <img src="{{ public_path('images/logo.png') }}" alt="Logo" class="logo" />
-        <h1>PhoneStore Pro</h1>
+        <h1>TARI - CASHEW</h1>
         <p>Sales Receipt</p>
 
         {{-- QR Code --}}
@@ -196,7 +196,7 @@
 
     <footer class="footer">
         <p>Thank you for your purchase!</p>
-        <p>PhoneStore Pro &mdash; Your trusted phone seller</p>
+        <p>TARI - CASHEW &mdash; Your trusted phone seller</p>
     </footer>
 </div>
 </body>

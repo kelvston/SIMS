@@ -48,13 +48,10 @@
                 <p class="mt-2 text-xl font-bold text-red-600">{{ number_format($lowStockCount) }}</p>
             </div>
             <div class="flex flex-col items-center justify-center bg-white rounded-full h-40 w-40 mx-auto shadow-lg border-4 border-purple-500">
-                <p class="text-sm font-medium text-gray-500 text-center">Medicines</p>
+                <p class="text-sm font-medium text-gray-500 text-center">Products</p>
                 <p class="mt-2 text-xl font-bold text-gray-900">{{ number_format($totalMedicineItems) }}</p>
             </div>
-            <div class="flex flex-col items-center justify-center bg-white rounded-full h-40 w-40 mx-auto shadow-lg border-4 border-blue-500">
-                <p class="text-sm font-medium text-gray-500 text-center">Cosmetics</p>
-                <p class="mt-2 text-xl font-bold text-gray-900">{{ number_format($totalCosmeticItems) }}</p>
-            </div>
+
         </div>
 
 
@@ -63,7 +60,7 @@
             <!-- Medicines Stock Table -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                    <h2 class="text-xl font-semibold text-gray-800">Medicine Stock Levels</h2>
+                    <h2 class="text-xl font-semibold text-gray-800">Product Stock Levels</h2>
                     <input type="text" id="medicineSearchInput" onkeyup="renderTable('medicineTable')" placeholder="Search for medicines..." class="px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
                 <div class="overflow-x-auto">
@@ -71,32 +68,34 @@
                         <thead class="bg-gray-50">
                         <tr>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 0)">Product <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 1)">Model <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 2)">Quantity <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 3)">Cost Value <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 4)">Selling Price <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 5)">Profit <i class="fas fa-sort ml-1"></i></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 1)">Quantity <i class="fas fa-sort ml-1"></i></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 2)">Cost Value <i class="fas fa-sort ml-1"></i></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 3)">Selling Price <i class="fas fa-sort ml-1"></i></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 4)">Profit <i class="fas fa-sort ml-1"></i></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 5)">% profit <i class="fas fa-sort ml-1"></i></th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($medicineStock as $medicine)
-                            <tr>
+                            <tr data-id="{{ $medicine->id }}">
                                 <td class="px-4 py-3 text-sm text-gray-500">{{ $medicine->product->name ?? 'N/A' }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-900">{{ $medicine->model }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-500">{{ $medicine->quantity }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $medicine->total_purchase_price }}">{{ number_format($medicine->total_purchase_price, 2) }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $medicine->total_selling_price }}">{{ number_format($medicine->total_selling_price, 2) }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $medicine->total_selling_price - $medicine->total_purchase_price }}">{{ number_format($medicine->total_selling_price - $medicine->total_purchase_price, 2) }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $medicine->quantity }}">{{ $medicine->quantity }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $medicine->unit_price * $medicine->quantity }}">{{ number_format($medicine->unit_price * $medicine->quantity, 2) }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $medicine->selling_price * $medicine->quantity  }}">{{ number_format($medicine->selling_price * $medicine->quantity , 2) }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $medicine->selling_price * $medicine->quantity  - $medicine->unit_price * $medicine->quantity }}">{{ number_format($medicine->selling_price * $medicine->quantity  - $medicine->unit_price * $medicine->quantity, 2) }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $medicine->unit_price > 0 ? (($medicine->selling_price - $medicine->unit_price) / $medicine->unit_price) * 100 : 0 }}">
+                                    {{ $medicine->unit_price > 0 ? number_format((($medicine->selling_price - $medicine->unit_price) / $medicine->unit_price) * 100, 1) : '0.0' }}%
+                                </td>
                                 <td class="px-4 py-3 text-sm text-gray-500">
-                                    <button onclick="editQuantity('medicineTable', this.closest('tr'))" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200">
+                                    <button onclick="editQuantity('medicineTable', this.closest('tr'), '{{ $medicine->id }}')" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200">
                                         <i class="fas fa-pencil-alt"></i>
                                     </button>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-4 py-3 text-center text-sm text-gray-500">No medicine stock found.</td>
+                                <td colspan="7" class="px-4 py-3 text-center text-sm text-gray-500">No medicine stock found.</td>
                             </tr>
                         @endforelse
                         </tbody>
@@ -109,47 +108,7 @@
 <hr>
 <hr>
             <!-- Cosmetics Stock Table -->
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                    <h2 class="text-xl font-semibold text-gray-800">Cosmetic Stock Levels</h2>
-                    <input type="text" id="cosmeticSearchInput" onkeyup="renderTable('cosmeticTable')" placeholder="Search for accessories..." class="px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full divide-y divide-gray-200 table-auto" id="cosmeticTable">
-                        <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('cosmeticTable', 0)">Item <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('cosmeticTable', 1)">Quantity <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('cosmeticTable', 2)">Cost/Item <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('cosmeticTable', 3)">Total Value <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('cosmeticTable', 4)">Profit <i class="fas fa-sort ml-1"></i></th>
-{{--                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>--}}
-                        </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                        @forelse($cosmeticStock as $cosmetic)
-                            <tr data-id="{{ $cosmetic->id }}">
-                                <td class="px-4 py-3 text-sm text-gray-900">{{ $cosmetic->name }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $cosmetic->quantity }}">{{ number_format($cosmetic->quantity) }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $cosmetic->total_purchase_price }}">{{ number_format($cosmetic->total_purchase_price, 2) }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $cosmetic->total_purchase_price * $cosmetic->quantity }}">{{ number_format($cosmetic->total_purchase_price * $cosmetic->quantity, 2) }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ ($cosmetic->total_selling_price - $cosmetic->total_purchase_price) * $cosmetic->quantity }}">{{ number_format(($cosmetic->total_selling_price - $cosmetic->total_purchase_price) * $cosmetic->quantity, 2) }}</td>
-{{--                                <td class="px-4 py-3 text-sm text-gray-500">--}}
-{{--                                    <button onclick="editQuantity('cosmeticTable', this.closest('tr'))" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200">--}}
-{{--                                        <i class="fas fa-pencil-alt"></i>--}}
-{{--                                    </button>--}}
-{{--                                </td>--}}
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-4 py-3 text-center text-sm text-gray-500">No cosmetic stock found.</td>
-                            </tr>
-                        @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                <div id="cosmeticPagination" class="px-6 py-3 border-t border-gray-200"></div>
-            </div>
+
         </div>
 {{--    </div>--}}
 
@@ -162,7 +121,7 @@
                 <!-- Form for backend submission -->
                 <form id="stockAdjustmentForm" class="hidden">
                     @csrf
-                    <input type="hidden" name="id" id="cosmeticIdInput">
+                    <input type="hidden" name="id" id="stockItemIdInput">
                     <div class="mb-4">
                         <label for="newQuantityInput" class="block text-sm font-medium text-gray-700">New Quantity</label>
                         <input type="number" name="new_quantity" id="newQuantityInput" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter new quantity">
@@ -186,23 +145,27 @@
     <script>
         // Store current sort state for each table
         let sortState = {
-            medicineTable: { column: -1, direction: 1 },
-            cosmeticTable: { column: -1, direction: 1 }
+            medicineTable: { column: -1, direction: 1 }
         };
 
         // Pagination and filter variables
         const itemsPerPage = 5;
         let medicineTableCurrentPage = 1;
-        let cosmeticTableCurrentPage = 1;
         let medicineTableAllRows = [];
-        let cosmeticTableAllRows = [];
         let currentEditingRow = null;
 
         function renderTable(tableId) {
             const table = document.getElementById(tableId);
             const inputId = tableId.replace('Table', 'SearchInput');
-            const filterText = document.getElementById(inputId).value.toLowerCase();
-            const allRows = tableId === 'medicineTable' ? medicineTableAllRows : cosmeticTableAllRows;
+            const searchInput = document.getElementById(inputId);
+            const paginationContainer = document.getElementById(tableId.replace('Table', 'Pagination'));
+
+            if (!table || !table.tBodies.length || !searchInput || !paginationContainer) {
+                return;
+            }
+
+            const filterText = searchInput.value.toLowerCase();
+            const allRows = medicineTableAllRows;
 
             // Filter the rows based on the search input
             const filteredRows = allRows.filter(row => {
@@ -211,8 +174,7 @@
             });
 
             // Update pagination and display filtered results
-            const currentPage = tableId === 'medicineTable' ? medicineTableCurrentPage : cosmeticTableCurrentPage;
-            const paginationContainer = document.getElementById(tableId.replace('Table', 'Pagination'));
+            const currentPage = medicineTableCurrentPage;
 
             const totalRows = filteredRows.length;
             const totalPages = Math.ceil(totalRows / itemsPerPage);
@@ -233,8 +195,7 @@
                 prevButton.classList.add('px-3', 'py-1', 'rounded-md', 'mr-2', 'bg-gray-200', 'hover:bg-gray-300', 'disabled:opacity-50');
                 prevButton.disabled = currentPage === 1;
                 prevButton.onclick = () => {
-                    if (tableId === 'medicineTable') medicineTableCurrentPage--;
-                    else cosmeticTableCurrentPage--;
+                    medicineTableCurrentPage--;
                     renderTable(tableId);
                 };
 
@@ -243,8 +204,7 @@
                 nextButton.classList.add('px-3', 'py-1', 'rounded-md', 'bg-gray-200', 'hover:bg-gray-300', 'disabled:opacity-50');
                 nextButton.disabled = currentPage === totalPages;
                 nextButton.onclick = () => {
-                    if (tableId === 'medicineTable') medicineTableCurrentPage++;
-                    else cosmeticTableCurrentPage++;
+                    medicineTableCurrentPage++;
                     renderTable(tableId);
                 };
 
@@ -256,7 +216,11 @@
         // Sort function
         function sortTable(tableId, column) {
             const table = document.getElementById(tableId);
-            const allRows = tableId === 'medicineTable' ? medicineTableAllRows : cosmeticTableAllRows;
+            if (!table || !sortState[tableId]) {
+                return;
+            }
+
+            const allRows = medicineTableAllRows;
 
             // Determine sort direction
             const isAscending = sortState[tableId].column !== column || sortState[tableId].direction === -1;
@@ -266,6 +230,9 @@
             allRows.sort((a, b) => {
                 const cellA = a.cells[column];
                 const cellB = b.cells[column];
+                if (!cellA || !cellB) {
+                    return 0;
+                }
 
                 // Check for a data-value attribute, otherwise use text content
                 const valA = cellA.dataset.value ? parseFloat(cellA.dataset.value) : cellA.innerText.trim();
@@ -281,14 +248,12 @@
             });
 
             // Re-render the table with the newly sorted data
-            if (tableId === 'medicineTable') medicineTableCurrentPage = 1;
-            else cosmeticTableCurrentPage = 1;
+            medicineTableCurrentPage = 1;
             renderTable(tableId);
         }
 
-        // Function to edit the quantity of an item using the new modal
-        function editQuantity(tableId, rowElement) {
-            currentEditingRow = rowElement; // Store the row being edited
+        function editQuantity(tableId, rowElement, rowId = null) {
+            currentEditingRow = rowElement;
             const modal = document.getElementById('customModal');
             const modalTitle = document.getElementById('modalTitle');
             const modalMessage = document.getElementById('modalMessage');
@@ -296,7 +261,7 @@
             const modalButtons = document.getElementById('modalButtons');
             const newQuantityInput = document.getElementById('newQuantityInput');
             const adjustmentComment = document.getElementById('adjustmentComment');
-            const cosmeticIdInput = document.getElementById('cosmeticIdInput');
+            const stockItemIdInput = document.getElementById('stockItemIdInput');
             const modalError = document.getElementById('modalError');
 
             // Reset modal state
@@ -304,43 +269,29 @@
             modalMessage.classList.remove('hidden');
             stockAdjustmentForm.classList.add('hidden');
 
-            if (tableId === 'cosmeticTable') {
-                const quantityCell = rowElement.cells[1];
-                const currentQuantity = parseInt(quantityCell.dataset.value, 10);
-                const itemName = rowElement.cells[0].textContent;
-                const cosmeticId = rowElement.dataset.id;
+            const quantityCell = rowElement.cells[1];
+            const currentQuantity = parseInt(quantityCell.textContent.trim(), 10);
+            const itemName = rowElement.cells[0].textContent.trim();
+            const itemId = rowId || rowElement.dataset.id;
 
-                modalTitle.textContent = `Edit Quantity for ${itemName}`;
-                modalMessage.textContent = 'Please enter the new quantity and a reason for the change.';
-                newQuantityInput.value = currentQuantity;
-                adjustmentComment.value = '';
-                cosmeticIdInput.value = cosmeticId;
-                stockAdjustmentForm.classList.remove('hidden');
+            modalTitle.textContent = `Edit Quantity for ${itemName}`;
+            modalMessage.textContent = 'Please enter the new quantity and a reason for the change.';
+            newQuantityInput.value = currentQuantity;
+            adjustmentComment.value = '';
+            stockItemIdInput.value = itemId;
+            stockAdjustmentForm.classList.remove('hidden');
 
-                // Set buttons for editing
-                modalButtons.innerHTML = `
-                    <button type="button" onclick="cancelEdit()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
-                        Cancel
-                    </button>
-                    <button type="button" onclick="saveQuantity()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
-                        Save
-                    </button>
-                `;
-            } else if (tableId === 'medicineTable') {
-                modalTitle.textContent = 'Action Not Applicable';
-                modalMessage.textContent = 'Quantity editing is not applicable to medicines. Use the IMEI column to manage individual items.';
-                stockAdjustmentForm.classList.add('hidden');
+            modalButtons.innerHTML = `
+        <button type="button" onclick="cancelEdit()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
+            Cancel
+        </button>
+        <button type="button" onclick="saveQuantity()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
+            Save
+        </button>
+    `;
 
-                // Set buttons for a simple message
-                modalButtons.innerHTML = `
-                    <button type="button" onclick="cancelEdit()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
-                        Close
-                    </button>
-                `;
-            }
             modal.classList.remove('hidden');
         }
-
         // Function to save the new quantity and comment to the backend
         async function saveQuantity() {
             const newQuantityInput = document.getElementById('newQuantityInput');
@@ -353,7 +304,7 @@
 
             const newQuantity = parseInt(newQuantityInput.value, 10);
             const comment = adjustmentComment.value;
-            const cosmeticId = document.getElementById('cosmeticIdInput').value;
+            const stockItemId = document.getElementById('stockItemIdInput').value;
 
             // Simple client-side validation
             if (isNaN(newQuantity) || newQuantity < 0) {
@@ -372,10 +323,12 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+                        // 'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+
                     },
                     body: JSON.stringify({
-                        id: cosmeticId,
+                        id: stockItemId,
                         new_quantity: newQuantity,
                         comment: comment
                     })
@@ -385,30 +338,34 @@
 
                 if (response.ok) {
                     // Find the table row and update the values
-                    const row = document.querySelector(`tr[data-id="${cosmeticId}"]`);
+                    const row = document.querySelector(`#medicineTable tr[data-id="${stockItemId}"]`);
                     if (row) {
                         const quantityCell = row.cells[1];
-                        const oldQuantity = parseInt(quantityCell.dataset.value, 10);
+                        const oldQuantity = parseInt(quantityCell.dataset.value || quantityCell.textContent.trim(), 10);
+                        const oldTotalCost = parseFloat(row.cells[2].dataset.value || 0);
+                        const oldTotalSelling = parseFloat(row.cells[3].dataset.value || 0);
+                        const costPerItem = oldQuantity > 0 ? oldTotalCost / oldQuantity : 0;
+                        const sellingPricePerItem = oldQuantity > 0 ? oldTotalSelling / oldQuantity : 0;
 
                         quantityCell.dataset.value = newQuantity;
                         quantityCell.textContent = newQuantity;
 
-                        // Recalculate other values
-                        const costPerItem = parseFloat(row.cells[2].dataset.value);
-                        const oldProfit = parseFloat(row.cells[4].dataset.value);
-                        const sellingPricePerItem = (oldProfit / (oldQuantity > 0 ? oldQuantity : 1)) + costPerItem;
-
-                        const totalCostCell = row.cells[3];
+                        const totalCostCell = row.cells[2];
                         const newTotalCost = costPerItem * newQuantity;
                         totalCostCell.dataset.value = newTotalCost;
-                        totalCostCell.textContent = '$' + newTotalCost.toFixed(2);
+                        totalCostCell.textContent = newTotalCost.toFixed(2);
+
+                        const totalSellingCell = row.cells[3];
+                        const newTotalSelling = sellingPricePerItem * newQuantity;
+                        totalSellingCell.dataset.value = newTotalSelling;
+                        totalSellingCell.textContent = newTotalSelling.toFixed(2);
 
                         const profitCell = row.cells[4];
-                        const newProfit = (sellingPricePerItem - costPerItem) * newQuantity;
+                        const newProfit = newTotalSelling - newTotalCost;
                         profitCell.dataset.value = newProfit;
-                        profitCell.textContent = '$' + newProfit.toFixed(2);
+                        profitCell.textContent = newProfit.toFixed(2);
 
-                        renderTable('cosmeticTable');
+                        renderTable('medicineTable');
                     }
 
                     modalTitle.textContent = 'Success!';
@@ -449,12 +406,11 @@
         // Initial setup on window load
         window.onload = function() {
             const medicineTable = document.getElementById('medicineTable');
-            const cosmeticTable = document.getElementById('cosmeticTable');
-            medicineTableAllRows = Array.from(medicineTable.tBodies[0].rows);
-            cosmeticTableAllRows = Array.from(cosmeticTable.tBodies[0].rows);
+            if (medicineTable && medicineTable.tBodies.length) {
+                medicineTableAllRows = Array.from(medicineTable.tBodies[0].rows);
+            }
 
             renderTable('medicineTable');
-            renderTable('cosmeticTable');
         };
     </script>
 @endsection

@@ -2,180 +2,167 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Brand;
+use App\Models\Cashew;
+use App\Models\Expense;
 use App\Models\InstallmentPayment;
 use App\Models\InstallmentPlan;
-use App\Models\Phone;
 use App\Models\Sale;
 use App\Models\SaleItem;
-use App\Models\StockLevel;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $totalPhones = Phone::where('status', 'available')->count();
+        $monthStart = Carbon::now()->startOfMonth();
+        $monthEnd = Carbon::now()->endOfMonth();
 
-        $currentMonth = Carbon::now()->month;
-        $currentYear = Carbon::now()->year;
+        $productCount = Cashew::count();
+        $availableStockUnits = (int) Cashew::where('status', 'available')->sum('quantity');
+        $inventoryValue = (float) (Cashew::where('status', 'available')
+            ->selectRaw('SUM(CAST(unit_price AS REAL) * CAST(quantity AS REAL)) as total_value')
+            ->value('total_value') ?? 0);
 
-        // Monthly Sales
-        $monthlySales = Sale::whereMonth('sale_date', $currentMonth)
-            ->whereYear('sale_date', $currentYear)
+        $monthlySales = (float) Sale::whereBetween('sale_date', [$monthStart, $monthEnd])
             ->sum('final_amount');
 
-        // Pending Installments
-        $pendingInstallmentsAmount = 0;
+        $monthlyExpenses = (float) Expense::whereBetween('expense_date', [
+            $monthStart->toDateString(),
+            $monthEnd->toDateString(),
+        ])->sum('amount');
+
+        $monthlyItems = SaleItem::whereHas('sale', function ($query) use ($monthStart, $monthEnd) {
+            $query->whereBetween('sale_date', [$monthStart, $monthEnd]);
+        })->get();
+
+        $monthlyCogs = (float) $monthlyItems->sum(function ($item) {
+            return (float) ($item->cashews->unit_price ?? 0) * (int) $item->quantity;
+        });
+        $grossProfit = $monthlySales - $monthlyCogs;
+        $netProfit = $grossProfit - $monthlyExpenses;
+        $profitMarginPercentage = $monthlySales > 0 ? ($netProfit / $monthlySales) * 100 : 0;
+
         $activeInstallmentPlans = InstallmentPlan::where('status', 'active')
             ->with(['sale', 'installmentPayments'])
             ->get();
 
-        foreach ($activeInstallmentPlans as $plan) {
-            $totalPaid = $plan->installmentPayments->sum('amount_paid');
-            $remainingAmount = $plan->sale->final_amount - $totalPaid;
-            if ($remainingAmount > 0) {
-                $pendingInstallmentsAmount += $remainingAmount;
-            }
-        }
+        $pendingInstallmentsAmount = (float) $activeInstallmentPlans->sum(function ($plan) {
+            $saleTotal = (float) optional($plan->sale)->final_amount;
+            $paid = (float) $plan->installmentPayments->sum('amount_paid');
 
-        // Profit Margin
-        $totalRevenueThisMonth = $monthlySales;
-        $totalCogsThisMonth = 0;
+            return max($saleTotal - $paid, 0);
+        });
 
-        $soldPhonesThisMonth = SaleItem::whereHas('sale', function ($query) use ($currentMonth, $currentYear) {
-            $query->whereMonth('sale_date', $currentMonth)
-                ->whereYear('sale_date', $currentYear);
-        })->with('phone')->get();
-
-        foreach ($soldPhonesThisMonth as $saleItem) {
-            if ($saleItem->phone) {
-                $totalCogsThisMonth += $saleItem->phone->purchase_price;
-            }
-        }
-
-        $grossProfit = $totalRevenueThisMonth - $totalCogsThisMonth;
-        $profitMarginPercentage = $totalRevenueThisMonth > 0 ? ($grossProfit / $totalRevenueThisMonth) * 100 : 0;
-
-        // Sales chart (last 30 days)
         $salesData = Sale::select(
             DB::raw('DATE(sale_date) as date'),
             DB::raw('SUM(final_amount) as total_sales')
         )
             ->where('sale_date', '>=', Carbon::now()->subDays(30)->startOfDay())
             ->groupBy('date')
-            ->orderBy('date', 'asc')
+            ->orderBy('date')
             ->get();
 
-        $salesChartLabels = $salesData->pluck('date')->map(fn($date) => Carbon::parse($date)->format('j M'))->toArray();
-        $salesChartData = $salesData->pluck('total_sales')->toArray();
+        $salesChartLabels = $salesData->pluck('date')
+            ->map(fn ($date) => Carbon::parse($date)->format('j M'))
+            ->values()
+            ->toArray();
+        $salesChartData = $salesData->pluck('total_sales')
+            ->map(fn ($value) => (float) $value)
+            ->values()
+            ->toArray();
 
-        // Inventory chart
-        $inventoryDistribution = Phone::where('status', 'available')
-            ->select('brand_id', DB::raw('count(*) as count'))
-            ->with('brand')
-            ->groupBy('brand_id')
+        $inventoryDistribution = Cashew::where('status', 'available')
+            ->select('product_id', DB::raw('SUM(CAST(quantity AS REAL)) as count'))
+            ->with('product')
+            ->groupBy('product_id')
+            ->orderByDesc('count')
             ->get();
 
-        $inventoryChartLabels = $inventoryDistribution->pluck('brand.name')->toArray();
-        $inventoryChartData = $inventoryDistribution->pluck('count')->toArray();
+        $inventoryChartLabels = $inventoryDistribution
+            ->map(fn ($stock) => optional($stock->product)->name ?? 'Unknown')
+            ->values()
+            ->toArray();
+        $inventoryChartData = $inventoryDistribution
+            ->map(fn ($stock) => (int) $stock->count)
+            ->values()
+            ->toArray();
 
-        // Low stock products
-        $lowStockProducts = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')
-            ->with('brand')
+        $lowStockProducts = Cashew::with('product')
+            ->where('status', 'available')
+            ->whereRaw('CAST(quantity AS INTEGER) <= low_stock_threshold')
+            ->orderBy('quantity')
             ->get();
 
-        // Notifications count
         $notificationCount = $lowStockProducts->count();
 
-        // Recent Activities
-        $recentSales = Sale::with('saleItems.phone.brand')->latest('sale_date')->take(5)->get()->map(function($sale) {
-            $phoneNames = $sale->saleItems->map(fn($item) => $item->phone->brand->name . ' ' . $item->phone->model)->implode(', ');
-            return [
-                'type' => 'sale',
-                'description' => "✔️ {$phoneNames} sold to {$sale->customer_name} - $" . number_format($sale->final_amount, 2),
-                'date' => $sale->sale_date,
-                'link' => route('sales.show', $sale->id)
-            ];
-        });
+        $recentSales = Sale::with('saleItems.product')
+            ->latest('sale_date')
+            ->take(5)
+            ->get()
+            ->map(function ($sale) {
+                $items = $sale->saleItems
+                    ->map(fn ($item) => (optional($item->product)->name ?? 'Unknown') . ' x ' . $item->quantity)
+                    ->implode(', ');
 
-        $recentReceivedPhones = Phone::with('brand')->latest('received_at')->take(5)->get()->map(function($phone) {
-            return [
-                'type' => 'received',
-                'description' => "📦 1 {$phone->brand->name} {$phone->model} ({$phone->color}) received (IMEI: {$phone->imei})",
-                'date' => $phone->received_at,
-                'link' => route('phones.index')
-            ];
-        });
-
-        $recentInstallmentPayments = InstallmentPayment::with('installmentPlan.sale.saleItems.phone')
-            ->latest('payment_date')->take(5)->get()->map(function($payment) {
-                $phoneName = $payment->installmentPlan?->sale?->saleItems->first()?->phone->brand->name ?? 'N/A';
-                $phoneModel = $payment->installmentPlan?->sale?->saleItems->first()?->phone->model ?? '';
                 return [
-                    'type' => 'payment',
-                    'description' => "💵 Installment payment received for {$phoneName} {$phoneModel} - $" . number_format($payment->amount_paid, 2),
-                    'date' => $payment->payment_date,
-                    'link' => route('sales.show', $payment->installmentPlan->sale->id)
+                    'type' => 'sale',
+                    'description' => "{$items} sold to " . ($sale->customer_name ?: 'Walk-in customer') . ' - Tsh ' . number_format($sale->final_amount, 2),
+                    'date' => $sale->sale_date,
+                    'link' => route('sales.show', $sale->id),
                 ];
             });
 
+        $recentReceivedStock = Cashew::with('product')
+            ->latest('received_at')
+            ->take(5)
+            ->get()
+            ->map(fn ($stock) => [
+                'type' => 'received',
+                'description' => (optional($stock->product)->name ?? 'Unknown') . ' received - ' . number_format($stock->quantity) . ' units',
+                'date' => $stock->received_at ?? $stock->created_at,
+                'link' => route('cashews.index'),
+            ]);
+
+        $recentInstallmentPayments = InstallmentPayment::with('installmentPlan.sale')
+            ->latest('payment_date')
+            ->take(5)
+            ->get()
+            ->map(fn ($payment) => [
+                'type' => 'payment',
+                'description' => 'Installment payment received - Tsh ' . number_format($payment->amount_paid, 2),
+                'date' => $payment->payment_date,
+                'link' => $payment->installmentPlan?->sale
+                    ? route('sales.show', $payment->installmentPlan->sale->id)
+                    : route('installments.index'),
+            ]);
+
         $recentActivities = collect()
             ->concat($recentSales)
-            ->concat($recentReceivedPhones)
+            ->concat($recentReceivedStock)
             ->concat($recentInstallmentPayments)
             ->sortByDesc('date')
-            ->take(8);
+            ->take(8)
+            ->values();
 
-        return view('dashboard', compact(
-            'totalPhones',
-            'monthlySales',
-            'pendingInstallmentsAmount',
-            'profitMarginPercentage',
-            'salesChartLabels',
-            'salesChartData',
-            'inventoryChartLabels',
-            'inventoryChartData',
-            'lowStockProducts',
-            'notificationCount',
-            'recentActivities'
-        ));
-    }
-
-    // Optional: Edit phone action
-    public function editPhone(Phone $phone)
-    {
-        $this->authorize('edit phones');
-        $brands = Brand::all(); // Fetch all brands
-        return view('phones.edit', compact('phone', 'brands'));
-    }
-
-    // Optional: Delete phone action
-    public function deletePhone(Phone $phone)
-    {
-        $this->authorize('delete phones');
-        $phone->delete();
-        return redirect()->back()->with('success', 'Phone deleted successfully');
-    }
-
-    public function updatePhone(Request $request, Phone $phone)
-    {
-        $this->authorize('edit phones');
-
-        $validated = $request->validate([
-            'brand_id' => 'required|exists:brands,id',
-            'model' => 'required|string|max:255',
-            'color' => 'required|string|max:255',
-            'storage_capacity' => 'required|string|max:255',
-            'purchase_price' => 'required|numeric|min:0',
-            'selling_price' => 'required|numeric|min:0',
-            'imei' => 'required|string|max:255|unique:phones,imei,' . $phone->id,
+        return view('dashboard', [
+            'product_count' => $productCount,
+            'totalProducts' => $productCount,
+            'availableStockUnits' => $availableStockUnits,
+            'inventoryValue' => $inventoryValue,
+            'monthlySales' => $monthlySales,
+            'monthlyExpenses' => $monthlyExpenses,
+            'monthlyCogs' => $monthlyCogs,
+            'netProfit' => $netProfit,
+            'pendingInstallmentsAmount' => $pendingInstallmentsAmount,
+            'profitMarginPercentage' => $profitMarginPercentage,
+            'salesChartLabels' => $salesChartLabels,
+            'salesChartData' => $salesChartData,
+            'inventoryChartLabels' => $inventoryChartLabels,
+            'inventoryChartData' => $inventoryChartData,
+            'lowStockProducts' => $lowStockProducts,
+            'notificationCount' => $notificationCount,
+            'recentActivities' => $recentActivities,
         ]);
-
-        $phone->update($validated);
-
-        return redirect()->back()->with('success', 'Phone updated successfully');
     }
 }

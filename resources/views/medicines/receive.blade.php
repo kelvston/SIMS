@@ -5,50 +5,123 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
+
         .modal {
             background-color: rgba(0, 0, 0, 0.5);
             transition: opacity 0.3s ease-in-out;
         }
+
         .modal-content {
             transform: translateY(-20px);
             transition: transform 0.3s ease-in-out;
         }
+
         .modal:not(.hidden) .modal-content {
             transform: translateY(0);
+        }
+
+        /* Custom searchable select styles */
+        .custom-select {
+            position: relative;
+            width: 100%;
+        }
+
+        .select-selected {
+            background-color: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 8px 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .select-selected:after {
+            position: absolute;
+            content: "";
+            top: 18px;
+            right: 10px;
+            width: 0;
+            height: 0;
+            border: 6px solid transparent;
+            border-color: #6b7280 transparent transparent transparent;
+        }
+
+        .select-selected.select-arrow-active:after {
+            border-color: transparent transparent #6b7280 transparent;
+            top: 12px;
+        }
+
+        .select-items {
+            position: absolute;
+            background-color: white;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 99;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .search-box {
+            padding: 8px;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            background: white;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 14px;
+        }
+
+        .select-items div {
+            padding: 8px 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .select-items div:hover {
+            background-color: #f3f4f6;
+        }
+
+        .same-as-selected {
+            background-color: #e5e7eb;
         }
     </style>
 
     <div class="container mx-auto bg-white p-8 rounded-xl shadow-2xl mt-10 relative max-w-6xl">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Receive Inventory</h1>
-        <p class="text-center text-gray-500 mb-8">Fill in the shared details and then scan each medicine's to add to the list.</p>
 
-        <div id="toast-container" class="fixed top-4 right-4 z-50"></div>
-        <div id="confirmation-modal" class="modal fixed inset-0 z-50 overflow-y-auto hidden">
-            <div class="flex items-center justify-center min-h-screen p-4">
-                <div class="modal-content bg-white rounded-lg shadow-xl p-8 max-w-sm w-full relative text-center">
-                    <p id="confirmation-message" class="mb-4 text-gray-800"></p>
-                    <div class="flex justify-center space-x-4">
-                        <button id="cancel-confirm-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full">Cancel</button>
-                        <button id="confirm-action-btn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full">Confirm</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">
+            Receive Product Inventory
+        </h1>
+
+        <p class="text-center text-gray-500 mb-8">
+            Add products and quantities to inventory stock.
+        </p>
 
         @if (session('success'))
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
                 <strong class="font-bold">Success!</strong>
                 <span class="block sm:inline">{{ session('success') }}</span>
             </div>
         @endif
 
         @if ($errors->any())
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
                 <strong class="font-bold">Validation Error!</strong>
+
                 <ul class="mt-2 list-disc list-inside">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -57,833 +130,539 @@
             </div>
         @endif
 
-        <form action="{{ route('medicines.receive.store') }}" method="POST" id="main-form">
+        <form action="{{ route('cashews.receive.store') }}" method="POST" id="main-form">
             @csrf
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-                <div class="p-6 border rounded-lg bg-white shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-2xl font-semibold text-gray-700">Medicines</h2>
-                        <button type="button" id="add-medicine-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
-                            + Add Medicine
-                        </button>
-                    </div>
-                    <p class="text-sm text-gray-500 mb-6">Add an Medicine and its quantity. The details will be added below as a summary.</p>
-                    <div id="medicine-list" class="space-y-4">
-                    </div>
+
+            <div class="p-6 border rounded-lg bg-white shadow-sm">
+
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-semibold text-gray-700">
+                         Products
+                    </h2>
+
+                    <button type="button"
+                            id="add-cashew-btn"
+                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
+                        + Add Product
+                    </button>
                 </div>
 
-                <div class="p-6 border rounded-lg bg-white shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-2xl font-semibold text-gray-700">Cosmetics</h2>
-                        <button type="button" id="add-cosmetic-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
-                            + Add Cosmetic
-                        </button>
-                    </div>
-                    <p class="text-sm text-gray-500 mb-6">Add an cosmetic and its quantity. The details will be added below as a summary.</p>
-                    <div id="cosmetic-list" class="space-y-4">
-                    </div>
-                </div>
+                <p class="text-sm text-gray-500 mb-6">
+                    Add products and quantities. Added products will appear below.
+                </p>
+
+                <div id="cashew-list" class="space-y-4"></div>
             </div>
 
             <div class="flex items-center justify-between mt-6">
-                <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full focus:outline-none focus:shadow-outline transition duration-300 ease-in-out shadow-lg">
-                    Receive Inventory
+                <button type="submit"
+                        class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full focus:outline-none focus:shadow-outline transition duration-300 ease-in-out shadow-lg">
+                    Receive Cashew Stock
                 </button>
-                <a href="{{ route('medicines.index') }}" class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
-                    View All Medicines
+
+                <a href="{{ route('cashews.index') }}"
+                   class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
+                    View All Cashew Products
                 </a>
             </div>
 
-{{--            <div id="medicine-hidden-inputs"></div>--}}
+            <div id="hidden-inputs"></div>
         </form>
     </div>
 
-    <div id="cosmetic-modal" class="modal fixed inset-0 z-50 overflow-y-auto hidden">
+    <!-- Modal -->
+    <div id="cashew-modal" class="modal fixed inset-0 z-50 overflow-y-auto hidden">
         <div class="flex items-center justify-center min-h-screen p-4">
+
             <div class="modal-content bg-white rounded-lg shadow-xl p-8 max-w-lg w-full relative">
-                <h3 class="text-xl font-bold mb-4">Add/Edit Cosmetic</h3>
-                <form id="cosmetic-form">
-                    <input type="hidden" id="cosmetic-index" value="">
+
+                <h3 class="text-xl font-bold mb-4">
+                    Add/Edit New Product
+                </h3>
+
+                <form id="cashew-form">
+
+                    <input type="hidden" id="cashew-index">
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="col-span-2 relative">
-                            <label class="block text-sm font-medium text-gray-700">Cosmetic Name</label>
-                            <input
-                                type="text"
-                                id="modal-name"
-                                class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full"
-                                placeholder="Search or enter a new Cosmetic"
-                            >
-                            <input type="hidden" id="selected-cosmetic-id">
-                            <ul id="cosmetic-name-dropdown" class="absolute z-10 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg max-h-48 overflow-y-auto hidden"></ul>
+
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Product Name <span class="text-red-500">*</span>
+                            </label>
+                            <div class="custom-select" id="custom-select-container">
+                                <div class="select-selected" id="select-selected">-- Search and select a product --</div>
+                                <div class="select-items" id="select-items">
+                                    <div class="search-box">
+                                        <input type="text" id="search-input" placeholder="Search products..." autocomplete="off">
+                                    </div>
+                                    <div id="options-list">
+                                        @foreach($products as $id => $name)
+                                            <div data-value="{{ $id }}" data-name="{{ $name }}">{{ $name }}</div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="modal-product-id" name="product_id" required>
+                            <input type="hidden" id="modal-product-name" name="name">
                         </div>
-                        <div class="relative">
-                            <label class="block text-sm font-medium text-gray-700">Category</label>
-                            <input
-                                type="text"
-                                id="cosmetic-category-input"
-                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline cursor-pointer"
-                                placeholder="Search or select a Category"
-                            >
-                            <input type="hidden" id="cosmetic-category-id">
-                            <ul id="category-dropdown" class="absolute z-10 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg max-h-48 overflow-y-auto hidden"></ul>
-                        </div>
+
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Barcode</label>
-                            <input type="text" id="modal-barcode" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="Scan or type barcode">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Unit</label>
-                            <select id="modal-unit" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Unit <span class="text-red-500">*</span>
+                            </label>
+                            <select id="modal-unit"
+                                    class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full"
+                                    required>
+                                <option value="">Select unit...</option>
+                                <option value="kg">Kilogram (kg)</option>
+                                <option value="gram">Gram (g)</option>
+                                <option value="box">Box</option>
+                                <option value="package">Package</option>
+                                <option value="bag">Bag</option>
+                                <option value="carton">Carton</option>
                                 <option value="piece">Piece</option>
-                                <option value="pack">Pack</option>
+                                <option value="ton">Ton</option>
                             </select>
                         </div>
+
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Purchase Price</label>
-                            <input type="number" step="0.01" id="modal-purchase-price" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="P. Price">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Unit Price (TZS)
+                            </label>
+                            <input type="number"
+                                   step="0.01"
+                                   id="modal-unit-price"
+                                   class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full"
+                                   placeholder="Price per unit">
                         </div>
+
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Selling Price</label>
-                            <input type="number" step="0.01" id="modal-selling-price" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="S. Price">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Selling Price (TZS)
+                            </label>
+                            <input type="number"
+                                   step="0.01"
+                                   id="modal-selling-price"
+                                   class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full"
+                                   placeholder="Selling price per unit">
                         </div>
+
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Description</label>
-                            <input type="text" step="0.01" id="modal-description" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="S. OS">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Stock Origin
+                            </label>
+                            <input type="text"
+                                   id="modal-stock-origin"
+                                   class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full"
+                                   placeholder="e.g. Mtwara">
                         </div>
+
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Stock Origin</label>
-                            <input type="text" step="0.01" id="modal-stock_origin" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="S.ORIGIN">
-                        </div>
-                        <div class="col-span-2">
-                            <label class="block text-sm font-medium text-gray-700">Quantity</label>
-                            <input type="number" id="modal-quantity" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="Qty">
-                        </div>
-                    </div>
-                    <div class="mt-6 flex justify-end space-x-2">
-                        <button type="button" id="close-cosmetic-modal-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full">Cancel</button>
-                        <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Save</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    <div id="medicine-modal" class="modal fixed inset-0 z-50 overflow-y-auto hidden">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="modal-content bg-white rounded-lg shadow-xl p-8 max-w-lg w-full relative">
-                <h3 class="text-xl font-bold mb-4">Add/Edit Medicine</h3>
-                <form id="medicine-form">
-{{--                    <input type="hidden" id="medicine-index" value="">--}}
-                    <input type="hidden" id="medicine-index" value="">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="col-span-2 relative">
-                            <label class="block text-sm font-medium text-gray-700">Medicine Name</label>
-                            <input
-                                type="text"
-                                id="modal-medicine_name"
-                                class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full"
-                                placeholder="Search or enter a new Medicine"
-                            >
-                            <input type="hidden" id="selected-medicine-id">
-                            <ul id="medicine-name-dropdown" class="absolute z-10 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg max-h-48 overflow-y-auto hidden"></ul>
-                        </div>
-                        <div class="relative">
-                            <label class="block text-sm font-medium text-gray-700">Category</label>
-                            <input
-                                type="text"
-                                id="medicine-category-input"
-                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline cursor-pointer"
-                                placeholder="Search or select a Category"
-                            >
-                            <input type="hidden" id="medicine-category-id">
-                            <ul id="category-medicine_dropdown" class="absolute z-10 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg max-h-48 overflow-y-auto hidden"></ul>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Barcode</label>
-                            <input type="text" id="modal-barcode" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="Scan or type barcode">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Unit</label>
-                            <select id="modal-unit" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full">
-                                <option value="piece">Piece</option>
-                                <option value="pack">Pack</option>
+                            <label class="block text-sm font-medium text-gray-700">
+                                Condition
+                            </label>
+                            <select id="modal-condition"
+                                    class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full">
+                                <option value="">Select condition...</option>
+                                <option value="excellent">Excellent</option>
+                                <option value="good">Good</option>
+                                <option value="fair">Fair</option>
+                                <option value="poor">Poor</option>
                             </select>
                         </div>
+
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Purchase Price</label>
-                            <input type="number" step="0.01" id="modal-purchase-price" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="P. Price">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Batch Number
+                            </label>
+                            <input type="text"
+                                   id="modal-batch-number"
+                                   class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full"
+                                   placeholder="Batch number">
                         </div>
+
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Selling Price</label>
-                            <input type="number" step="0.01" id="modal-selling-price" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="S. Price">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Received At
+                            </label>
+                            <input type="date"
+                                   id="modal-received-at"
+                                   class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full"
+                                   value="{{ date('Y-m-d') }}">
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Description</label>
-                            <input type="text" step="0.01" id="modal-description" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="S. OS">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Stock Origin</label>
-                            <input type="text" step="0.01" id="modal-stock_origin" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="S.ORIGIN">
-                        </div>
+
                         <div class="col-span-2">
-                            <label class="block text-sm font-medium text-gray-700">Quantity</label>
-                            <input type="number" id="modal-quantity" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full" placeholder="Qty">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Quantity <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number"
+                                   id="modal-quantity"
+                                   class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full"
+                                   placeholder="Quantity"
+                                   required>
                         </div>
+
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Low Stock Threshold
+                            </label>
+                            <input type="number"
+                                   id="modal-low-stock-threshold"
+                                   class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full"
+                                   placeholder="Low stock threshold"
+                                   value="5"
+                                   min="0">
+                        </div>
+
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Description
+                            </label>
+                            <textarea id="modal-description"
+                                      rows="3"
+                                      class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full"
+                                      placeholder="Additional description..."></textarea>
+                        </div>
+
                     </div>
+
                     <div class="mt-6 flex justify-end space-x-2">
-                        <button type="button" id="close-medicine-modal-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full">Cancel</button>
-                        <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Save</button>
+
+                        <button type="button"
+                                id="close-modal-btn"
+                                class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full">
+                            Cancel
+                        </button>
+
+                        <button type="submit"
+                                class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">
+                            Save
+                        </button>
+
                     </div>
+
                 </form>
+
             </div>
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // --- Shared Data and Functions ---
-            const medicines = @json($products);
-            const cosmeticCategories = @json($cosmetic_categories);
-            const cosmetics = @json($cosmetics);
+        document.addEventListener('DOMContentLoaded', function () {
 
-            let cosmeticsData = [];
-            let cosmeticCounter = 0;
+            let cashewsData = [];
+            let cashewCounter = 0;
 
-            let medicinesData = [];
-            let medicineCounter = 0;
+            const cashewModal = document.getElementById('cashew-modal');
+            const addCashewBtn = document.getElementById('add-cashew-btn');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const cashewForm = document.getElementById('cashew-form');
+            const cashewList = document.getElementById('cashew-list');
+            const hiddenInputs = document.getElementById('hidden-inputs');
 
+            // Custom select dropdown functionality
+            let selectSelected = document.getElementById('select-selected');
+            let selectItems = document.getElementById('select-items');
+            let searchInput = document.getElementById('search-input');
+            let optionsList = document.getElementById('options-list');
+            let modalProductId = document.getElementById('modal-product-id');
+            let modalProductName = document.getElementById('modal-product-name');
 
-            // --- DOM Elements ---
-            const productInput = document.getElementById('medicine-product-input');
-            const productHiddenInput = document.getElementById('medicine-product');
-            const productDropdown = document.getElementById('product-dropdown');
-            // Add a condition input
-            const conditionInput = document.getElementById('condition-input'); // Assuming you add this input to your HTML
-            const barcodeInput = document.getElementById('barcode-input');
-            const addImeiBtn = document.getElementById('add-barcode-btn');
-            const barcodeList = document.getElementById('barcode-list');
-            const noImeiPlaceholder = document.getElementById('no-barcode-placeholder');
-            const medicineHiddenInputs = document.getElementById('medicine-hidden-inputs');
+            // Get all options
+            let allOptions = Array.from(optionsList.querySelectorAll('div[data-value]'));
 
-            const cosmeticModal = document.getElementById('cosmetic-modal');
-            const addCosmeticBtn = document.getElementById('add-cosmetic-btn');
-            const addMedicineBtn = document.getElementById('add-medicine-btn');
-            const closeCosmeticModalBtn = document.getElementById('close-cosmetic-modal-btn');
-            const medicineModal = document.getElementById('medicine-modal');
-            const closeMedicineModalBtn = document.getElementById('close-medicine-modal-btn');
-            const cosmeticForm = document.getElementById('cosmetic-form');
-            const medicineForm = document.getElementById('medicine-form');
-            const cosmeticList = document.getElementById('cosmetic-list');
-            const medicineList = document.getElementById('medicine-list');
-            const cosmeticNameInput = document.getElementById('modal-name');
-            const medicineNameInput = document.getElementById('modal-medicine_name');
-            const cosmeticNameDropdown = document.getElementById('cosmetic-name-dropdown');
-            const medicineNameDropdown = document.getElementById('medicine-name-dropdown');
-            const selectedCosmeticIdInput = document.getElementById('selected-cosmetic-id');
-            const selectedMedicineIdInput = document.getElementById('selected-medicine-id');
-            const cosmeticCategoryInput = document.getElementById('cosmetic-category-input');
-            const medicineCategoryInput = document.getElementById('medicine-category-input');
-            const cosmeticCategoryIdHidden = document.getElementById('cosmetic-category-id');
-            const medicineCategoryIdHidden = document.getElementById('medicine-category-id');
-            const cosmeticCategoryDropdown = document.getElementById('category-dropdown');
-            const medicineCategoryDropdown = document.getElementById('category-medicine_dropdown');
-            const mainForm = document.getElementById('main-form');
-            const medicinePurchasePriceInput = document.getElementById('medicine-purchase-price');
-            const medicineSellingPriceInput = document.getElementById('medicine-selling-price');
-            const descriptionInput = document.getElementById('description');
-            const stockOriginInput = document.getElementById('stock_origin');
-            const submitButton = mainForm.querySelector('button[type="submit"]');
-
-            // let medicinesData = [];
-
-            function updateSubmitButtonState() {
-                if (medicinesData.length > 0 || cosmeticsData.length > 0) {
-                    submitButton.disabled = false;
-                    submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                } else {
-                    submitButton.disabled = true;
-                    submitButton.classList.add('opacity-50', 'cursor-not-allowed');
-                }
-            }
-
-            function showToast(message, type = 'success') {
-                const toastContainer = document.getElementById('toast-container');
-                const toast = document.createElement('div');
-                toast.className = `p-4 rounded-lg shadow-lg mb-4 text-white flex items-center space-x-2 animate-fade-in-down`;
-                if (type === 'success') {
-                    toast.classList.add('bg-green-500');
-                    toast.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> <span>${message}</span>`;
-                } else {
-                    toast.classList.add('bg-red-500');
-                    toast.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> <span>${message}</span>`;
-                }
-                toastContainer.appendChild(toast);
-                setTimeout(() => toast.remove(), 5000);
-            }
-
-            const confirmationModal = document.getElementById('confirmation-modal');
-            const confirmationMessage = document.getElementById('confirmation-message');
-            const cancelConfirmBtn = document.getElementById('cancel-confirm-btn');
-            const confirmActionBtn = document.getElementById('confirm-action-btn');
-            let confirmationPromiseResolver;
-
-            function showConfirmation(message) {
-                return new Promise((resolve) => {
-                    confirmationMessage.textContent = message;
-                    confirmationModal.classList.remove('hidden');
-                    confirmationPromiseResolver = resolve;
-                });
-            }
-
-            cancelConfirmBtn.addEventListener('click', () => {
-                confirmationModal.classList.add('hidden');
-                confirmationPromiseResolver(false);
-            });
-
-            confirmActionBtn.addEventListener('click', () => {
-                confirmationModal.classList.add('hidden');
-                confirmationPromiseResolver(true);
-            });
-
-            // --- BARCODEs Section (Main Logic) ---
-
-            function addImei() {
-                const barcode = barcodeInput.value.trim();
-                // if (!barcode) {
-                //     showToast('BARCODE cannot be empty.', 'error');
-                //     return;
-                // }
-
-                const product = productInput.value.trim();
-                const purchasePrice = medicinePurchasePriceInput.value;
-                const sellingPrice = medicineSellingPriceInput.value;
-                const description = descriptionInput.value;
-                const stockOrigin = stockOriginInput.value;
-                const productId = productHiddenInput.value;
-
-                if (!productId ||!colorId || !storageId || !purchasePrice || !sellingPrice || !description || !stockOrigin) {
-                    showToast('Please fill in all medicine details (Product and Prices) from the dropdowns before adding an BARCODE.', 'error');
-                    return;
-                }
-
-                if (medicinesData.some(medicine => medicine.barcode === barcode)) {
-                    showToast('BARCODE already exists in the list.', 'error');
-                    barcodeInput.value = '';
-                    return;
-                }
-
-                medicinesData.push({
-                    product_id: productId,
-                    product_name: product,
-                    purchase_price: purchasePrice,
-                    selling_price: sellingPrice,
-                    description: description,
-                    stock_origin: stockOrigin,
-                    // You can hardcode a condition for now or add a dropdown to your HTML
-                    condition: 'New'
-                });
-
-                renderImeiList();
-                barcodeInput.value = '';
-                barcodeInput.focus();
-                showToast('BARCODE added successfully!', 'success');
-
-                updateSubmitButtonState();
-            }
-
-            let barcodeTypingTimer;
-            const barcodeDoneTypingInterval = 200;
-
-
-            function renderImeiList() {
-                if (noImeiPlaceholder) noImeiPlaceholder.classList.add('hidden');
-                barcodeList.innerHTML = '';
-
-                // Remove existing hidden inputs to avoid duplicates
-                document.querySelectorAll('input[name^="medicines"]').forEach(el => el.remove());
-
-                medicinesData.forEach((medicine, index) => {
-                    const listItem = document.createElement('li');
-                    listItem.className = 'flex justify-between items-center bg-white p-3 rounded-md shadow-sm mb-2 text-gray-700';
-                    listItem.innerHTML = `
-<!--                <span><strong>BARCODE:</strong> ${medicine.barcode} - ${medicine.product_name} ${medicine.model_name}</span>-->
-                <button type="button" class="remove-barcode-btn text-red-500 hover:text-red-700 font-bold" data-index="${index}">&times;</button>
-            `;
-                    barcodeList.appendChild(listItem);
-                    // Now, handle the nested 'barcodes' array
-
-                    const inputCondition = document.createElement('input');
-                    inputCondition.type = 'hidden';
-                    inputCondition.name = `medicines[${index}][barcodes][0][condition]`;
-                    inputCondition.value = medicine.condition;
-                    medicineHiddenInputs.appendChild(inputCondition);
-
-                    // Also, don't forget the other fields that don't need to be nested
-                    const inputProductId = document.createElement('input');
-                    inputProductId.type = 'hidden';
-                    inputProductId.name = `medicines[${index}][product_id]`;
-                    inputProductId.value = medicine.product_id;
-                    medicineHiddenInputs.appendChild(inputProductId);
-
-                    const inputPurchasePrice = document.createElement('input');
-                    inputPurchasePrice.type = 'hidden';
-                    inputPurchasePrice.name = `medicines[${index}][purchase_price]`;
-                    inputPurchasePrice.value = medicine.purchase_price;
-                    medicineHiddenInputs.appendChild(inputPurchasePrice);
-
-                    const inputSellingPrice = document.createElement('input');
-                    inputSellingPrice.type = 'hidden';
-                    inputSellingPrice.name = `medicines[${index}][selling_price]`;
-                    inputSellingPrice.value = medicine.selling_price;
-                    medicineHiddenInputs.appendChild(inputSellingPrice);
-
-                    const inputDescription = document.createElement('input');
-                    inputDescription.type = 'hidden';
-                    inputDescription.name = `medicines[${index}][description]`;
-                    inputDescription.value = medicine.description;
-                    medicineHiddenInputs.appendChild(inputDescription);
-
-                    const inputStockOrigin = document.createElement('input');
-                    inputStockOrigin.type = 'hidden';
-                    inputStockOrigin.name = `medicines[${index}][stock_origin]`;
-                    inputStockOrigin.value = medicine.stock_origin;
-                    medicineHiddenInputs.appendChild(inputStockOrigin);
-                });
-
-                if (medicinesData.length === 0) {
-                    if (noImeiPlaceholder) noImeiPlaceholder.classList.remove('hidden');
-                }
-            }
-
-
-            // --- Other Sections (dropdowns, cosmetics, etc.) ---
-            function renderDropdown(dropdownElement, data, type, inputElement, hiddenInputElement, isIdRequired = false) {
-                dropdownElement.innerHTML = '';
-                if (data.length === 0) {
-                    const noResults = document.createElement('li');
-                    noResults.className = 'px-3 py-2 text-gray-500';
-                    noResults.textContent = `No ${type}s found.`;
-                    dropdownElement.appendChild(noResults);
-                } else {
-                    data.forEach(item => {
-                        const listItem = document.createElement('li');
-                        listItem.className = 'cursor-pointer px-3 py-2 hover:bg-gray-100';
-                        listItem.textContent = item.name;
-                        listItem.dataset.value = item.name;
-                        listItem.dataset.id = item.id;
-
-                        listItem.addEventListener('click', () => {
-                            inputElement.value = item.name;
-                            if (isIdRequired) {
-                                hiddenInputElement.value = item.id;
-                            } else {
-                                hiddenInputElement.value = item.name;
-                            }
-                            dropdownElement.classList.add('hidden');
-                        });
-                        dropdownElement.appendChild(listItem);
-                    });
-                }
-            }
-
-            // productInput.addEventListener('input', () => {
-            //     const filter = productInput.value.toLowerCase();
-            //     const filteredProducts = products.filter(b => b.name.toLowerCase().includes(filter));
-            //     renderDropdown(productDropdown, filteredProducts, 'product', productInput, productHiddenInput, true);
-            //     productDropdown.classList.remove('hidden');
-            // });
-            //
-            // productInput.addEventListener('focus', () => {
-            //     const filter = productInput.value.toLowerCase();
-            //     const filteredProducts = products.filter(b => b.name.toLowerCase().includes(filter));
-            //     renderDropdown(productDropdown, filteredProducts, 'product', productInput, productHiddenInput, true);
-            //     productDropdown.classList.remove('hidden');
-            // });
-
-            cosmeticCategoryInput.addEventListener('input', () => {
-                const filter = cosmeticCategoryInput.value.toLowerCase();
-                const filteredCategories = cosmeticCategories.filter(c => c.name.toLowerCase().includes(filter));
-                renderDropdown(cosmeticCategoryDropdown, filteredCategories, 'category', cosmeticCategoryInput, cosmeticCategoryIdHidden, true);
-                cosmeticCategoryDropdown.classList.remove('hidden');
-            });
-            cosmeticCategoryInput.addEventListener('focus', () => {
-                const filter = cosmeticCategoryInput.value.toLowerCase();
-                const filteredCategories = cosmeticCategories.filter(c => c.name.toLowerCase().includes(filter));
-                renderDropdown(cosmeticCategoryDropdown, filteredCategories, 'category', cosmeticCategoryInput, cosmeticCategoryIdHidden, true);
-                cosmeticCategoryDropdown.classList.remove('hidden');
-            });
-            medicineCategoryInput.addEventListener('input', () => {
-                const filter = medicineCategoryInput.value.toLowerCase();
-                const filteredCategories = medicineCategories.filter(c => c.name.toLowerCase().includes(filter));
-                renderDropdown(medicineCategoryDropdown, filteredCategories, 'category', medicineCategoryInput, medicineCategoryIdHidden, true);
-                medicineCategoryDropdown.classList.remove('hidden');
-            });
-            medicineCategoryInput.addEventListener('focus', () => {
-                const filter = medicineCategoryInput.value.toLowerCase();
-                const filteredCategories = medicineCategories.filter(c => c.name.toLowerCase().includes(filter));
-                renderDropdown(medicineCategoryDropdown, filteredCategories, 'category', medicineCategoryInput, medicineCategoryIdHidden, true);
-                medicineCategoryDropdown.classList.remove('hidden');
-            });
-
-            document.addEventListener('click', (event) => {
-                // if (!productInput.parentElement.contains(event.target)) {
-                //     productDropdown.classList.add('hidden');
-                // }
-                if (!cosmeticCategoryInput.parentElement.contains(event.target)) {
-                    cosmeticCategoryDropdown.classList.add('hidden');
-                }
-                if (!cosmeticNameInput.parentElement.contains(event.target)) {
-                    cosmeticNameDropdown.classList.add('hidden');
-                }
-                if (!medicineCategoryInput.parentElement.contains(event.target)) {
-                    medicineCategoryDropdown.classList.add('hidden');
-                }
-                if (!medicineNameInput.parentElement.contains(event.target)) {
-                    medicineNameDropdown.classList.add('hidden');
-                }
-            });
-
-            addCosmeticBtn.addEventListener('click', () => {
-                cosmeticForm.reset();
-                selectedCosmeticIdInput.value = '';
-                document.getElementById('cosmetic-index').value = '';
-                cosmeticModal.classList.remove('hidden');
-            });
-            addMedicineBtn.addEventListener('click', () => {
-                medicineForm.reset();
-                selectedMedicineIdInput.value = '';
-                document.getElementById('medicine-index').value = '';
-                medicineModal.classList.remove('hidden');
-            });
-
-            closeCosmeticModalBtn.addEventListener('click', () => cosmeticModal.classList.add('hidden'));
-            closeMedicineModalBtn.addEventListener('click', () => medicineModal.classList.add('hidden'));
-
-            cosmeticNameInput.addEventListener('input', () => {
-                const filter = cosmeticNameInput.value.toLowerCase();
-                const filteredCosmetics = cosmetics.filter(acc => acc.name.toLowerCase().includes(filter));
-                renderCosmeticNameDropdown(filteredCosmetics, cosmeticNameDropdown);
-                cosmeticNameDropdown.classList.remove('hidden');
-            });
-
-            cosmeticNameInput.addEventListener('focus', () => {
-                const filter = cosmeticNameInput.value.toLowerCase();
-                const filteredCosmetics = cosmetics.filter(acc => acc.name.toLowerCase().includes(filter));
-                renderCosmeticNameDropdown(filteredCosmetics, cosmeticNameDropdown);
-                cosmeticNameDropdown.classList.remove('hidden');
-            });
-            medicineNameInput.addEventListener('input', () => {
-                const filter = medicineNameInput.value.toLowerCase();
-                const filteredMedicines = medicines.filter(acc => acc.name.toLowerCase().includes(filter));
-                renderMedicineNameDropdown(filteredMedicines, medicineNameDropdown);
-                medicineNameDropdown.classList.remove('hidden');
-            });
-
-            medicineNameInput.addEventListener('focus', () => {
-                const filter = medicineNameInput.value.toLowerCase();
-                const filteredMedicines = medicines.filter(acc => acc.name.toLowerCase().includes(filter));
-                renderMedicineNameDropdown(filteredMedicines, medicineNameDropdown);
-                medicineNameDropdown.classList.remove('hidden');
-            });
-
-            function renderCosmeticNameDropdown(data, dropdownElement) {
-                dropdownElement.innerHTML = '';
-                if (data.length === 0) {
-                    const noResults = document.createElement('li');
-                    noResults.className = 'px-3 py-2 text-gray-500';
-                    noResults.textContent = 'No existing cosmetics found. Create a new one.';
-                    dropdownElement.appendChild(noResults);
-                } else {
-                    data.forEach(item => {
-                        const listItem = document.createElement('li');
-                        listItem.className = 'cursor-pointer px-3 py-2 hover:bg-gray-100';
-                        listItem.textContent = `${item.name} ($${parseFloat(item.selling_price).toFixed(2)})`;
-                        listItem.addEventListener('click', () => {
-                            cosmeticNameInput.value = item.name;
-                            selectedCosmeticIdInput.value = item.id;
-                            document.getElementById('modal-purchase-price').value = item.purchase_price;
-                            document.getElementById('modal-selling-price').value = item.selling_price;
-                            document.getElementById('modal-description').value = item.description;
-                            document.getElementById('modal-stock_origin').value = item.stock_origin;
-                            document.getElementById('modal-unit').value = item.unit;
-                            if (item.category_id) {
-                                const category = cosmeticCategories.find(c => c.id === item.category_id);
-                                if (category) {
-                                    cosmeticCategoryInput.value = category.name;
-                                    cosmeticCategoryIdHidden.value = category.id;
-                                }
-                            }
-                            dropdownElement.classList.add('hidden');
-                        });
-                        dropdownElement.appendChild(listItem);
-                    });
-                }
-            }
-
-            function renderMedicineNameDropdown(data, dropdownElement) {
-                dropdownElement.innerHTML = '';
-                if (data.length === 0) {
-                    const noResults = document.createElement('li');
-                    noResults.className = 'px-3 py-2 text-gray-500';
-                    noResults.textContent = 'No existing cosmetics found. Create a new one.';
-                    dropdownElement.appendChild(noResults);
-                } else {
-                    data.forEach(item => {
-                        const listItem = document.createElement('li');
-                        listItem.className = 'cursor-pointer px-3 py-2 hover:bg-gray-100';
-                        listItem.textContent = `${item.name} ($${parseFloat(item.selling_price).toFixed(2)})`;
-                        listItem.addEventListener('click', () => {
-                            medicineNameInput.value = item.name;
-                            selectedMedicineIdInput.value = item.id;
-                            document.getElementById('modal-purchase-price').value = item.purchase_price;
-                            document.getElementById('modal-selling-price').value = item.selling_price;
-                            document.getElementById('modal-description').value = item.description;
-                            document.getElementById('modal-stock_origin').value = item.stock_origin;
-                            document.getElementById('modal-unit').value = item.unit;
-                            alert(item.category_id);
-                            if (item.category_id) {
-                                const category = medicineCategories.find(c => c.id === item.category_id);
-                                if (category) {
-                                    medicineCategoryInput.value = category.name;
-                                    medicineCategoryIdHidden.value = category.id;
-                                }
-                            }
-                            dropdownElement.classList.add('hidden');
-                        });
-                        dropdownElement.appendChild(listItem);
-                    });
-                }
-            }
-
-            cosmeticForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const index = document.getElementById('cosmetic-index').value;
-                const name = document.getElementById('modal-name').value;
-                const existingCosmeticId = selectedCosmeticIdInput.value;
-                const categoryId = document.getElementById('cosmetic-category-id').value;
-                const categoryName = document.getElementById('cosmetic-category-input').value;
-                const barcode = document.getElementById('modal-barcode').value;
-                const unit = document.getElementById('modal-unit').value;
-                const purchasePrice = document.getElementById('modal-purchase-price').value;
-                const sellingPrice = document.getElementById('modal-selling-price').value;
-                const stockOrigin = document.getElementById('modal-stock_origin').value;
-                const description = document.getElementById('modal-description').value;
-                const quantity = document.getElementById('modal-quantity').value;
-
-                if (!name || !quantity) {
-                    showToast('Name and Quantity are required.', 'error');
-                    return;
-                }
-
-                const cosmetic = {
-                    id: existingCosmeticId || (index ? cosmeticsData[index].id : cosmeticCounter++),
-                    name,
-                    category_id: categoryId,
-                    category_name: categoryName,
-                    barcode,
-                    unit,
-                    purchase_price: purchasePrice,
-                    selling_price: sellingPrice,
-                    description: description,
-                    stock_origin: stockOrigin,
-                    quantity
-                };
-
-                if (index) {
-                    cosmeticsData[index] = cosmetic;
-                } else {
-                    cosmeticsData.push(cosmetic);
-                }
-                renderCosmeticList();
-                cosmeticModal.classList.add('hidden');
-            });
-            medicineForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const indexMedicine = document.getElementById('medicine-index').value;
-                const name = document.getElementById('modal-medicine_name').value;
-                const existingMedicineId = selectedMedicineIdInput.value;
-                const categoryId = document.getElementById('medicine-category-id').value;
-                const categoryName = document.getElementById('medicine-category-input').value;
-                const barcode = document.getElementById('modal-barcode').value;
-                const unit = document.getElementById('modal-unit').value;
-                const purchasePrice = document.getElementById('modal-purchase-price').value;
-                const sellingPrice = document.getElementById('modal-selling-price').value;
-                const stockOrigin = document.getElementById('modal-stock_origin').value;
-                const description = document.getElementById('modal-description').value;
-                const quantity = document.getElementById('modal-quantity').value;
-
-                if (!name || !quantity) {
-                    showToast('Name and Quantity are required.', 'error');
-                    return;
-                }
-
-                const medicine = {
-                    id: existingMedicineId || (indexMedicine ? medicinesData[indexMedicine].id : medicineCounter++),
-                    name,
-                    category_id: categoryId,
-                    category_name: categoryName,
-                    barcode,
-                    unit,
-                    purchase_price: purchasePrice,
-                    selling_price: sellingPrice,
-                    description: description,
-                    stock_origin: stockOrigin,
-                    quantity
-                };
-
-                if (indexMedicine) {
-                    medicinesData[indexMedicine] = medicine;
-                } else {
-                    medicinesData.push(medicine);
-                }
-                renderMedicineList();
-                medicineModal.classList.add('hidden');
-            });
-
-            function renderCosmeticList() {
-                cosmeticList.innerHTML = '';
-
-                document.querySelectorAll('input[name^="cosmetics"]').forEach(el => el.remove());
-
-                cosmeticsData.forEach((cosmetic, index) => {
-                    const card = document.createElement('div');
-                    card.className = 'bg-gray-100 p-4 rounded-md shadow-sm mb-2';
-                    card.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h4 class="font-semibold">${cosmetic.name}</h4>
-                        <p class="text-sm text-gray-600">Category: ${cosmetic.category_name || 'N/A'}</p>
-                        ${cosmetic.barcode ? `<p class="text-xs text-gray-400">Barcode: ${cosmetic.barcode}</p>` : ''}
-                    </div>
-                    <div class="text-right">
-                        <p class="text-lg font-bold">${cosmetic.quantity} pcs</p>
-                        <p class="text-sm text-gray-500">P.Price: $${parseFloat(cosmetic.purchase_price || 0).toFixed(2)}</p>
-                    </div>
-                </div>
-                <div class="flex justify-end mt-2 space-x-2">
-                    <button type="button" class="edit-cosmetic-btn text-blue-500 hover:text-blue-700 font-bold text-sm" data-index="${index}">Edit</button>
-                    <button type="button" class="remove-cosmetic-btn text-red-500 hover:text-red-700 font-bold text-sm" data-index="${index}">Remove</button>
-                </div>
-            `;
-                    cosmeticList.appendChild(card);
-
-                    for (const key in cosmetic) {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = `cosmetics[${index}][${key}]`;
-                        input.value = cosmetic[key];
-                        medicineHiddenInputs.appendChild(input);
+            // Toggle dropdown
+            if (selectSelected) {
+                selectSelected.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    selectItems.style.display = selectItems.style.display === 'block' ? 'none' : 'block';
+                    if (selectItems.style.display === 'block') {
+                        setTimeout(() => searchInput.focus(), 100);
                     }
                 });
-                updateSubmitButtonState();
             }
 
-            function renderMedicineList() {
-                medicineList.innerHTML = '';
+            // Search functionality
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    let searchTerm = this.value.toLowerCase();
+                    allOptions.forEach(option => {
+                        let text = option.textContent.toLowerCase();
+                        if (text.includes(searchTerm)) {
+                            option.style.display = '';
+                        } else {
+                            option.style.display = 'none';
+                        }
+                    });
+                });
+            }
 
-                document.querySelectorAll('input[name^="medicines"]').forEach(el => el.remove());
+            // Select option
+            function selectOption(element) {
+                let productId = element.getAttribute('data-value');
+                let productName = element.getAttribute('data-name') || element.textContent;
+                selectSelected.textContent = productName;
+                modalProductId.value = productId;
+                modalProductName.value = productName;
+                selectItems.style.display = 'none';
 
-                medicinesData.forEach((medicine, indexMedicine) => {
+                // Remove selected class from all
+                allOptions.forEach(opt => opt.classList.remove('same-as-selected'));
+                element.classList.add('same-as-selected');
+            }
+
+            // Add click handlers to options
+            function bindOptionClick() {
+                document.querySelectorAll('#options-list div[data-value]').forEach(option => {
+                    option.removeEventListener('click', option.clickHandler);
+                    option.clickHandler = function() {
+                        selectOption(this);
+                    };
+                    option.addEventListener('click', option.clickHandler);
+                });
+            }
+
+            bindOptionClick();
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function() {
+                if (selectItems) {
+                    selectItems.style.display = 'none';
+                }
+            });
+
+            // Reset custom select
+            function resetCustomSelect() {
+                selectSelected.textContent = '-- Search and select a product --';
+                modalProductId.value = '';
+                modalProductName.value = '';
+                if (searchInput) searchInput.value = '';
+                allOptions.forEach(option => {
+                    option.style.display = '';
+                    option.classList.remove('same-as-selected');
+                });
+            }
+
+            // Set custom select value
+            function setCustomSelectValue(productId, productName) {
+                if (!productId) {
+                    resetCustomSelect();
+                    return;
+                }
+                let matchingOption = allOptions.find(opt => opt.getAttribute('data-value') == productId);
+                if (matchingOption) {
+                    selectOption(matchingOption);
+                } else if (productName) {
+                    selectSelected.textContent = productName;
+                    modalProductId.value = productId;
+                    modalProductName.value = productName;
+                }
+            }
+
+            addCashewBtn.addEventListener('click', () => {
+                cashewForm.reset();
+                document.getElementById('cashew-index').value = '';
+                resetCustomSelect();
+                document.getElementById('modal-received-at').value = '{{ date("Y-m-d") }}';
+                document.getElementById('modal-low-stock-threshold').value = 5;
+                cashewModal.classList.remove('hidden');
+            });
+
+            closeModalBtn.addEventListener('click', () => {
+                cashewModal.classList.add('hidden');
+            });
+
+            cashewForm.addEventListener('submit', function (e) {
+
+                e.preventDefault();
+
+                const index = document.getElementById('cashew-index').value;
+
+                const cashew = {
+                    id: index ? cashewsData[index].id : cashewCounter++,
+                    product_id: modalProductId.value,
+                    name: modalProductName.value,
+                    unit: document.getElementById('modal-unit').value,
+                    unit_price: document.getElementById('modal-unit-price').value,
+                    selling_price: document.getElementById('modal-selling-price').value,
+                    quantity: document.getElementById('modal-quantity').value,
+                    low_stock_threshold: document.getElementById('modal-low-stock-threshold').value || 5,
+                    stock_origin: document.getElementById('modal-stock-origin').value,
+                    condition: document.getElementById('modal-condition').value,
+                    batch_number: document.getElementById('modal-batch-number').value,
+                    received_at: document.getElementById('modal-received-at').value,
+                    description: document.getElementById('modal-description').value,
+                    status: 'available'
+                };
+
+                if (!cashew.product_id || !cashew.quantity) {
+                    alert('Product name and quantity are required.');
+                    return;
+                }
+
+                if (!cashew.unit) {
+                    alert('Please select a unit.');
+                    return;
+                }
+
+                if (index !== '') {
+                    cashewsData[index] = cashew;
+                } else {
+                    cashewsData.push(cashew);
+                }
+
+                renderCashewList();
+                cashewModal.classList.add('hidden');
+
+            });
+
+            function renderCashewList() {
+
+                cashewList.innerHTML = '';
+                hiddenInputs.innerHTML = '';
+
+                cashewsData.forEach((cashew, index) => {
+
                     const card = document.createElement('div');
-                    card.className = 'bg-gray-100 p-4 rounded-md shadow-sm mb-2';
-                    card.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h4 class="font-semibold">${medicine.name}</h4>
-                        <p class="text-sm text-gray-600">Category: ${medicine.category_name || 'N/A'}</p>
-                        ${medicine.barcode ? `<p class="text-xs text-gray-400">Barcode: ${medicine.barcode}</p>` : ''}
-                    </div>
-                    <div class="text-right">
-                        <p class="text-lg font-bold">${medicine.quantity} pcs</p>
-                        <p class="text-sm text-gray-500">P.Price: $${parseFloat(medicine.purchase_price || 0).toFixed(2)}</p>
-                    </div>
-                </div>
-                <div class="flex justify-end mt-2 space-x-2">
-                    <button type="button" class="edit-cosmetic-btn text-blue-500 hover:text-blue-700 font-bold text-sm" data-index="${indexMedicine}">Edit</button>
-                    <button type="button" class="remove-cosmetic-btn text-red-500 hover:text-red-700 font-bold text-sm" data-index="${indexMedicine}">Remove</button>
-                </div>
-            `;
-                    medicineList.appendChild(card);
 
-                    for (const key in medicine) {
+                    card.className = 'bg-gray-100 p-4 rounded-md shadow-sm';
+
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center">
+
+                            <div>
+                                <h4 class="font-semibold text-lg">${escapeHtml(cashew.name)}</h4>
+
+                                <p class="text-sm text-gray-600">
+                                    Unit: ${escapeHtml(cashew.unit)}
+                                </p>
+
+                                <p class="text-sm text-gray-600">
+                                    Origin: ${escapeHtml(cashew.stock_origin || 'N/A')}
+                                </p>
+
+                                <p class="text-sm text-gray-600">
+                                    Batch: ${escapeHtml(cashew.batch_number || 'N/A')}
+                                </p>
+
+                                ${cashew.condition ? `<p class="text-sm text-gray-600">Condition: ${escapeHtml(cashew.condition)}</p>` : ''}
+                            </div>
+
+                            <div class="text-right">
+
+                                <p class="text-lg font-bold">
+                                    ${cashew.quantity} ${cashew.unit}(s)
+                                </p>
+
+                                <p class="text-sm text-gray-500">
+                                    Unit Price: TZS ${parseFloat(cashew.unit_price || 0).toLocaleString()}
+                                </p>
+
+                                <p class="text-sm text-gray-500">
+                                    Selling: TZS ${parseFloat(cashew.selling_price || 0).toLocaleString()}
+                                </p>
+
+                                <p class="text-sm font-semibold text-green-600">
+                                    Total: TZS ${(parseFloat(cashew.unit_price || 0) * parseFloat(cashew.quantity || 0)).toLocaleString()}
+                                </p>
+
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end mt-4 space-x-2">
+
+                            <button type="button"
+                                    class="edit-btn bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded"
+                                    data-index="${index}">
+                                Edit
+                            </button>
+
+                            <button type="button"
+                                    class="delete-btn bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded"
+                                    data-index="${index}">
+                                Delete
+                            </button>
+
+                        </div>
+                    `;
+
+                    cashewList.appendChild(card);
+
+                    // Add hidden inputs for form submission
+                    const fields = ['product_id', 'name', 'unit', 'unit_price', 'selling_price', 'quantity', 'low_stock_threshold', 'stock_origin', 'condition', 'batch_number', 'received_at', 'description', 'status'];
+
+                    fields.forEach(field => {
                         const input = document.createElement('input');
                         input.type = 'hidden';
-                        input.name = `medicines[${indexMedicine}][${key}]`;
-                        input.value =  medicine[key];
-                        medicineHiddenInputs.appendChild(input);
-                    }
+                        input.name = `cashews[${index}][${field}]`;
+                        input.value = cashew[field] || '';
+                        hiddenInputs.appendChild(input);
+                    });
+
                 });
-                updateSubmitButtonState();
+
+                bindButtons();
             }
 
-            cosmeticList.addEventListener('click', (e) => {
-                if (e.target.classList.contains('edit-cosmetic-btn')) {
-                    const index = e.target.dataset.index;
-                    const cosmetic = cosmeticsData[index];
-                    document.getElementById('cosmetic-index').value = index;
-                    document.getElementById('modal-name').value = cosmetic.name;
-                    document.getElementById('selected-cosmetic-id').value = cosmetic.id;
-                    document.getElementById('cosmetic-category-input').value = cosmetic.category_name;
-                    document.getElementById('cosmetic-category-id').value = cosmetic.category_id;
-                    document.getElementById('modal-barcode').value = cosmetic.barcode;
-                    document.getElementById('modal-unit').value = cosmetic.unit;
-                    document.getElementById('modal-purchase-price').value = cosmetic.purchase_price;
-                    document.getElementById('modal-selling-price').value = cosmetic.selling_price;
-                    document.getElementById('modal-stock_origin').value = cosmetic.stock_origin;
-                    document.getElementById('modal-description').value = cosmetic.description;
-                    document.getElementById('modal-quantity').value = cosmetic.quantity;
-                    cosmeticModal.classList.remove('hidden');
-                } else if (e.target.classList.contains('remove-cosmetic-btn')) {
-                    const index = e.target.dataset.index;
-                    showConfirmation('Are you sure you want to remove this cosmetic?').then(result => {
-                        if (result) {
-                            cosmeticsData.splice(index, 1);
-                            renderCosmeticList();
-                            showToast('Cosmetic removed.', 'success');
-                        }
+            // Helper function to escape HTML
+            function escapeHtml(str) {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function bindButtons() {
+
+                document.querySelectorAll('.edit-btn').forEach(button => {
+
+                    button.addEventListener('click', function () {
+
+                        const index = this.dataset.index;
+                        const cashew = cashewsData[index];
+
+                        document.getElementById('cashew-index').value = index;
+                        setCustomSelectValue(cashew.product_id, cashew.name);
+                        document.getElementById('modal-unit').value = cashew.unit || '';
+                        document.getElementById('modal-unit-price').value = cashew.unit_price || '';
+                        document.getElementById('modal-selling-price').value = cashew.selling_price || '';
+                        document.getElementById('modal-quantity').value = cashew.quantity || '';
+                        document.getElementById('modal-low-stock-threshold').value = cashew.low_stock_threshold || 5;
+                        document.getElementById('modal-stock-origin').value = cashew.stock_origin || '';
+                        document.getElementById('modal-condition').value = cashew.condition || '';
+                        document.getElementById('modal-batch-number').value = cashew.batch_number || '';
+                        document.getElementById('modal-received-at').value = cashew.received_at || '{{ date("Y-m-d") }}';
+                        document.getElementById('modal-description').value = cashew.description || '';
+
+                        cashewModal.classList.remove('hidden');
+
                     });
-                }
-            });
 
-            medicineList.addEventListener('click', (e) => {
-                if (e.target.classList.contains('edit-medicine-btn')) {
-                    const indexMedicine = e.target.dataset.indexMedicine;
-                    const medicine = medicinesData[indexMedicine];
-                    document.getElementById('medicine-index').value = indexMedicine;
-                    document.getElementById('modal-name').value = medicine.name;
-                    document.getElementById('selected-medicine-id').value = medicine.id;
-                    document.getElementById('medicine-category-input').value = medicine.category_name;
-                    document.getElementById('medicine-category-id').value = medicine.category_id;
-                    document.getElementById('modal-barcode').value = medicine.barcode;
-                    document.getElementById('modal-unit').value = medicine.unit;
-                    document.getElementById('modal-purchase-price').value = medicine.purchase_price;
-                    document.getElementById('modal-selling-price').value = medicine.selling_price;
-                    document.getElementById('modal-stock_origin').value = medicine.stock_origin;
-                    document.getElementById('modal-description').value = medicine.description;
-                    document.getElementById('modal-quantity').value = medicine.quantity;
-                    medicineModal.classList.remove('hidden');
-                } else if (e.target.classList.contains('remove-medicine-btn')) {
-                    const indexMedicine = e.target.dataset.indexMedicine;
-                    showConfirmation('Are you sure you want to remove this medicine?').then(result => {
-                        if (result) {
-                            medicinesData.splice(indexMedicine, 1);
-                            renderMedicineList();
-                            showToast('Medicine removed.', 'success');
+                });
+
+                document.querySelectorAll('.delete-btn').forEach(button => {
+
+                    button.addEventListener('click', function () {
+
+                        const index = this.dataset.index;
+
+                        if (confirm('Remove this cashew product?')) {
+
+                            cashewsData.splice(index, 1);
+
+                            renderCashewList();
                         }
+
                     });
-                }
-            });
 
-            // --- Initial Renders and State ---
-            // renderImeiList();
-            renderCosmeticList();
-            renderMedicineList();
-            updateSubmitButtonState();
+                });
 
-            mainForm.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target !== barcodeInput) {
-                    e.preventDefault();
-                }
-            });
+            }
+
         });
     </script>
 @endsection

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('sale_items', function (Blueprint $table) {
             $table->id(); // Primary key
             $table->foreignId('sale_id')->constrained('sales')->onDelete('cascade'); // Foreign key to sales table
-            $table->foreignId('medicine_id')->unique()->constrained('medicines')->onDelete('cascade'); // Foreign key to phones table, unique to ensure a phone is sold only once per sale
+            $table->foreignId('medicine_id')->unique()->constrained('medicines')->onDelete('cascade'); // Foreign key to cashews table, unique to ensure a phone is sold only once per sale
             $table->decimal('unit_price', 10, 2); // Price of this specific phone in this sale
             $table->timestamps(); // created_at and updated_at
         });

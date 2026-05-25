@@ -3,91 +3,250 @@
 <head>
     <title>Receipt #{{ $receipt->receipt_number }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-{{--    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">--}}
     <link rel="stylesheet" href="{{ asset('assets/css/tailwind.min.css') }}">
-
     <style>
-        @media print {
-            body {
-                -webkit-print-color-adjust: exact;
-            }
-        }
-        /* Custom styles for a polished logo */
-        .logo-container {
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #f3f4f6;
             display: flex;
             justify-content: center;
-            align-items: center;
-            margin-bottom: 1.5rem;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            font-family: 'Courier New', Courier, monospace;
         }
-        .logo {
-            max-height: 80px;
-            max-width: 150px;
-            opacity: 0.9;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-            border-radius: 0.5rem;
+
+        .receipt {
+            background: #fff;
+            width: 100%;
+            max-width: 360px;
+            padding: 1.5rem 1.25rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .receipt-header {
+            text-align: center;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .receipt-header .logo {
+            max-height: 60px;
+            max-width: 120px;
+            margin-bottom: 0.5rem;
+        }
+
+        .receipt-header h2 {
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .receipt-header p {
+            font-size: 0.75rem;
+            color: #555;
+            margin-top: 2px;
+        }
+
+        .receipt-meta {
+            font-size: 0.75rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 0.75rem;
+        }
+
+        .receipt-meta .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+
+        .receipt-meta .label { color: #666; }
+
+        .items-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+        }
+
+        .item-row {
+            font-size: 0.75rem;
+            margin-bottom: 6px;
+        }
+
+        .item-row .item-name {
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .item-row .item-detail {
+            display: flex;
+            justify-content: space-between;
+            color: #444;
+        }
+
+        .totals {
+            border-top: 1px dashed #ccc;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            font-size: 0.78rem;
+        }
+
+        .totals .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .totals .grand-total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1rem;
+            font-weight: bold;
+            border-top: 1px solid #333;
+            border-bottom: 3px double #333;
+            padding: 6px 0;
+            margin-top: 6px;
+        }
+
+        .totals .balance-due {
+            color: #c0392b;
+            font-weight: bold;
+        }
+
+        .status-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: bold;
+        }
+
+        .status-paid { background: #d4edda; color: #155724; }
+        .status-partial { background: #fff3cd; color: #856404; }
+
+        .receipt-footer {
+            text-align: center;
+            border-top: 1px dashed #ccc;
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            font-size: 0.7rem;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        @media print {
+            body { background: none; padding: 0; }
+            .receipt { box-shadow: none; max-width: 100%; }
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-<div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-2xl">
-    <div class="text-center mb-6">
+<body>
+<div class="receipt">
+
+    {{-- Header --}}
+    <div class="receipt-header">
         @if(isset($settings['organization_logo_path']) && $settings['organization_logo_path'])
-            <div class="logo-container">
-                <img src="{{ asset('storage/' . $settings['organization_logo_path']) }}" alt="Organization Logo" class="logo">
-            </div>
+            <img src="{{ asset('storage/' . $settings['organization_logo_path']) }}" alt="Logo" class="logo">
         @endif
-        <h2 class="text-2xl font-bold text-gray-800">Sales Receipt</h2>
-        <p class="text-sm text-gray-500">Receipt No: {{ $receipt->receipt_number }}</p>
+        <h2>{{ $settings['organization_name'] ?? 'TARI NALIENDELE' }}</h2>
+        <p>{{ $settings['organization_address'] ?? '' }}</p>
+        <p>Tel: {{ $settings['organization_phone'] ?? 'N/A' }}</p>
+        <p>{{ $settings['organization_email'] ?? '' }}</p>
     </div>
 
-    {{-- Organization Details --}}
-    <div class="border-t border-b border-gray-200 py-4 mb-4">
-        <div class="text-center mb-4">
-            <h3 class="text-xl font-bold text-gray-800">{{ $settings['organization_name'] ?? 'Your Organization Name' }}</h3>
-            <p class="text-sm text-gray-600">{{ $settings['organization_address'] ?? '123 Main Street, City, ZIP' }}</p>
-            <p class="text-sm text-gray-600">Phone: {{ $settings['organization_phone'] ?? 'N/A' }} | Email: {{ $settings['organization_email'] ?? 'N/A' }}</p>
+    {{-- Meta --}}
+    <div class="receipt-meta">
+        <div class="row">
+            <span class="label">Receipt No:</span>
+            <span>{{ $receipt->receipt_number }}</span>
         </div>
-        <div class="flex justify-between text-sm">
-            <p class="font-semibold text-gray-700">Date Issued:</p>
-            <p>{{ $receipt->issued_at->format('Y-m-d H:i') }}</p>
+        <div class="row">
+            <span class="label">Date:</span>
+            <span>{{ $receipt->issued_at->format('d/m/Y H:i') }}</span>
         </div>
-        <div class="flex justify-between text-sm">
-            <p class="font-semibold text-gray-700">Customer Name:</p>
-            <p>{{ $receipt->sale->customer_name ?? 'N/A' }}</p>
+        <div class="row">
+            <span class="label">Customer:</span>
+            <span>{{ $receipt->sale->customer_name ?? 'Walk-in' }}</span>
         </div>
-        <div class="flex justify-between text-sm">
-            <p class="font-semibold text-gray-700">Customer Phone:</p>
-            <p>{{ $receipt->sale->customer_phone ?? 'N/A' }}</p>
+        <div class="row">
+            <span class="label">Payment:</span>
+            <span>{{ ucfirst($receipt->payment_method) }}</span>
+        </div>
+        <div class="row">
+            <span class="label">Status:</span>
+            <span>
+                <span class="status-badge {{ $receipt->status === 'paid' ? 'status-paid' : 'status-partial' }}">
+                    {{ ucfirst($receipt->status) }}
+                </span>
+            </span>
         </div>
     </div>
-    <h3 class="text-lg font-semibold text-gray-700 mb-2">Items</h3>
-    <div class="space-y-2 mb-4">
-        @foreach($receipt->sale->saleItems as $item)
-            <div class="flex justify-between text-sm">
-                @if ($item->medicine)
-                    <p class="text-gray-700">Medicine:  (BARCODE: {{ $item->medicine->barcode }})</p>
-                @else
-                    <p class="text-gray-700">Cosmetic: {{ $item->cosmetic->name }}</p>
-                @endif
-                <p class="text-gray-700">x{{ $item->quantity }} @ {{ number_format($item->unit_price, 2) }}</p>
+
+    {{-- Items --}}
+    <div class="items-header">
+        <span>Item</span>
+        <span>Amount</span>
+    </div>
+
+    @foreach($receipt->sale->saleItems as $item)
+        <div class="item-row">
+            <div class="item-name">{{ $item->cashews->product->name ?? 'N/A' }}</div>
+            <div class="item-detail">
+                <span>{{ $item->quantity }} x Tsh {{ number_format($item->unit_price, 2) }}</span>
+                <span>Tsh {{ number_format($item->unit_price * $item->quantity, 2) }}</span>
             </div>
-        @endforeach
+        </div>
+    @endforeach
+
+    {{-- Totals --}}
+    <div class="totals">
+        <div class="row">
+            <span>Subtotal</span>
+            <span>Tsh {{ number_format($receipt->subtotal, 2) }}</span>
+        </div>
+        @if($receipt->discount > 0)
+            <div class="row">
+                <span>Discount</span>
+                <span>-Tsh {{ number_format($receipt->discount, 2) }}</span>
+            </div>
+        @endif
+        <div class="grand-total">
+            <span>TOTAL</span>
+            <span>Tsh {{ number_format($receipt->total, 2) }}</span>
+        </div>
+        <div class="row" style="margin-top: 6px;">
+            <span>Amount Paid</span>
+            <span>Tsh {{ number_format($receipt->paid_amount, 2) }}</span>
+        </div>
+        @if($receipt->balance > 0)
+            <div class="row balance-due">
+                <span>Balance Due</span>
+                <span>Tsh {{ number_format($receipt->balance, 2) }}</span>
+            </div>
+        @endif
     </div>
-    <div class="border-t border-gray-200 pt-4">
-        <div class="flex justify-between text-sm mb-1">
-            <p class="text-gray-600">Subtotal</p>
-            <p class="font-semibold">{{ number_format($receipt->subtotal, 2) }}</p>
-        </div>
-        <div class="flex justify-between text-sm mb-1">
-            <p class="text-gray-600">Discount</p>
-            <p class="font-semibold">-{{ number_format($receipt->discount, 2) }}</p>
-        </div>
-        <div class="flex justify-between text-lg font-bold text-gray-800 border-t border-gray-300 pt-2 mt-2">
-            <p>Total</p>
-            <p>{{ number_format($receipt->total, 2) }}</p>
-        </div>
+
+    {{-- Footer --}}
+    <div class="receipt-footer">
+        <p>*** Thank you for your purchase! ***</p>
+        <p>{{ $settings['organization_name'] ?? '' }}</p>
+        <p>{{ $settings['organization_address'] ?? '' }}</p>
     </div>
 </div>
+
 <script>
     window.onload = function () {
         window.print();
@@ -96,7 +255,5 @@
         };
     };
 </script>
-
-
 </body>
 </html>
