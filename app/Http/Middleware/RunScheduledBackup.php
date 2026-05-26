@@ -16,7 +16,7 @@ class RunScheduledBackup
                 'backup_enabled',
                 'backup_frequency',
                 'backup_time',
-                'backup_last_run',
+                'backup_last_auto_run',
             ])->pluck('value', 'key');
 
             // Skip if backup is disabled
@@ -25,14 +25,15 @@ class RunScheduledBackup
             }
 
             $now       = Carbon::now();
-            $lastRun   = $settings['backup_last_run'] ?? null;
+            $lastRun   = $settings['backup_last_auto_run'] ?? null;
             $frequency = $settings['backup_frequency'] ?? 'daily';
             $time      = $settings['backup_time'] ?? '00:00';
 
-            [$hour, $minute] = explode(':', $time);
+            [$hour, $minute] = array_pad(explode(':', $time), 2, 0);
 
             // Check if it's the right time
-            $isCorrectTime = (int)$now->hour === (int)$hour;
+            $isCorrectTime = (int) $now->hour === (int) $hour
+                && (int) $now->minute >= (int) $minute;
 
             if (!$isCorrectTime) {
                 return $next($request);
@@ -68,7 +69,7 @@ class RunScheduledBackup
                 return $next($request);
             }
 
-            $orgName  = Setting::where('key', 'organization_name')->first()->value ?? 'backup';
+            $orgName  = Setting::where('key', 'organization_name')->value('value') ?? 'backup';
             $orgName  = preg_replace('/[^A-Za-z0-9_\-]/', '_', $orgName);
             $fileName = $orgName . '-auto-backup-' . $now->format('Y-m-d_H-i-s') . '.sqlite';
 
@@ -82,6 +83,7 @@ class RunScheduledBackup
 
             // Save last run time and flag for user notification
             Setting::updateOrCreate(['key' => 'backup_last_run'],          ['value' => $now->toDateTimeString()]);
+            Setting::updateOrCreate(['key' => 'backup_last_auto_run'],     ['value' => $now->toDateTimeString()]);
             Setting::updateOrCreate(['key' => 'backup_last_file'],         ['value' => $fileName]);
             Setting::updateOrCreate(['key' => 'backup_pending_download'],  ['value' => '1']);
 

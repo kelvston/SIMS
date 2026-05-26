@@ -33,8 +33,10 @@ class Cashew extends Model
         'quantity',
         'low_stock_threshold',
         'received_at',
+        'stock_origin',
         'condition',
         'batch_number',
+        'description',
     ];
 
     // Define the casts for attributes

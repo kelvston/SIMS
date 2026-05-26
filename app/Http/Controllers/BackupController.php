@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Storage;
 use App\Models\Setting;
+use Illuminate\Http\Request;
 
 class BackupController extends Controller
 {
@@ -23,7 +24,7 @@ class BackupController extends Controller
                 return redirect()->route('settings.edit')->with('error', 'Database file not found at: ' . $dbPath);
             }
 
-            $orgName  = Setting::where('key', 'organization_name')->first()->value ?? 'backup';
+            $orgName  = Setting::where('key', 'organization_name')->value('value') ?? 'backup';
             $orgName  = preg_replace('/[^A-Za-z0-9_\-]/', '_', $orgName);
             $fileName = $orgName . '-backup-' . now()->format('Y-m-d_H-i-s') . '.sqlite';
 
@@ -31,10 +32,12 @@ class BackupController extends Controller
                 mkdir(storage_path('app/backups'), 0755, true);
             }
 
-            copy($dbPath, storage_path('app/backups/' . $fileName));
+            $backupPath = storage_path('app/backups/' . $fileName);
+            copy($dbPath, $backupPath);
 
             Setting::updateOrCreate(['key' => 'backup_last_run'],  ['value' => now()->toDateTimeString()]);
             Setting::updateOrCreate(['key' => 'backup_last_file'], ['value' => $fileName]);
+            Setting::updateOrCreate(['key' => 'backup_last_path'], ['value' => $backupPath]);
 
             return redirect()->route('settings.edit')->with('success', 'Backup completed. File: ' . $fileName);
 
@@ -46,7 +49,7 @@ class BackupController extends Controller
     /**
      * Run backup via AJAX (called from JS button)
      */
-    public function runNowAjax()
+    public function runNowAjax(Request $request)
     {
         try {
             $dbPath = config('database.connections.sqlite.database');
@@ -59,7 +62,7 @@ class BackupController extends Controller
                 return response()->json(['success' => false, 'message' => 'Database file not found.']);
             }
 
-            $orgName  = Setting::where('key', 'organization_name')->first()->value ?? 'backup';
+            $orgName  = Setting::where('key', 'organization_name')->value('value') ?? 'backup';
             $orgName  = preg_replace('/[^A-Za-z0-9_\-]/', '_', $orgName);
             $fileName = $orgName . '-backup-' . now()->format('Y-m-d_H-i-s') . '.sqlite';
 
@@ -67,10 +70,15 @@ class BackupController extends Controller
                 mkdir(storage_path('app/backups'), 0755, true);
             }
 
-            copy($dbPath, storage_path('app/backups/' . $fileName));
+            $backupPath = storage_path('app/backups/' . $fileName);
+            copy($dbPath, $backupPath);
 
             Setting::updateOrCreate(['key' => 'backup_last_run'],  ['value' => now()->toDateTimeString()]);
             Setting::updateOrCreate(['key' => 'backup_last_file'], ['value' => $fileName]);
+            Setting::updateOrCreate(['key' => 'backup_last_path'], ['value' => $backupPath]);
+            if ($request->boolean('automated')) {
+                Setting::updateOrCreate(['key' => 'backup_last_auto_run'], ['value' => now()->toDateTimeString()]);
+            }
 
             return response()->json([
                 'success'  => true,
@@ -90,6 +98,29 @@ class BackupController extends Controller
     public function download()
     {
         try {
+            $lastFile = Setting::where('key', 'backup_last_file')->value('value');
+            $lastPath = Setting::where('key', 'backup_last_path')->value('value');
+            $backupPath = $lastPath ?: ($lastFile ? storage_path('app/backups/' . $lastFile) : null);
+
+            if ($backupPath && file_exists($backupPath)) {
+                $downloadName = $lastFile ?: basename($backupPath);
+
+                Setting::updateOrCreate(
+                    ['key' => 'backup_last_download'],
+                    ['value' => now()->toDateTimeString()]
+                );
+                Setting::updateOrCreate(['key' => 'backup_pending_download'], ['value' => '0']);
+
+                return response()->download($backupPath, $downloadName, [
+                    'Content-Type'        => 'application/octet-stream',
+                    'Content-Disposition' => 'attachment; filename="' . $downloadName . '"',
+                    'Content-Length'      => filesize($backupPath),
+                    'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+                    'Pragma'              => 'no-cache',
+                    'Expires'             => '0',
+                ]);
+            }
+
             $dbPath = config('database.connections.sqlite.database');
 
             if (!str_starts_with($dbPath, '/')) {
@@ -100,7 +131,7 @@ class BackupController extends Controller
                 return redirect()->route('settings.edit')->with('error', 'Database file not found at: ' . $dbPath);
             }
 
-            $orgName  = Setting::where('key', 'organization_name')->first()->value ?? 'backup';
+            $orgName  = Setting::where('key', 'organization_name')->value('value') ?? 'backup';
             $orgName  = preg_replace('/[^A-Za-z0-9_\-]/', '_', $orgName);
             $fileName = $orgName . '-backup-' . now()->format('Y-m-d_H-i-s') . '.sqlite';
 

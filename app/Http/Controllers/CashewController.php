@@ -6,6 +6,7 @@ use App\Models\Cashew;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CashewController extends Controller
 {
@@ -31,6 +32,10 @@ class CashewController extends Controller
             'cashews.*.stock_origin' => 'nullable|string|max:255',
             'cashews.*.quantity' => 'required|integer|min:1',
             'cashews.*.low_stock_threshold' => 'nullable|integer|min:0',
+            'cashews.*.condition' => 'nullable|string|max:255',
+            'cashews.*.batch_number' => 'nullable|string|max:255',
+            'cashews.*.received_at' => 'nullable|date',
+            'cashews.*.description' => 'nullable|string|max:1000',
         ]);
 
         DB::beginTransaction();
@@ -38,15 +43,26 @@ class CashewController extends Controller
         try {
 
             foreach ($request->cashews as $item) {
-                Cashew::create([
+                $cashewData = [
                     'product_id' => $item['product_id'],
                     'unit' => $item['unit'] ?? null,
                     'unit_price' => $item['unit_price'],
                     'selling_price' => $item['selling_price'],
                     'quantity' => $item['quantity'],
                     'low_stock_threshold' => $item['low_stock_threshold'] ?? 5,
+                    'condition' => $item['condition'] ?? null,
+                    'batch_number' => $item['batch_number'] ?? null,
+                    'received_at' => $item['received_at'] ?? now()->toDateString(),
                     'status' => 'available',
-                ]);
+                ];
+
+                foreach (['stock_origin', 'description'] as $optionalColumn) {
+                    if (Schema::hasColumn('cashews', $optionalColumn)) {
+                        $cashewData[$optionalColumn] = $item[$optionalColumn] ?? null;
+                    }
+                }
+
+                Cashew::create($cashewData);
             }
 
             DB::commit();

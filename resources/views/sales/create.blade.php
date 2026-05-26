@@ -250,7 +250,7 @@
                 const barcodeText = cashew.barcode ? `(${cashew.barcode})` : '';
 
                 div.textContent =
-                    `${cashew.product_name} ${barcodeText} - Tsh ${cashew.selling_price}`;
+                    `${cashew.product_name} ${barcodeText} - Tsh ${cashew.selling_price} (${cashew.available_quantity} available)`;
 
                 div.dataset.id = cashew.id;
 
@@ -276,18 +276,20 @@
 
             // ✅ IMPORTANT: store price here
             div.dataset.price = cashew.selling_price || 0;
+            div.dataset.available = cashew.available_quantity || 0;
 
             div.innerHTML = `
         <input type="hidden" name="cashew_ids[]" value="${cashew.id ?? ''}">
 
         <input type="text"
-            value="${cashew.product_name} ${cashew.barcode ? '(' + cashew.barcode + ')' : ''} - Tsh ${cashew.selling_price}"
+            value="${cashew.product_name} ${cashew.barcode ? '(' + cashew.barcode + ')' : ''} - Tsh ${cashew.selling_price} (${cashew.available_quantity || 0} available)"
             readonly
             class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-100">
 
         <input type="number"
             name="quantities[]"
             min="1"
+            max="${cashew.available_quantity || 1}"
             value="1"
             class="qty w-20 border rounded px-2 py-2 text-center">
 
@@ -336,8 +338,13 @@
             let grandTotal = 0;
             document.querySelectorAll('.cashew-item-group').forEach(row => {
                 const price = parseFloat(row.dataset.price || 0);
+                const available = parseInt(row.dataset.available || 0);
                 const qtyInput = row.querySelector('input[name="quantities[]"]');
-                const qty = parseInt(qtyInput?.value || 0);
+                let qty = parseInt(qtyInput?.value || 0);
+                if (available > 0 && qty > available) {
+                    qty = available;
+                    qtyInput.value = available;
+                }
                 const rowTotal = price * qty;
                 grandTotal += rowTotal;
                 // Update this specific row's total span

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Exceptions\UnauthorizedException;
 
@@ -104,6 +105,27 @@ class ProductController extends Controller
 
         $product->delete();
         return redirect()->route('products.index')->with('success', 'Product deleted successfully!');
+    }
+
+    public function bulkUpload(Request $request)
+    {
+        $request->validate([
+            'products'       => 'required|array|min:1',
+            'products.*.name' => 'required|string|max:255',
+        ]);
+        $now = now();
+        $rows = collect($request->products)->map(fn($p) => [
+            'name'       => trim($p['name']),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        // Insert in chunks to avoid huge queries
+        foreach ($rows->chunk(100) as $chunk) {
+            DB::table('products')->insert($chunk->toArray());
+        }
+        return response()->json([
+            'message' => $rows->count() . ' products added successfully.'
+        ]);
     }
 }
 

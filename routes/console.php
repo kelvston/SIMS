@@ -17,11 +17,11 @@ Artisan::command('stock:check-low', function () {
 
 Schedule::command('stock:check-low')->everyMinute();
 
+Schedule::command('backup:automated')->everyMinute();
 
 Schedule::command('backup:run --only-db')->dailyAt('02:00');
 
 Schedule::command('backup:clean')->dailyAt('03:00');
-
 
 
 

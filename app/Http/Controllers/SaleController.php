@@ -93,14 +93,19 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
 //            ->where('cashews.quantity', '>', 0)
 //            ->get();
 
-        $availableCashews = Cashew::with('product')
+        $availableCashews = Cashew::query()
+            ->select('product_id', DB::raw('SUM(quantity) as available_quantity'))
+            ->with('product')
             ->where('quantity', '>', 0)
+            ->groupBy('product_id')
+            ->orderBy('product_id')
             ->get()
             ->map(fn($c) => [
                 'id' => $c->product_id,
-                'barcode' => $c->barcode,
+                'barcode' => null,
                 'product_name' => $c->product?->name ?? 'N/A',
-                'selling_price' => $c->selling_price,
+                'selling_price' => optional($this->oldestAvailableBatch($c->product_id))->selling_price ?? 0,
+                'available_quantity' => (int) $c->available_quantity,
             ]);
 
 
@@ -124,6 +129,77 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
         return view('sales.print_receipt', compact('receipt', 'settings'));
     }
 
+    private function oldestAvailableBatch($productId)
+    {
+        return Cashew::where('product_id', $productId)
+            ->where('quantity', '>', 0)
+            ->orderBy('received_at')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->first();
+    }
+
+    private function requestedCashewQuantities(array $productIds, array $quantities): array
+    {
+        $requested = [];
+
+        foreach ($productIds as $index => $productId) {
+            $qty = (int) ($quantities[$index] ?? 0);
+
+            if ($qty < 1) {
+                continue;
+            }
+
+            $requested[$productId] = ($requested[$productId] ?? 0) + $qty;
+        }
+
+        return $requested;
+    }
+
+    private function buildFifoSalePlan(array $requested, bool $lock = false): array
+    {
+        $plan = [];
+
+        foreach ($requested as $productId => $requiredQty) {
+            $remaining = $requiredQty;
+            $query = Cashew::where('product_id', $productId)
+                ->where('quantity', '>', 0)
+                ->orderBy('received_at')
+                ->orderBy('created_at')
+                ->orderBy('id');
+
+            if ($lock) {
+                $query->lockForUpdate();
+            }
+
+            $batches = $query->get();
+            $available = $batches->sum('quantity');
+
+            if ($available < $requiredQty) {
+                $productName = optional(Product::find($productId))->name ?? "ID {$productId}";
+                throw ValidationException::withMessages([
+                    'items' => "Not enough stock for {$productName}. Available: {$available}, requested: {$requiredQty}.",
+                ]);
+            }
+
+            foreach ($batches as $batch) {
+                if ($remaining <= 0) {
+                    break;
+                }
+
+                $takeQty = min((int) $batch->quantity, $remaining);
+                $plan[] = [
+                    'batch' => $batch,
+                    'quantity' => $takeQty,
+                ];
+
+                $remaining -= $takeQty;
+            }
+        }
+
+        return $plan;
+    }
+
 
     /**
      * Store a newly created sale in storage.
@@ -140,8 +216,8 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             'customer_name' => 'nullable',
             'customer_email' => 'nullable',
             'payment_option' => 'nullable|numeric|min:0',
-            'quantities' => 'required|array',
-            'cashew_ids' => 'required|array',
+            'quantities' => 'required|array|min:1',
+            'cashew_ids' => 'required|array|min:1',
             'amount_paid' => 'required_without:credit_sale|nullable|numeric|min:0',
             'credit_sale' => 'nullable|boolean', // New validation for the credit_sale flag
             'is_installment' => 'nullable|boolean',
@@ -149,37 +225,24 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             'installment_amount' => 'required_if:is_installment,true|nullable|numeric|min:0.01',
             'start_date' => 'required_if:is_installment,true|nullable|date',
             'discount_amount' => 'nullable|numeric|min:0',
+            'cashew_ids.*' => 'required|exists:products,id',
+            'quantities.*' => 'required|integer|min:1',
         ]);
 
 
         // 2. Validate product stock before creating a sale
-        $totalAmount = 0;
-        $cashewsToSell = [];
-
-        // Validate and get cashew details
-        $totalAmount = 0;
-        $cashewIds = $request->input('cashew_ids', []);
-        $quantities = $request->input('quantities', []);
-        foreach ($cashewIds as $index => $productId) {
-            $qty = $quantities[$index] ?? 0;
-            $cashew = Cashew::where('product_id', $productId)->first();
-            if (!$cashew) {
-                throw ValidationException::withMessages([
-                    'items' => "Product not found for ID {$productId}"
-                ]);
-            }
-            if ($cashew->quantity < $qty) {
-                throw ValidationException::withMessages([
-                    'items' => "Not enough stock for the product "
-                ]);
-            }
-            $totalAmount += $cashew->selling_price * $qty;
-        }
+        $requestedCashews = $this->requestedCashewQuantities(
+            $validated['cashew_ids'],
+            $validated['quantities']
+        );
+        $salePlan = $this->buildFifoSalePlan($requestedCashews);
+        $totalAmount = collect($salePlan)->sum(fn ($line) => $line['batch']->selling_price * $line['quantity']);
 
 
         // Calculate final amount after discount
 
-        $finalAmount = $totalAmount - $validated['discount_amount'];
+        $discountAmount = $validated['discount_amount'] ?? 0;
+        $finalAmount = $totalAmount - $discountAmount;
         if ($finalAmount < 0) {
             throw ValidationException::withMessages(['discount_amount' => 'Discount cannot exceed the total amount.']);
         }
@@ -197,7 +260,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
         }
 
         // Calculate the remaining balance (the "credit" amount)
-        if($validated['credit_sale'] == 1){
+        if($request->boolean('credit_sale')){
             $amountDue = $finalAmount - $amountPaid;
         }else{
             $amountDue =0;
@@ -207,23 +270,8 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
         try {
             DB::beginTransaction();
 
-            // Re-validate and get products inside the transaction with a lock
-            $cashewIds = $request->cashew_ids;
-            $quantities = $request->quantities;
-            foreach ($cashewIds as $index => $productId) {
-                $qty = $quantities[$index];
-                $cashew = Cashew::where('product_id', $productId)->lockForUpdate()->first();
-                if (!$cashew) {
-                    throw ValidationException::withMessages([
-                        'items' => "Product not found for ID {$productId}"
-                    ]);
-                }
-                if ($cashew->quantity < $qty) {
-                    throw ValidationException::withMessages([
-                        'items' => "Not enough stock for the product"
-                    ]);
-                }
-            }
+            // Re-validate FIFO batches inside the transaction before reducing stock.
+            $salePlan = $this->buildFifoSalePlan($requestedCashews, true);
             // 3. Create the Sale record with the calculated total amount and payment details
             $payment_option = null;
             if (isset($request['payment_option'])) {
@@ -247,7 +295,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 'customer_name' => $validated['customer_name'],
                 'customer_email' => $validated['customer_email'],
                 'total_amount' => $totalAmount,
-                'discount_amount' => $validated['discount_amount'],
+                'discount_amount' => $discountAmount,
                 'final_amount' => $finalAmount,
                 'amount_paid' => $amountPaid,
                 'amount_due' => $amountDue,
@@ -258,9 +306,9 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             ]);
 
             // 4. Create sale items and update stock
-            foreach ($validated['cashew_ids'] as $index => $productId) {
-                $cashew = Cashew::where('product_id', $productId)->first();
-                 $qty = $validated['quantities'][$index];
+            foreach ($salePlan as $line) {
+                $cashew = $line['batch'];
+                $qty = $line['quantity'];
                 $sale->saleItems()->create([
                     'product_id' => $cashew->product_id,
                     'cosmetic_id' => null,
@@ -270,6 +318,9 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 ]);
                 // reduce stock
                 $cashew->quantity -= $qty;
+                if ($cashew->quantity <= 0) {
+                    $cashew->status = 'out_of_stock';
+                }
                 $cashew->save();
             }
 

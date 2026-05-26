@@ -120,6 +120,11 @@
                                 Next backup: <strong>{{ $nextRun->diffForHumans() }} ({{ $nextRun->format('Y-m-d H:i') }})</strong>
                             </p>
                         @endif
+                        @if(($settings['backup_pending_download'] ?? '0') == '1')
+                            <p class="text-sm text-blue-700 mt-2">
+                                An automated backup is ready. Use Download Latest Backup to save it to your selected folder.
+                            </p>
+                        @endif
                     </div>
                     {{-- Enable Backup --}}
                     <div class="mb-4 flex items-center gap-3">
@@ -167,17 +172,17 @@
                             Backup Save Location
                         </label>
                         <div class="flex gap-2 items-center">
-                            <input type="text" id="backup_save_path" name="backup_save_path" readonly
+                            <input type="text" id="backup_save_path" name="backup_save_path"
                                    value="{{ $settings['backup_save_path'] ?? '' }}"
-                                   placeholder="No folder selected..."
-                                   class="shadow border rounded w-full py-2 px-3 text-gray-500 bg-gray-50 focus:outline-none cursor-not-allowed">
+                                   placeholder="/home/yoga/Desktop/test"
+                                   class="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none">
                             <button type="button" onclick="selectFolder()"
                                     class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded whitespace-nowrap">
                                 📁 Browse
                             </button>
                         </div>
                         <p class="text-xs text-gray-500 mt-1">
-                            Click Browse to choose where backups will be saved on your computer.
+                            For unattended backups, enter a full server path. Browse is only for saving manual downloads from this browser.
                         </p>
                     </div>
 
@@ -204,15 +209,14 @@
 
                     {{-- Backup Action Buttons --}}
                     <div class="flex gap-3 mt-2 mb-4">
-                        <a href="{{ route('backup.run') }}"
+                        <button type="button" id="runBackupBtn" onclick="runBackupNow()"
                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
                             🗄 Run Backup Now
-                        </a>
-                        <a href="{{ route('backup.download') }}"
-                           onclick="return confirmDownload()"
+                        </button>
+                        <button type="button" onclick="downloadToFolder()"
                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                             ⬇ Download Latest Backup
-                        </a>
+                        </button>
                     </div>
 
                     {{-- Browser tip --}}
@@ -238,13 +242,72 @@
     </div>
     <script>
         let selectedDirectoryHandle = null;
+        const backupFolderDbName = 'sims_backup_settings';
+        const backupFolderStore = 'folder_handles';
+        const backupFolderKey = 'backup_folder';
+
+        function openBackupFolderDb() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(backupFolderDbName, 1);
+                request.onupgradeneeded = () => request.result.createObjectStore(backupFolderStore);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveBackupFolderHandle(handle) {
+            const db = await openBackupFolderDb();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(backupFolderStore, 'readwrite');
+                tx.objectStore(backupFolderStore).put(handle, backupFolderKey);
+                tx.oncomplete = resolve;
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        async function loadBackupFolderHandle() {
+            const db = await openBackupFolderDb();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(backupFolderStore, 'readonly');
+                const request = tx.objectStore(backupFolderStore).get(backupFolderKey);
+                request.onsuccess = () => resolve(request.result || null);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function verifyFolderPermission(handle) {
+            if (!handle) return false;
+
+            const options = { mode: 'readwrite' };
+            if ((await handle.queryPermission(options)) === 'granted') {
+                return true;
+            }
+
+            return (await handle.requestPermission(options)) === 'granted';
+        }
 
         // Restore folder name from sessionStorage on page load
         window.addEventListener('load', async () => {
             const savedFolder = sessionStorage.getItem('backup_folder_name');
-            if (savedFolder) {
+            if (savedFolder && !document.getElementById('backup_save_path').value) {
                 document.getElementById('backup_save_path').value = savedFolder;
             }
+
+            if (window.showDirectoryPicker && window.indexedDB) {
+                try {
+                    selectedDirectoryHandle = await loadBackupFolderHandle();
+                    if (selectedDirectoryHandle && !document.getElementById('backup_save_path').value) {
+                        document.getElementById('backup_save_path').value = selectedDirectoryHandle.name;
+                        sessionStorage.setItem('backup_folder_name', selectedDirectoryHandle.name);
+                    }
+                } catch (err) {
+                    console.warn('Could not restore backup folder handle.', err);
+                }
+            }
+
+            @if(($settings['backup_pending_download'] ?? '0') == '1')
+                alert('An automated backup is ready. Click Download Latest Backup to save it to your selected folder.');
+            @endif
         });
 
         async function selectFolder() {
@@ -257,10 +320,12 @@
                 selectedDirectoryHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
 
                 const folderName = selectedDirectoryHandle.name;
-                document.getElementById('backup_save_path').value = folderName;
 
                 // Persist folder name in sessionStorage
                 sessionStorage.setItem('backup_folder_name', folderName);
+                if (window.indexedDB) {
+                    await saveBackupFolderHandle(selectedDirectoryHandle);
+                }
 
                 // Save to hidden input for form submit
                 let hiddenInput = document.getElementById('backup_save_path_hidden');
@@ -334,15 +399,15 @@
         }
 
         async function downloadToFolder() {
-            await saveToFolder(null);
+            await saveToFolder(null, true);
         }
 
-        async function saveToFolder(fileName) {
+        async function saveToFolder(fileName, notify = true) {
             try {
                 const response = await fetch('{{ route('backup.download') }}');
 
                 if (!response.ok) {
-                    alert('Failed to get backup file from server.');
+                    if (notify) alert('Failed to get backup file from server.');
                     return;
                 }
 
@@ -353,13 +418,13 @@
                         ? disposition.split('filename=')[1].replace(/"/g, '').trim()
                         : 'backup-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.sqlite');
 
-                if (selectedDirectoryHandle) {
+                if (selectedDirectoryHandle && await verifyFolderPermission(selectedDirectoryHandle)) {
                     try {
                         const fileHandle = await selectedDirectoryHandle.getFileHandle(name, { create: true });
                         const writable   = await fileHandle.createWritable();
                         await writable.write(blob);
                         await writable.close();
-                        alert('✅ Backup saved to folder: ' + selectedDirectoryHandle.name + '\\\n' + name);
+                        if (notify) alert('✅ Backup saved to folder: ' + selectedDirectoryHandle.name + '\\\n' + name);
                         return;
                     } catch (err) {
                         console.warn('Folder write failed, falling back to download.', err);
@@ -375,7 +440,7 @@
                 URL.revokeObjectURL(url);
 
             } catch (err) {
-                alert('Download failed: ' + err.message);
+                if (notify) alert('Download failed: ' + err.message);
             }
         }
     </script>

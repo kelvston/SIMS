@@ -135,6 +135,7 @@ Route::resource('expenses', ExpenseController::class);
     Route::post('/general/email',   [ReportController::class, 'sendGeneralReportEmail'])->name('general.email');
 
 // To view all installment plans
+Route::post('/products/bulk-upload', [ProductController::class, 'bulkUpload'])->name('products.bulk-upload');
 
 
 

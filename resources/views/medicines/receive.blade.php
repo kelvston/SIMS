@@ -147,9 +147,38 @@
                     </button>
                 </div>
 
+{{--                <p class="text-sm text-gray-500 mb-6">--}}
+{{--                    Add products and quantities. Added products will appear below.--}}
+
+{{--                </p>--}}
                 <p class="text-sm text-gray-500 mb-6">
                     Add products and quantities. Added products will appear below.
+                    <a href="#" onclick="document.getElementById('bulk-upload-section').classList.toggle('hidden'); return false;"
+                       class="text-blue-600 hover:underline ml-1">
+                        Bulk upload from Excel
+                    </a>
+                    <a href="#" onclick="downloadSample(); return false;" class="text-xs text-blue-500 hover:underline ml-2">
+                        Download sample Excel
+                    </a>
                 </p>
+                <div id="bulk-upload-section" class="hidden mb-6 border border-dashed border-gray-300 rounded-lg p-4">
+                    <p class="text-sm text-gray-500 mb-3">Upload an Excel file with a <code class="bg-gray-100 px-1 rounded">name</code> column.</p>
+
+                    <input type="file" id="bulkFile" accept=".xlsx,.xls" class="block text-sm text-gray-500 mb-3
+        file:mr-3 file:py-1 file:px-4 file:rounded file:border-0
+        file:text-sm file:font-medium file:bg-blue-50 file:text-blue-600
+        hover:file:bg-blue-100"/>
+
+                    <div id="bulk-preview" class="hidden mb-3 text-sm text-gray-600"></div>
+
+                    <button onclick="submitBulkUpload()" id="bulk-btn"
+                            class="bg-blue-600 text-white text-sm px-4 py-1.5 rounded hover:bg-blue-700 disabled:opacity-40" disabled>
+                        Upload products
+                    </button>
+
+                    <div id="bulk-status" class="mt-2 text-sm hidden"></div>
+                </div>
+
 
                 <div id="cashew-list" class="space-y-4"></div>
             </div>
@@ -347,6 +376,7 @@
             </div>
         </div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -664,5 +694,78 @@
             }
 
         });
+    </script>
+    <script>
+        let bulkProducts = [];
+
+        document.getElementById('bulkFile').addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const wb = XLSX.read(e.target.result, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+                bulkProducts = rows
+                    .map(r => (r['name'] || r['Name'] || r['NAME'] || '').toString().trim())
+                    .filter(n => n.length > 0);
+
+                document.getElementById('bulk-preview').classList.remove('hidden');
+                document.getElementById('bulk-preview').textContent = bulkProducts.length + ' products found: ' + bulkProducts.slice(0, 3).join(', ') + (bulkProducts.length > 3 ? '...' : '');
+                document.getElementById('bulk-btn').disabled = bulkProducts.length === 0;
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        async function submitBulkUpload() {
+            const btn = document.getElementById('bulk-btn');
+            const status = document.getElementById('bulk-status');
+            btn.disabled = true;
+            btn.textContent = 'Uploading...';
+            status.className = 'mt-2 text-sm text-gray-500';
+            status.classList.remove('hidden');
+            status.textContent = 'Sending...';
+
+            try {
+                const res = await fetch('{{ route("products.bulk-upload") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ products: bulkProducts.map(n => ({ name: n })) })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    status.className = 'mt-2 text-sm text-green-600';
+                    status.textContent = data.message || bulkProducts.length + ' products added.';
+                    document.getElementById('bulkFile').value = '';
+                    document.getElementById('bulk-preview').classList.add('hidden');
+                    bulkProducts = [];
+                } else {
+                    status.className = 'mt-2 text-sm text-red-600';
+                    status.textContent = data.message || 'Something went wrong.';
+                    btn.disabled = false;
+                    btn.textContent = 'Upload products';
+                }
+            } catch (err) {
+                status.className = 'mt-2 text-sm text-red-600';
+                status.textContent = 'Network error: ' + err.message;
+                btn.disabled = false;
+                btn.textContent = 'Upload products';
+            }
+        }
+        function downloadSample() {
+            const ws = XLSX.utils.aoa_to_sheet([
+                ['name'],
+                ['Product A'],
+                ['Product B'],
+                ['Product C'],
+            ]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Products');
+            XLSX.writeFile(wb, 'bulk_upload_sample.xlsx');
+        }
     </script>
 @endsection
