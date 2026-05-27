@@ -105,8 +105,10 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items Sold</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final Amount</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Due</th>
+                        @if($hasOutstandingBalance)
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Due</th>
+                        @endif
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale Date</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -114,14 +116,30 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                     @foreach ($sales as $sale)
+
                         <tr class="hover:bg-gray-50 transition-colors duration-200">
                             <td class="px-4 py-3 text-sm text-gray-900">{{ $sale->id }}</td>
                             <td class="px-4 py-3 text-sm text-gray-900">{{ $sale->customer_name }}</td>
                             <td class="px-4 py-3 text-sm text-gray-900">
                                 <ul class="list-disc list-inside">
+{{--                                    @foreach ($sale->saleItems as $item)--}}
+{{--                                        @if ($item->cashews)--}}
+{{--                                            <li>{{ $item->cashews->product->name ?? 'N/A' }} (Qty: {{ $item->quantity }})</li>--}}
+{{--                                        @else--}}
+{{--                                            <li>Unknown Item (Qty: {{ $item->quantity }})</li>--}}
+{{--                                        @endif--}}
+{{--                                    @endforeach--}}
                                     @foreach ($sale->saleItems as $item)
                                         @if ($item->cashews)
-                                            <li>{{ $item->cashews->product->name ?? 'N/A' }} (Qty: {{ $item->quantity }})</li>
+                                            <li>
+                                                {{ $item->cashews->product->name ?? 'N/A' }}
+                                                @if ($item->productSize)
+                                                    <span class="text-gray-500 text-xs">
+                                                        — {{ $item->productSize->size }} / {{ $item->productSize->color }}
+                                                    </span>
+                                                @endif
+                                                (Qty: {{ $item->quantity }})
+                                            </li>
                                         @else
                                             <li>Unknown Item (Qty: {{ $item->quantity }})</li>
                                         @endif
@@ -129,8 +147,10 @@
                                 </ul>
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-900">{{ number_format($sale->final_amount, 2) }}</td>
+                            @if($hasOutstandingBalance)
                             <td class="px-4 py-3 text-sm text-gray-900">{{ number_format($sale->amount_paid, 2) }}</td>
                             <td class="px-4 py-3 text-sm text-gray-900">{{ number_format($sale->amount_due, 2) }}</td>
+                            @endif
                             <td class="px-4 py-3 text-sm text-gray-900">{{ $sale->sale_date->format('Y-m-d H:i') }}</td>
                             <td class="px-4 py-3 text-sm text-gray-900">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
@@ -148,7 +168,7 @@
                             </td>
                             <td class="px-4 py-3 text-sm font-medium">
                                 <div class="flex items-center space-x-2">
-                                    <a href="{{ route('sales.show', $sale->id) }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-sm transition-colors duration-200">View</a>
+{{--                                    <a href="{{ route('sales.show', $sale->id) }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-sm transition-colors duration-200">View</a>--}}
                                     <a href="{{ route('sales.print', $sale->id) }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-sm transition-colors duration-200">receipt</a>
                                     @if ($sale->amount_due > 0 && !$sale->is_installment)
                                         <a href="{{ route('sales.pay.form', $sale->id) }}" class="text-green-600 hover:text-green-900 font-semibold text-sm transition-colors duration-200">Pay</a>

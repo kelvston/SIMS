@@ -136,7 +136,8 @@ Route::resource('expenses', ExpenseController::class);
 
 // To view all installment plans
 
-
+Route::get('/cashews/search-for-sale', [CashewController::class, 'searchForSale'])
+    ->name('cashews.searchForSale');
 
 
 

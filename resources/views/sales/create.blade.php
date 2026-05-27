@@ -169,41 +169,267 @@
     </div>
 
 
+{{--    <script>--}}
+{{--        // Pass available Cashewsdata to JavaScript--}}
+{{--        const availableCashews = @json($availableCashews);--}}
+
+{{--        const form = document.querySelector('form');--}}
+{{--        const cashewSearchInput = document.getElementById('cashewSearchInput');--}}
+{{--        const cashewSearchResults = document.getElementById('cashew-search-results');--}}
+{{--        const cashewImeiInputs = document.getElementById('cashew-barcode-inputs');--}}
+
+{{--        // --- BARCODE SCANNER IMPLEMENTATION -----}}
+{{--        let barcode = '';--}}
+{{--        let lastKeyTime = Date.now();--}}
+{{--        const barcodeInterval = 50; // Max time between keypresses (ms)--}}
+
+{{--        document.addEventListener('keydown', function(event) {--}}
+{{--            // Ignore Enter key from submitting form--}}
+{{--            if (event.key === 'Enter') {--}}
+{{--                event.preventDefault();--}}
+
+{{--                // If we have a collected barcode, process it--}}
+{{--                if (barcode.length > 0) {--}}
+{{--                    processScannedBarcode(barcode);--}}
+{{--                    barcode = '';--}}
+{{--                }--}}
+{{--                return;--}}
+{{--            }--}}
+
+{{--            // Check if this is part of a barcode scan (quick successive keypresses)--}}
+{{--            const currentTime = Date.now();--}}
+{{--            if (currentTime - lastKeyTime > barcodeInterval) {--}}
+{{--                barcode = ''; // Reset if too much time between keys--}}
+{{--            }--}}
+{{--            lastKeyTime = currentTime;--}}
+
+{{--            // Add to barcode (ignore modifier keys)--}}
+{{--            if (event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey) {--}}
+{{--                barcode += event.key;--}}
+{{--            }--}}
+{{--        });--}}
+
+{{--        function processScannedBarcode(code) {--}}
+{{--            const cashew = availableCashews.find(p => p.barcode && p.barcode === code);--}}
+
+{{--            if (cashew) {--}}
+{{--                addCashewInput(cashew);--}}
+{{--                showToast(`Added by barcode: ${cashew.product_name}`, 'success');--}}
+{{--                return;--}}
+{{--            }--}}
+
+{{--            showToast(`No barcode match. Try search instead.`, 'error');--}}
+{{--        }--}}
+
+{{--        // --- AUTO-SEARCH FUNCTIONS -----}}
+{{--        // For Cashews--}}
+{{--        cashewSearchInput.addEventListener('input', (event) => {--}}
+{{--            const searchTerm = (event.target.value || '').toLowerCase();--}}
+
+{{--            if (searchTerm.length > 0) {--}}
+{{--                const filteredCashews = availableCashews.filter(cashew => {--}}
+{{--                    const name = (cashew.product_name || '').toLowerCase();--}}
+{{--                    const barcode = (cashew.barcode || '').toLowerCase();--}}
+
+{{--                    return name.includes(searchTerm) || barcode.includes(searchTerm);--}}
+{{--                });--}}
+
+{{--                renderCashewResults(filteredCashews);--}}
+{{--            } else {--}}
+{{--                cashewSearchResults.classList.add('hidden');--}}
+{{--            }--}}
+{{--        });--}}
+
+{{--        function renderCashewResults(results) {--}}
+{{--            cashewSearchResults.innerHTML = '';--}}
+
+{{--            results.forEach(cashew => {--}}
+{{--                const div = document.createElement('div');--}}
+{{--                div.className = 'p-2 cursor-pointer hover:bg-gray-200';--}}
+
+{{--                const barcodeText = cashew.barcode ? `(${cashew.barcode})` : '';--}}
+
+{{--                div.textContent =--}}
+{{--                    `${cashew.product_name} ${barcodeText} - Tsh ${cashew.selling_price}`;--}}
+
+{{--                div.dataset.id = cashew.id;--}}
+
+{{--                cashewSearchResults.appendChild(div);--}}
+{{--            });--}}
+
+{{--            cashewSearchResults.classList.remove('hidden');--}}
+{{--        }--}}
+
+
+{{--        // --- ADD ITEM FUNCTIONS -----}}
+{{--        function addCashewInput(cashew) {--}}
+{{--            const key = cashew.id ?? cashew.barcode;--}}
+
+{{--            if (document.querySelector(`[data-key="${key}"]`)) {--}}
+{{--                showToast('This product is already added', 'warning');--}}
+{{--                return;--}}
+{{--            }--}}
+
+{{--            const div = document.createElement('div');--}}
+{{--            div.className = 'flex items-center gap-2 cashew-item-group mb-2';--}}
+{{--            div.dataset.key = key;--}}
+
+{{--            // ✅ IMPORTANT: store price here--}}
+{{--            div.dataset.price = cashew.selling_price || 0;--}}
+
+{{--            div.innerHTML = `--}}
+{{--        <input type="hidden" name="cashew_ids[]" value="${cashew.id ?? ''}">--}}
+
+{{--        <input type="text"--}}
+{{--            value="${cashew.product_name} ${cashew.barcode ? '(' + cashew.barcode + ')' : ''} - Tsh ${cashew.selling_price}"--}}
+{{--            readonly--}}
+{{--            class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-100">--}}
+
+{{--        <input type="number"--}}
+{{--            name="quantities[]"--}}
+{{--            min="1"--}}
+{{--            value="1"--}}
+{{--            class="qty w-20 border rounded px-2 py-2 text-center">--}}
+
+{{--<!--        <div class="mt-4 p-2 border-2 border-green-500 bg-green-50 text-green-700 text-sm font-bold rounded-lg shadow">-->--}}
+{{--<!--            Total: Tsh <span id="totalAmount">0</span>-->--}}
+{{--<!--        </div>-->--}}
+{{--            <div class="mt-4 p-2 border-2 border-green-500 bg-green-50 text-green-700 text-sm font-bold rounded-lg shadow">--}}
+{{--                Total: Tsh <span class="rowTotal">0</span>--}}
+{{--            </div>--}}
+
+{{--        <button type="button"--}}
+{{--            onclick="removeInput(this)"--}}
+{{--            class="bg-red-500 text-white px-4 py-2 rounded">--}}
+{{--            Remove--}}
+{{--        </button>--}}
+{{--    `;--}}
+
+{{--            cashewImeiInputs.appendChild(div);--}}
+
+{{--            // ✅ call AFTER adding element--}}
+{{--            calculateTotal();--}}
+{{--        }--}}
+
+{{--        document.addEventListener('input', function (e) {--}}
+{{--            if (e.target.name === 'quantities[]') {--}}
+{{--                calculateTotal();--}}
+{{--            }--}}
+{{--        });--}}
+
+{{--        // function calculateTotal() {--}}
+{{--        //     let total = 0;--}}
+{{--        //--}}
+{{--        //     document.querySelectorAll('.cashew-item-group').forEach(row => {--}}
+{{--        //         const price = parseFloat(row.dataset.price || 0);--}}
+{{--        //         const qtyInput = row.querySelector('input[name="quantities[]"]');--}}
+{{--        //--}}
+{{--        //         const qty = parseInt(qtyInput?.value || 0);--}}
+{{--        //--}}
+{{--        //         total += price * qty;--}}
+{{--        //     });--}}
+{{--        //--}}
+{{--        //     document.getElementById('totalAmount').textContent = total.toFixed(2);--}}
+{{--        // }--}}
+
+{{--        function calculateTotal() {--}}
+{{--            let grandTotal = 0;--}}
+{{--            document.querySelectorAll('.cashew-item-group').forEach(row => {--}}
+{{--                const price = parseFloat(row.dataset.price || 0);--}}
+{{--                const qtyInput = row.querySelector('input[name="quantities[]"]');--}}
+{{--                const qty = parseInt(qtyInput?.value || 0);--}}
+{{--                const rowTotal = price * qty;--}}
+{{--                grandTotal += rowTotal;--}}
+{{--                // Update this specific row's total span--}}
+{{--                row.querySelector('.rowTotal').textContent = rowTotal.toFixed(2);--}}
+{{--            });--}}
+{{--        }--}}
+
+{{--        // --- UTILITY FUNCTIONS -----}}
+
+{{--        function removeInput(button) {--}}
+{{--            button.closest('.cashew-item-group').remove();--}}
+{{--            calculateTotal();--}}
+{{--        }--}}
+
+{{--        function showToast(message, type) {--}}
+{{--            const toast = document.createElement('div');--}}
+{{--            toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg text-white ${--}}
+{{--                type === 'success' ? 'bg-green-500' :--}}
+{{--                    type === 'error' ? 'bg-red-500' : 'bg-yellow-500'--}}
+{{--            }`;--}}
+{{--            toast.textContent = message;--}}
+{{--            document.body.appendChild(toast);--}}
+
+{{--            setTimeout(() => {--}}
+{{--                toast.remove();--}}
+{{--            }, 3000);--}}
+{{--        }--}}
+
+{{--        // --- FORM SUBMISSION CONTROL -----}}
+{{--        form.addEventListener('submit', function(event) {--}}
+{{--            // Only allow submission from the actual submit button--}}
+{{--            if (event.submitter && event.submitter.type === 'submit') {--}}
+{{--                return; // Allow submission--}}
+{{--            }--}}
+{{--            event.preventDefault(); // Block all other submission attempts--}}
+{{--        });--}}
+
+{{--        // Handle selection from search results--}}
+{{--        cashewSearchResults.addEventListener('click', (event) => {--}}
+{{--            const item = event.target.closest('div');--}}
+{{--            if (!item) return;--}}
+
+{{--            const id = item.dataset.id;--}}
+{{--            const selected = availableCashews.find(c => c.id == id);--}}
+
+{{--            if (selected) {--}}
+{{--                addCashewInput(selected);--}}
+{{--                cashewSearchInput.value = '';--}}
+{{--                cashewSearchResults.classList.add('hidden');--}}
+{{--            }--}}
+{{--        });--}}
+
+
+{{--        // Close search results when clicking outside--}}
+{{--        document.addEventListener('click', (event) => {--}}
+{{--            if (!cashewSearchInput.contains(event.target) && !cashewSearchResults.contains(event.target)) {--}}
+{{--                cashewSearchResults.classList.add('hidden');--}}
+{{--            }--}}
+{{--        });--}}
+
+{{--        // Toggle installment details visibility--}}
+{{--        document.getElementById('is_installment').addEventListener('change', function() {--}}
+{{--            const installmentDetails = document.getElementById('installment-details');--}}
+{{--            if (this.checked) {--}}
+{{--                installmentDetails.classList.remove('hidden');--}}
+{{--            } else {--}}
+{{--                installmentDetails.classList.add('hidden');--}}
+{{--            }--}}
+{{--        });--}}
+{{--    </script>--}}
     <script>
-        // Pass available Cashewsdata to JavaScript
         const availableCashews = @json($availableCashews);
 
-        const form = document.querySelector('form');
-        const cashewSearchInput = document.getElementById('cashewSearchInput');
+        const form                = document.querySelector('form');
+        const cashewSearchInput   = document.getElementById('cashewSearchInput');
         const cashewSearchResults = document.getElementById('cashew-search-results');
-        const cashewImeiInputs = document.getElementById('cashew-barcode-inputs');
+        const cashewImeiInputs    = document.getElementById('cashew-barcode-inputs');
 
-        // --- BARCODE SCANNER IMPLEMENTATION ---
+        // --- BARCODE SCANNER ---
         let barcode = '';
         let lastKeyTime = Date.now();
-        const barcodeInterval = 50; // Max time between keypresses (ms)
+        const barcodeInterval = 50;
 
         document.addEventListener('keydown', function(event) {
-            // Ignore Enter key from submitting form
             if (event.key === 'Enter') {
                 event.preventDefault();
-
-                // If we have a collected barcode, process it
-                if (barcode.length > 0) {
-                    processScannedBarcode(barcode);
-                    barcode = '';
-                }
+                if (barcode.length > 0) { processScannedBarcode(barcode); barcode = ''; }
                 return;
             }
-
-            // Check if this is part of a barcode scan (quick successive keypresses)
             const currentTime = Date.now();
-            if (currentTime - lastKeyTime > barcodeInterval) {
-                barcode = ''; // Reset if too much time between keys
-            }
+            if (currentTime - lastKeyTime > barcodeInterval) barcode = '';
             lastKeyTime = currentTime;
-
-            // Add to barcode (ignore modifier keys)
             if (event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey) {
                 barcode += event.key;
             }
@@ -211,48 +437,56 @@
 
         function processScannedBarcode(code) {
             const cashew = availableCashews.find(p => p.barcode && p.barcode === code);
-
-            if (cashew) {
-                addCashewInput(cashew);
-                showToast(`Added by barcode: ${cashew.product_name}`, 'success');
-                return;
-            }
-
-            showToast(`No barcode match. Try search instead.`, 'error');
+            if (cashew) { addCashewInput(cashew); showToast(`Added: ${cashew.display_name}`, 'success'); return; }
+            showToast('No barcode match. Try search instead.', 'error');
         }
 
-        // --- AUTO-SEARCH FUNCTIONS ---
-        // For Cashews
+        // --- SEARCH ---
         cashewSearchInput.addEventListener('input', (event) => {
-            const searchTerm = (event.target.value || '').toLowerCase();
+            const term = (event.target.value || '').toLowerCase();
+            if (term.length === 0) { cashewSearchResults.classList.add('hidden'); return; }
 
-            if (searchTerm.length > 0) {
-                const filteredCashews = availableCashews.filter(cashew => {
-                    const name = (cashew.product_name || '').toLowerCase();
-                    const barcode = (cashew.barcode || '').toLowerCase();
-
-                    return name.includes(searchTerm) || barcode.includes(searchTerm);
-                });
-
-                renderCashewResults(filteredCashews);
-            } else {
-                cashewSearchResults.classList.add('hidden');
-            }
+            const filtered = availableCashews.filter(c =>
+                (c.display_name || '').toLowerCase().includes(term) ||
+                (c.barcode      || '').toLowerCase().includes(term) ||
+                (c.size         || '').toLowerCase().includes(term) ||
+                (c.color        || '').toLowerCase().includes(term)
+            );
+            renderCashewResults(filtered);
         });
 
         function renderCashewResults(results) {
             cashewSearchResults.innerHTML = '';
 
+            if (results.length === 0) {
+                cashewSearchResults.innerHTML = '<div class="p-2 text-gray-400 text-sm">No results found.</div>';
+                cashewSearchResults.classList.remove('hidden');
+                return;
+            }
+
             results.forEach(cashew => {
                 const div = document.createElement('div');
-                div.className = 'p-2 cursor-pointer hover:bg-gray-200';
+                div.className = 'p-2 cursor-pointer hover:bg-gray-100 flex justify-between items-center border-b last:border-0';
 
-                const barcodeText = cashew.barcode ? `(${cashew.barcode})` : '';
+                // Color swatch
+                const swatch = cashew.color
+                    ? `<span class="inline-block w-3 h-3 rounded-full mr-1 flex-shrink-0"
+                          style="background:${cashew.color.toLowerCase()};border:1px solid #aaa;"></span>`
+                    : '';
 
-                div.textContent =
-                    `${cashew.product_name} ${barcodeText} - Tsh ${cashew.selling_price}`;
+                // Size badge
+                const badge = cashew.size
+                    ? `<span class="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full mr-1">${cashew.size}</span>`
+                    : '';
 
-                div.dataset.id = cashew.id;
+                div.innerHTML = `
+                <span class="flex items-center gap-1">${swatch}${badge}${cashew.display_name}</span>
+                <span class="text-xs text-gray-400 ml-4 whitespace-nowrap">
+                    Tsh ${parseFloat(cashew.selling_price).toLocaleString()} &bull; Stock: ${cashew.available_qty}
+                </span>`;
+
+                div.dataset.cashewId = cashew.id;
+                div.dataset.sizeId   = cashew.product_size_id ?? '';
 
                 cashewSearchResults.appendChild(div);
             });
@@ -260,128 +494,108 @@
             cashewSearchResults.classList.remove('hidden');
         }
 
-
-        // --- ADD ITEM FUNCTIONS ---
+        // --- ADD ITEM ---
         function addCashewInput(cashew) {
-            const key = cashew.id ?? cashew.barcode;
+            // Unique key prevents duplicate size/color combos
+            const key = cashew.id + '_' + (cashew.product_size_id ?? 'none');
 
             if (document.querySelector(`[data-key="${key}"]`)) {
-                showToast('This product is already added', 'warning');
+                showToast('This variant is already added.', 'warning');
                 return;
             }
 
-            const div = document.createElement('div');
-            div.className = 'flex items-center gap-2 cashew-item-group mb-2';
-            div.dataset.key = key;
+            const maxQty     = parseInt(cashew.available_qty) || 9999;
+            const swatchStyle = cashew.color
+                ? `background:${cashew.color.toLowerCase()};border:1px solid #ccc;`
+                : 'display:none;';
 
-            // ✅ IMPORTANT: store price here
-            div.dataset.price = cashew.selling_price || 0;
+            const div = document.createElement('div');
+            div.className    = 'flex items-center gap-2 cashew-item-group mb-2 flex-wrap';
+            div.dataset.key  = key;
+            div.dataset.price= cashew.selling_price || 0;
 
             div.innerHTML = `
-        <input type="hidden" name="cashew_ids[]" value="${cashew.id ?? ''}">
+            <input type="hidden" name="cashew_ids[]"       value="${cashew.id}">
+            <input type="hidden" name="product_size_ids[]" value="${cashew.product_size_id ?? ''}">
 
-        <input type="text"
-            value="${cashew.product_name} ${cashew.barcode ? '(' + cashew.barcode + ')' : ''} - Tsh ${cashew.selling_price}"
-            readonly
-            class="shadow appearance-none border rounded w-full py-2 px-3 bg-gray-100">
+            <span class="inline-block w-4 h-4 rounded-full flex-shrink-0" style="${swatchStyle}"></span>
 
-        <input type="number"
-            name="quantities[]"
-            min="1"
-            value="1"
-            class="qty w-20 border rounded px-2 py-2 text-center">
+            <input type="text"
+                   value="${cashew.display_name} — Tsh ${parseFloat(cashew.selling_price).toLocaleString()}"
+                   readonly
+                   class="shadow appearance-none border rounded flex-1 py-2 px-3 bg-gray-100 text-sm min-w-0">
 
-<!--        <div class="mt-4 p-2 border-2 border-green-500 bg-green-50 text-green-700 text-sm font-bold rounded-lg shadow">-->
-<!--            Total: Tsh <span id="totalAmount">0</span>-->
-<!--        </div>-->
-            <div class="mt-4 p-2 border-2 border-green-500 bg-green-50 text-green-700 text-sm font-bold rounded-lg shadow">
-                Total: Tsh <span class="rowTotal">0</span>
+            <span class="text-xs text-gray-500 whitespace-nowrap">Max: ${maxQty}</span>
+
+            <input type="number"
+                   name="quantities[]"
+                   min="1" max="${maxQty}" value="1"
+                   class="qty w-20 border rounded px-2 py-2 text-center">
+
+            <div class="p-2 border-2 border-green-500 bg-green-50 text-green-700 text-sm font-bold rounded-lg shadow whitespace-nowrap">
+                Tsh <span class="rowTotal">0</span>
             </div>
 
-        <button type="button"
-            onclick="removeInput(this)"
-            class="bg-red-500 text-white px-4 py-2 rounded">
-            Remove
-        </button>
-    `;
+            <button type="button" onclick="removeInput(this)"
+                    class="bg-red-500 text-white px-3 py-2 rounded text-sm">
+                Remove
+            </button>`;
 
             cashewImeiInputs.appendChild(div);
-
-            // ✅ call AFTER adding element
             calculateTotal();
         }
 
         document.addEventListener('input', function (e) {
             if (e.target.name === 'quantities[]') {
+                const max = parseInt(e.target.max);
+                if (!isNaN(max) && parseInt(e.target.value) > max) {
+                    e.target.value = max;
+                    showToast(`Max available stock is ${max}.`, 'warning');
+                }
                 calculateTotal();
             }
         });
 
-        // function calculateTotal() {
-        //     let total = 0;
-        //
-        //     document.querySelectorAll('.cashew-item-group').forEach(row => {
-        //         const price = parseFloat(row.dataset.price || 0);
-        //         const qtyInput = row.querySelector('input[name="quantities[]"]');
-        //
-        //         const qty = parseInt(qtyInput?.value || 0);
-        //
-        //         total += price * qty;
-        //     });
-        //
-        //     document.getElementById('totalAmount').textContent = total.toFixed(2);
-        // }
-
         function calculateTotal() {
-            let grandTotal = 0;
             document.querySelectorAll('.cashew-item-group').forEach(row => {
                 const price = parseFloat(row.dataset.price || 0);
-                const qtyInput = row.querySelector('input[name="quantities[]"]');
-                const qty = parseInt(qtyInput?.value || 0);
-                const rowTotal = price * qty;
-                grandTotal += rowTotal;
-                // Update this specific row's total span
-                row.querySelector('.rowTotal').textContent = rowTotal.toFixed(2);
+                const qty   = parseInt(row.querySelector('input[name="quantities[]"]')?.value || 0);
+                row.querySelector('.rowTotal').textContent = (price * qty).toLocaleString();
             });
         }
 
-        // --- UTILITY FUNCTIONS ---
-
-        function removeInput(button) {
-            button.closest('.cashew-item-group').remove();
+        function removeInput(btn) {
+            btn.closest('.cashew-item-group').remove();
             calculateTotal();
         }
 
         function showToast(message, type) {
             const toast = document.createElement('div');
-            toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg text-white ${
+            toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg text-white z-50 ${
                 type === 'success' ? 'bg-green-500' :
-                    type === 'error' ? 'bg-red-500' : 'bg-yellow-500'
-            }`;
+                    type === 'error'   ? 'bg-red-500'   : 'bg-yellow-500'}`;
             toast.textContent = message;
             document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
+            setTimeout(() => toast.remove(), 3000);
         }
 
-        // --- FORM SUBMISSION CONTROL ---
         form.addEventListener('submit', function(event) {
-            // Only allow submission from the actual submit button
-            if (event.submitter && event.submitter.type === 'submit') {
-                return; // Allow submission
-            }
-            event.preventDefault(); // Block all other submission attempts
+            if (event.submitter && event.submitter.type === 'submit') return;
+            event.preventDefault();
         });
 
-        // Handle selection from search results
+        // Click on search result
         cashewSearchResults.addEventListener('click', (event) => {
-            const item = event.target.closest('div');
+            const item = event.target.closest('[data-cashew-id]');
             if (!item) return;
 
-            const id = item.dataset.id;
-            const selected = availableCashews.find(c => c.id == id);
+            const cashewId = item.dataset.cashewId;
+            const sizeId   = item.dataset.sizeId || null;
+
+            const selected = availableCashews.find(c =>
+                String(c.id) === String(cashewId) &&
+                String(c.product_size_id ?? '') === String(sizeId ?? '')
+            );
 
             if (selected) {
                 addCashewInput(selected);
@@ -390,22 +604,14 @@
             }
         });
 
-
-        // Close search results when clicking outside
         document.addEventListener('click', (event) => {
             if (!cashewSearchInput.contains(event.target) && !cashewSearchResults.contains(event.target)) {
                 cashewSearchResults.classList.add('hidden');
             }
         });
 
-        // Toggle installment details visibility
         document.getElementById('is_installment').addEventListener('change', function() {
-            const installmentDetails = document.getElementById('installment-details');
-            if (this.checked) {
-                installmentDetails.classList.remove('hidden');
-            } else {
-                installmentDetails.classList.add('hidden');
-            }
+            document.getElementById('installment-details').classList.toggle('hidden', !this.checked);
         });
     </script>
 @endsection

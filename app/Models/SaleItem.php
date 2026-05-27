@@ -18,7 +18,8 @@ class SaleItem extends Model
         'quantity',
         'is_sold',
         'unit_cost',
-        'product_id'
+        'product_id',
+        'product_size_id'
     ];
     protected $with = ['cashew', ];
     /**
@@ -50,6 +51,10 @@ class SaleItem extends Model
         return $this->belongsTo(Cashew::class, 'product_id', 'product_id');
     }
 
-
+// In SaleItem model
+    public function productSize()
+    {
+        return $this->belongsTo(\App\Models\ProductSize::class, 'product_size_id');
+    }
 
 }

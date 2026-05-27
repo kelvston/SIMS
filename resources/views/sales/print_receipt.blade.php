@@ -203,7 +203,13 @@
 
     @foreach($receipt->sale->saleItems as $item)
         <div class="item-row">
-            <div class="item-name">{{ $item->cashews->product->name ?? 'N/A' }}</div>
+            <div class="item-name">{{ $item->cashews->product->name ?? 'N/A' }}
+                @if ($item->productSize)
+                    <span class="text-gray-500 text-xs">
+                                                        — {{ $item->productSize->size }} / {{ $item->productSize->color }}
+                                                    </span>
+                @endif
+            </div>
             <div class="item-detail">
                 <span>{{ $item->quantity }} x Tsh {{ number_format($item->unit_price, 2) }}</span>
                 <span>Tsh {{ number_format($item->unit_price * $item->quantity, 2) }}</span>

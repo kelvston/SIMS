@@ -53,4 +53,9 @@ class Cashew extends Model
         return $this->belongsTo(Product::class);
     }
 
+    public function productSizes()
+    {
+        return $this->hasMany(ProductSize::class,'product_id');
+    }
+
 }

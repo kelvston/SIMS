@@ -21,7 +21,8 @@ class Sale extends Model
         'customer_email',
         'amount_paid',
         'amount_due','payment_option',
-        'user_id'
+        'user_id',
+        'product_size_id'
     ];
 
     // Define the casts for attributes

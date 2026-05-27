@@ -66,15 +66,18 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     public function index()
     {
         // Eager load saleItems and their associated medicines, and installmentPlan if it exists
-        $sales = Sale::with(['saleItems.cashews.product', 'installmentPlan'])
+        $sales = Sale::with(['saleItems.cashews.product', 'installmentPlan',
+            'saleItems.productSize'
+        ])
             ->orderBy('sale_date', 'desc')
             ->paginate(5);
 
         \Artisan::call('stock:check-low'); // Run the command
 
         $lowStockAlerts = Cache::pull('low_stock_alerts', []);
+        $hasOutstandingBalance = $sales->contains(fn($s) => $s->amount_due > 0 || $s->is_installment);
 
-        return view('sales.index', compact('sales','lowStockAlerts'));
+        return view('sales.index', compact('sales','lowStockAlerts','hasOutstandingBalance'));
 
 
 
@@ -85,28 +88,71 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
      *
      * @return \Illuminate\View\View
      */
+//    public function create()
+//    {
+//        // Fetch only available cashew for selection in the sales form
+////        $availableCashews = Product::select('products.*')
+////            ->leftJoin('cashews', 'products.id', '=', 'cashews.product_id')
+////            ->where('cashews.quantity', '>', 0)
+////            ->get();
+//
+//        $availableCashews = Cashew::with('product')
+//            ->where('quantity', '>', 0)
+//            ->get()
+//            ->map(fn($c) => [
+//                'id' => $c->product_id,
+//                'barcode' => $c->barcode,
+//                'product_name' => $c->product?->name ?? 'N/A',
+//                'selling_price' => $c->selling_price,
+//            ]);
+//
+//
+//
+//        $availableCosmetics = Cosmetic::where('status', 'in_stock')->where('quantity','>=',1)->orderBy('created_at')->get();
+//        return view('sales.create', compact('availableCosmetics','availableCashews'));
+//    }
+
     public function create()
     {
-        // Fetch only available cashew for selection in the sales form
-//        $availableCashews = Product::select('products.*')
-//            ->leftJoin('cashews', 'products.id', '=', 'cashews.product_id')
-//            ->where('cashews.quantity', '>', 0)
-//            ->get();
-
-        $availableCashews = Cashew::with('product')
+        $availableCashews = Cashew::with(['product', 'productSizes'])
             ->where('quantity', '>', 0)
             ->get()
-            ->map(fn($c) => [
-                'id' => $c->product_id,
-                'barcode' => $c->barcode,
-                'product_name' => $c->product?->name ?? 'N/A',
-                'selling_price' => $c->selling_price,
-            ]);
+            ->flatMap(function ($cashew) {
+                if ($cashew->productSizes->count() > 0) {
+                    return $cashew->productSizes
+                        ->where('quantity', '>', 0)
+                        ->map(fn($s) => [
+                            'id'              => $cashew->id,        // cashew's actual id
+                            'product_size_id' => $s->id,
+                            'product_name'    => $cashew->product->name,
+                            'display_name'    => $cashew->product->name . ' — ' . $s->size . ' / ' . $s->color,
+                            'size'            => $s->size,
+                            'color'           => $s->color,
+                            'selling_price'   => $cashew->selling_price,
+                            'unit'            => $cashew->unit,
+                            'available_qty'   => $s->quantity,
+                            'barcode'         => $cashew->barcode ?? null,
+                        ]);
+                }
 
+                return [[
+                    'id'              => $cashew->id,
+                    'product_size_id' => null,
+                    'product_name'    => $cashew->product->name,
+                    'display_name'    => $cashew->product->name,
+                    'size'            => null,
+                    'color'           => null,
+                    'selling_price'   => $cashew->selling_price,
+                    'unit'            => $cashew->unit,
+                    'available_qty'   => $cashew->quantity,
+                    'barcode'         => $cashew->barcode ?? null,
+                ]];
+            })
+            ->values();
 
+        $availableCosmetics = Cosmetic::where('status', 'in_stock')->where('quantity', '>=', 1)->orderBy('created_at')->get();
 
-        $availableCosmetics = Cosmetic::where('status', 'in_stock')->where('quantity','>=',1)->orderBy('created_at')->get();
-        return view('sales.create', compact('availableCosmetics','availableCashews'));
+        return view('sales.create', compact('availableCosmetics', 'availableCashews'));
     }
     public function printReceipt($id)
     {
@@ -132,174 +178,357 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
      * @return \Illuminate\Http\RedirectResponse
      */
 
+//    public function store(Request $request)
+//    {
+//
+//        // 1. Basic validation for customer, discount, and the new credit_sale flag
+//        $validated = $request->validate([
+//            'customer_name' => 'nullable',
+//            'customer_email' => 'nullable',
+//            'payment_option' => 'nullable|numeric|min:0',
+//            'quantities' => 'required|array',
+//            'cashew_ids' => 'required|array',
+//            'amount_paid' => 'required_without:credit_sale|nullable|numeric|min:0',
+//            'credit_sale' => 'nullable|boolean', // New validation for the credit_sale flag
+//            'is_installment' => 'nullable|boolean',
+//            'total_installments' => 'required_if:is_installment,true|nullable|integer|min:1',
+//            'installment_amount' => 'required_if:is_installment,true|nullable|numeric|min:0.01',
+//            'start_date' => 'required_if:is_installment,true|nullable|date',
+//            'discount_amount' => 'nullable|numeric|min:0',
+//        ]);
+//
+//
+//        // 2. Validate product stock before creating a sale
+//        $totalAmount = 0;
+//        $cashewsToSell = [];
+//
+//        // Validate and get cashew details
+//        $totalAmount = 0;
+//        $cashewIds = $request->input('cashew_ids', []);
+//        $quantities = $request->input('quantities', []);
+//        foreach ($cashewIds as $index => $productId) {
+//            $qty = $quantities[$index] ?? 0;
+//            $cashew = Cashew::where('product_id', $productId)->first();
+//            if (!$cashew) {
+//                throw ValidationException::withMessages([
+//                    'items' => "Product not found for ID {$productId}"
+//                ]);
+//            }
+//            if ($cashew->quantity < $qty) {
+//                throw ValidationException::withMessages([
+//                    'items' => "Not enough stock for the product "
+//                ]);
+//            }
+//            $totalAmount += $cashew->selling_price * $qty;
+//        }
+//
+//
+//        // Calculate final amount after discount
+//
+//        $finalAmount = $totalAmount - $validated['discount_amount'];
+//        if ($finalAmount < 0) {
+//            throw ValidationException::withMessages(['discount_amount' => 'Discount cannot exceed the total amount.']);
+//        }
+//
+//        // Determine the amount paid based on the credit_sale flag
+//        $amountPaid = 0;
+//        if (!($validated['credit_sale'] ?? false)) {
+//            // If it's NOT a credit sale, use the amount_paid from the request
+//            $amountPaid = $validated['amount_paid'] ?? 0;
+//        }
+//
+//        // Validate that the amount paid does not exceed the final amount
+//        if ($amountPaid > $finalAmount) {
+//            throw ValidationException::withMessages(['amount_paid' => 'Amount paid cannot exceed the final sale amount.']);
+//        }
+//
+//        // Calculate the remaining balance (the "credit" amount)
+//        if($validated['credit_sale'] == 1){
+//            $amountDue = $finalAmount - $amountPaid;
+//        }else{
+//            $amountDue =0;
+//        }
+//
+//
+//        try {
+//            DB::beginTransaction();
+//
+//            // Re-validate and get products inside the transaction with a lock
+//            $cashewIds = $request->cashew_ids;
+//            $quantities = $request->quantities;
+//            foreach ($cashewIds as $index => $productId) {
+//                $qty = $quantities[$index];
+//                $cashew = Cashew::where('product_id', $productId)->lockForUpdate()->first();
+//                if (!$cashew) {
+//                    throw ValidationException::withMessages([
+//                        'items' => "Product not found for ID {$productId}"
+//                    ]);
+//                }
+//                if ($cashew->quantity < $qty) {
+//                    throw ValidationException::withMessages([
+//                        'items' => "Not enough stock for the product"
+//                    ]);
+//                }
+//            }
+//            // 3. Create the Sale record with the calculated total amount and payment details
+//            $payment_option = null;
+//            if (isset($request['payment_option'])) {
+//                switch ((int) $request['payment_option']) {
+//                    case 1:
+//                        $payment_option = 'Cash';
+//                        break;
+//                    case 2:
+//                        $payment_option = 'Bank';
+//                        break;
+//                    case 3:
+//                        $payment_option = 'Phone';
+//                        break;
+//                    default:
+//                        $payment_option = 'Cash';
+//                }
+//            }
+//
+//
+//            $sale = Sale::create([
+//                'customer_name' => $validated['customer_name'],
+//                'customer_email' => $validated['customer_email'],
+//                'total_amount' => $totalAmount,
+//                'discount_amount' => $validated['discount_amount'],
+//                'final_amount' => $finalAmount,
+//                'amount_paid' => $amountPaid,
+//                'amount_due' => $amountDue,
+//                'is_installment' => $request->boolean('is_installment'),
+//                'sale_date' => now(),
+//                'payment_option' => $payment_option,
+//                'user_id' => auth()->id(),
+//            ]);
+//
+//            // 4. Create sale items and update stock
+//            foreach ($validated['cashew_ids'] as $index => $productId) {
+//                $cashew = Cashew::where('product_id', $productId)->first();
+//                 $qty = $validated['quantities'][$index];
+//                $sale->saleItems()->create([
+//                    'product_id' => $cashew->product_id,
+//                    'cosmetic_id' => null,
+//                    'unit_price' => $cashew->selling_price,
+//                    'unit_cost' => $cashew->unit_price,
+//                    'quantity' => $qty,
+//                ]);
+//                // reduce stock
+//                $cashew->quantity -= $qty;
+//                $cashew->save();
+//            }
+//
+//
+//
+//            // 5. Handle installment details if applicable
+//            if ($sale->is_installment) {
+//                $sale->installment()->create([
+//                    'total_installments' => $validated['total_installments'],
+//                    'installment_amount' => $validated['installment_amount'],
+//                    'start_date' => $validated['start_date'],
+//                ]);
+//            }
+//
+//            // 6. Generate the receipt automatically
+//            SaleReceipt::create([
+//                'receipt_number' => 'RCPT-' . Str::upper(Str::random(13)),
+//                'sale_id' => $sale->id,
+//                'issued_at' => now(),
+//                'subtotal' => $sale->total_amount,
+//                'tax' => 0.00, // Assuming tax is not calculated for now
+//                'discount' => $sale->discount_amount,
+//                'total' => $sale->final_amount,
+//                'is_installment' => $sale->is_installment,
+//                'paid_amount' => $sale->amount_paid,
+//                'balance' => $sale->amount_due,
+//                'payment_method' => 'cash',
+//                'status' => $sale->amount_due > 0 ? 'partial' : 'paid',
+//                'notes' => null,
+//            ]);
+//            DB::commit();
+//
+//            return redirect()->route('sales.index')->with('success', 'Sale recorded successfully.');
+//
+//        } catch (ValidationException $e) {
+//            DB::rollBack();
+//            return back()->withErrors($e->errors())->withInput();
+//        } catch (\Exception $e) {
+//            DB::rollBack();
+//            return back()->with('error', 'An error occurred while recording the sale: ' . $e->getMessage())->withInput();
+//        }
+//    }
+
     public function store(Request $request)
     {
-
-        // 1. Basic validation for customer, discount, and the new credit_sale flag
         $validated = $request->validate([
-            'customer_name' => 'nullable',
-            'customer_email' => 'nullable',
-            'payment_option' => 'nullable|numeric|min:0',
-            'quantities' => 'required|array',
-            'cashew_ids' => 'required|array',
-            'amount_paid' => 'required_without:credit_sale|nullable|numeric|min:0',
-            'credit_sale' => 'nullable|boolean', // New validation for the credit_sale flag
-            'is_installment' => 'nullable|boolean',
+            'customer_name'      => 'nullable',
+            'customer_email'     => 'nullable',
+            'payment_option'     => 'nullable|numeric|min:0',
+            'quantities'         => 'required|array',
+            'cashew_ids'         => 'required|array',
+            'product_size_ids'   => 'nullable|array',   // ← new
+            'amount_paid'        => 'required_without:credit_sale|nullable|numeric|min:0',
+            'credit_sale'        => 'nullable|boolean',
+            'is_installment'     => 'nullable|boolean',
             'total_installments' => 'required_if:is_installment,true|nullable|integer|min:1',
             'installment_amount' => 'required_if:is_installment,true|nullable|numeric|min:0.01',
-            'start_date' => 'required_if:is_installment,true|nullable|date',
-            'discount_amount' => 'nullable|numeric|min:0',
+            'start_date'         => 'required_if:is_installment,true|nullable|date',
+            'discount_amount'    => 'nullable|numeric|min:0',
         ]);
 
+        $cashewIds     = $request->input('cashew_ids', []);
+        $quantities    = $request->input('quantities', []);
+        $productSizeIds= $request->input('product_size_ids', []);
 
-        // 2. Validate product stock before creating a sale
+        // --- Pre-transaction stock check ---
         $totalAmount = 0;
-        $cashewsToSell = [];
 
-        // Validate and get cashew details
-        $totalAmount = 0;
-        $cashewIds = $request->input('cashew_ids', []);
-        $quantities = $request->input('quantities', []);
-        foreach ($cashewIds as $index => $productId) {
-            $qty = $quantities[$index] ?? 0;
-            $cashew = Cashew::where('product_id', $productId)->first();
+        foreach ($cashewIds as $index => $cashewId) {
+            $qty    = $quantities[$index] ?? 0;
+            $cashew = Cashew::find($cashewId);
+
             if (!$cashew) {
                 throw ValidationException::withMessages([
-                    'items' => "Product not found for ID {$productId}"
+                    'items' => "Cashew record not found for ID {$cashewId}"
                 ]);
             }
-            if ($cashew->quantity < $qty) {
-                throw ValidationException::withMessages([
-                    'items' => "Not enough stock for the product "
-                ]);
+
+            $sizeId = $productSizeIds[$index] ?? null;
+
+            if ($sizeId) {
+                // Variant product — check size stock
+                $sizeVariant = \App\Models\ProductSize::find($sizeId);
+                if (!$sizeVariant || $sizeVariant->quantity < $qty) {
+                    throw ValidationException::withMessages([
+                        'items' => "Not enough stock for size/color variant."
+                    ]);
+                }
+            } else {
+                // Plain product — check cashew stock
+                if ($cashew->quantity < $qty) {
+                    throw ValidationException::withMessages([
+                        'items' => "Not enough stock for {$cashew->product->name}."
+                    ]);
+                }
             }
+
             $totalAmount += $cashew->selling_price * $qty;
         }
 
+        // --- Discount & payment calc ---
+        $discountAmount = $validated['discount_amount'] ?? 0;
+        $finalAmount    = $totalAmount - $discountAmount;
 
-        // Calculate final amount after discount
-
-        $finalAmount = $totalAmount - $validated['discount_amount'];
         if ($finalAmount < 0) {
             throw ValidationException::withMessages(['discount_amount' => 'Discount cannot exceed the total amount.']);
         }
 
-        // Determine the amount paid based on the credit_sale flag
         $amountPaid = 0;
         if (!($validated['credit_sale'] ?? false)) {
-            // If it's NOT a credit sale, use the amount_paid from the request
             $amountPaid = $validated['amount_paid'] ?? 0;
         }
 
-        // Validate that the amount paid does not exceed the final amount
         if ($amountPaid > $finalAmount) {
             throw ValidationException::withMessages(['amount_paid' => 'Amount paid cannot exceed the final sale amount.']);
         }
 
-        // Calculate the remaining balance (the "credit" amount)
-        if($validated['credit_sale'] == 1){
-            $amountDue = $finalAmount - $amountPaid;
-        }else{
-            $amountDue =0;
-        }
+        $amountDue = ($validated['credit_sale'] == 1) ? ($finalAmount - $amountPaid) : 0;
 
+        // --- Payment option label ---
+        $payment_option = match((int) $request->input('payment_option')) {
+            1 => 'Cash',
+            2 => 'Bank',
+            3 => 'Phone',
+            default => 'Cash',
+        };
 
         try {
             DB::beginTransaction();
 
-            // Re-validate and get products inside the transaction with a lock
-            $cashewIds = $request->cashew_ids;
-            $quantities = $request->quantities;
-            foreach ($cashewIds as $index => $productId) {
-                $qty = $quantities[$index];
-                $cashew = Cashew::where('product_id', $productId)->lockForUpdate()->first();
-                if (!$cashew) {
-                    throw ValidationException::withMessages([
-                        'items' => "Product not found for ID {$productId}"
-                    ]);
-                }
-                if ($cashew->quantity < $qty) {
-                    throw ValidationException::withMessages([
-                        'items' => "Not enough stock for the product"
-                    ]);
-                }
-            }
-            // 3. Create the Sale record with the calculated total amount and payment details
-            $payment_option = null;
-            if (isset($request['payment_option'])) {
-                switch ((int) $request['payment_option']) {
-                    case 1:
-                        $payment_option = 'Cash';
-                        break;
-                    case 2:
-                        $payment_option = 'Bank';
-                        break;
-                    case 3:
-                        $payment_option = 'Phone';
-                        break;
-                    default:
-                        $payment_option = 'Cash';
+            // Lock rows and re-check stock inside transaction
+            foreach ($cashewIds as $index => $cashewId) {
+                $qty    = $quantities[$index];
+                $sizeId = $productSizeIds[$index] ?? null;
+                $cashew = Cashew::lockForUpdate()->find($cashewId);
+
+                if ($sizeId) {
+                    $sizeVariant = \App\Models\ProductSize::lockForUpdate()->find($sizeId);
+                    if (!$sizeVariant || $sizeVariant->quantity < $qty) {
+                        throw ValidationException::withMessages(['items' => 'Not enough stock for size/color variant (locked check).']);
+                    }
+                } else {
+                    if (!$cashew || $cashew->quantity < $qty) {
+                        throw ValidationException::withMessages(['items' => "Not enough stock for {$cashew->product->name} (locked check)."]);
+                    }
                 }
             }
 
-
+            // Create sale
             $sale = Sale::create([
-                'customer_name' => $validated['customer_name'],
+                'customer_name'  => $validated['customer_name'],
                 'customer_email' => $validated['customer_email'],
-                'total_amount' => $totalAmount,
-                'discount_amount' => $validated['discount_amount'],
-                'final_amount' => $finalAmount,
-                'amount_paid' => $amountPaid,
-                'amount_due' => $amountDue,
+                'total_amount'   => $totalAmount,
+                'discount_amount'=> $discountAmount,
+                'final_amount'   => $finalAmount,
+                'amount_paid'    => $amountPaid,
+                'amount_due'     => $amountDue,
                 'is_installment' => $request->boolean('is_installment'),
-                'sale_date' => now(),
+                'sale_date'      => now(),
                 'payment_option' => $payment_option,
-                'user_id' => auth()->id(),
+                'user_id'        => auth()->id(),
             ]);
 
-            // 4. Create sale items and update stock
-            foreach ($validated['cashew_ids'] as $index => $productId) {
-                $cashew = Cashew::where('product_id', $productId)->first();
-                 $qty = $validated['quantities'][$index];
+            // Create sale items + deduct stock
+            foreach ($cashewIds as $index => $cashewId) {
+                $qty    = $quantities[$index];
+                $sizeId = $productSizeIds[$index] ?? null;
+                $cashew = Cashew::find($cashewId);
+
                 $sale->saleItems()->create([
-                    'product_id' => $cashew->product_id,
-                    'cosmetic_id' => null,
-                    'unit_price' => $cashew->selling_price,
-                    'unit_cost' => $cashew->unit_price,
-                    'quantity' => $qty,
+                    'product_id'      => $cashew->product_id,
+                    'cosmetic_id'     => null,
+                    'unit_price'      => $cashew->selling_price,
+                    'unit_cost'       => $cashew->unit_price,
+                    'quantity'        => $qty,
+                    'product_size_id' => $sizeId,
                 ]);
-                // reduce stock
-                $cashew->quantity -= $qty;
-                $cashew->save();
+
+                // Deduct from cashews total quantity
+                $cashew->decrement('quantity', $qty);
+
+                // Deduct from product_sizes if variant
+                if ($sizeId) {
+                    \App\Models\ProductSize::find($sizeId)->decrement('quantity', $qty);
+                }
             }
 
-
-
-            // 5. Handle installment details if applicable
+            // Installment plan
             if ($sale->is_installment) {
                 $sale->installment()->create([
                     'total_installments' => $validated['total_installments'],
                     'installment_amount' => $validated['installment_amount'],
-                    'start_date' => $validated['start_date'],
+                    'start_date'         => $validated['start_date'],
                 ]);
             }
 
-            // 6. Generate the receipt automatically
+            // Receipt
             SaleReceipt::create([
                 'receipt_number' => 'RCPT-' . Str::upper(Str::random(13)),
-                'sale_id' => $sale->id,
-                'issued_at' => now(),
-                'subtotal' => $sale->total_amount,
-                'tax' => 0.00, // Assuming tax is not calculated for now
-                'discount' => $sale->discount_amount,
-                'total' => $sale->final_amount,
+                'sale_id'        => $sale->id,
+                'issued_at'      => now(),
+                'subtotal'       => $sale->total_amount,
+                'tax'            => 0.00,
+                'discount'       => $sale->discount_amount,
+                'total'          => $sale->final_amount,
                 'is_installment' => $sale->is_installment,
-                'paid_amount' => $sale->amount_paid,
-                'balance' => $sale->amount_due,
+                'paid_amount'    => $sale->amount_paid,
+                'balance'        => $sale->amount_due,
                 'payment_method' => 'cash',
-                'status' => $sale->amount_due > 0 ? 'partial' : 'paid',
-                'notes' => null,
+                'status'         => $sale->amount_due > 0 ? 'partial' : 'paid',
+                'notes'          => null,
             ]);
+
             DB::commit();
 
             return redirect()->route('sales.index')->with('success', 'Sale recorded successfully.');
@@ -309,10 +538,9 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             return back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'An error occurred while recording the sale: ' . $e->getMessage())->withInput();
+            return back()->with('error', 'An error occurred: ' . $e->getMessage())->withInput();
         }
     }
-
 
     /**
      * Display the specified sale.

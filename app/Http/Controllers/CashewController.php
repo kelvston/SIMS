@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Cashew;
 use App\Models\Product;
+use App\Models\ProductSize;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -31,6 +32,11 @@ class CashewController extends Controller
             'cashews.*.stock_origin' => 'nullable|string|max:255',
             'cashews.*.quantity' => 'required|integer|min:1',
             'cashews.*.low_stock_threshold' => 'nullable|integer|min:0',
+            // size/color rows are optional per product
+            'cashews.*.sizes'               => 'nullable|array',
+            'cashews.*.sizes.*.size'        => 'required_with:cashews.*.sizes|string',
+            'cashews.*.sizes.*.color'       => 'required_with:cashews.*.sizes|string',
+            'cashews.*.sizes.*.quantity'    => 'required_with:cashews.*.sizes|integer|min:0',
         ]);
 
         DB::beginTransaction();
@@ -47,6 +53,20 @@ class CashewController extends Controller
                     'low_stock_threshold' => $item['low_stock_threshold'] ?? 5,
                     'status' => 'available',
                 ]);
+
+                // Store size/color variants if provided
+                if (!empty($item['sizes']) && is_array($item['sizes'])) {
+                    foreach ($item['sizes'] as $sizeRow) {
+                        if (!empty($sizeRow['size']) && !empty($sizeRow['color'])) {
+                            ProductSize::create([
+                                'product_id' => $item['product_id'],
+                                'size'       => strtoupper($sizeRow['size']),
+                                'color'      => strtoupper($sizeRow['color']),
+                                'quantity'   => $sizeRow['quantity'] ?? 0,
+                            ]);
+                        }
+                    }
+                }
             }
 
             DB::commit();
@@ -70,7 +90,7 @@ class CashewController extends Controller
      */
     public function index()
     {
-        $cashews = Cashew::with('product')->latest()->paginate(10);
+        $cashews = Cashew::with('product','productSizes')->latest()->paginate(10);
 
         return view('cashews.index', compact('cashews'));
     }
@@ -107,5 +127,40 @@ class CashewController extends Controller
         $cashew->delete();
 
         return redirect()->route('cashews.index')->with('success', 'Cashew stock deleted successfully.');
+    }
+
+    public function searchForSale(Request $request)
+    {
+        $query = $request->get('q', '');
+
+        $results = Cashew::with(['product', 'productSizes'])
+            ->whereHas('product', function ($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%");
+            })
+            ->orWhereHas('productSizes', function ($q) use ($query) {
+                $q->where('size', 'like', "%{$query}%")
+                    ->orWhere('color', 'like', "%{$query}%");
+            })
+            ->where('status', 'available')
+            ->where('quantity', '>', 0)
+            ->get()
+            ->map(function ($cashew) {
+                $variants = $cashew->productSizes->map(fn($s) => "{$s->size}/{$s->color} (qty:{$s->quantity})");
+                return [
+                    'id'            => $cashew->id,
+                    'product_id'    => $cashew->product_id,
+                    'name'          => $cashew->product->name,
+                    'display_name'  => $cashew->product->name
+                        . ($variants->count()
+                            ? ' — ' . $variants->implode(', ')
+                            : ''),
+                    'selling_price' => $cashew->selling_price,
+                    'unit'          => $cashew->unit,
+                    'quantity'      => $cashew->quantity,
+                    'sizes'         => $cashew->productSizes,
+                ];
+            });
+
+        return response()->json($results);
     }
 }
