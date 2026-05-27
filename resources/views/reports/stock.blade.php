@@ -140,7 +140,6 @@
     </div>
 
     <!-- Link to Font Awesome for sort icons -->
-{{--    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>--}}
 
     <script>
         // Store current sort state for each table

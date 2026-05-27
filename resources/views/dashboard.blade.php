@@ -33,10 +33,10 @@
     <!-- Watermark -->
 
 	@if(isset($settings['organization_logo_path']))
-    <img src="{{ asset('storage/' . $settings['organization_logo_path']) }}"
-         alt="Watermark"
-         class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-         style="transform: translate(-50%, -90%);" />
+{{--    <img src="{{ asset('storage/' . $settings['organization_logo_path']) }}"--}}
+{{--         alt="Watermark"--}}
+{{--         class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"--}}
+{{--         style="transform: translate(-50%, -60%);border-radius: 20%" />--}}
 @endif
 
 
@@ -160,7 +160,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
 
     <!-- Low Stock Table -->
-    @can('view stock reports')
+{{--    @can('view stock reports')--}}
         <div class="p-2 bg-white rounded-lg shadow overflow-x-auto">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="font-semibold">Low Stock Products Overview</h2>
@@ -193,7 +193,7 @@
                 </table>
             @endif
         </div>
-    @endcan
+{{--    @endcan--}}
 
         <div class="p-2 bg-white rounded-lg shadow overflow-x-auto">
             <h2 class="font-semibold mb-4">Recent Activity</h2>

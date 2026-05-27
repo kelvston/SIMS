@@ -135,10 +135,7 @@
         </div>
     </div>
 
-    <!-- SweetAlert2 library -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Link to Font Awesome for icons -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+    <script src="{{ asset('assets/js/sweetalert2.min.js') }}"></script>
 
     <script>
         function showItemAdjustmentModal(id, name, currentValue, itemType) {

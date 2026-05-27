@@ -8,7 +8,7 @@
              style="transform: translate(-50%, -50%);" />
 
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">
-            All Cashew Products in Inventory
+            All  Products in Inventory
         </h1>
 
         @can('receive cashews')
@@ -155,7 +155,7 @@
         @endif
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('assets/js/sweetalert2.min.js') }}"></script>
 
     <script>
         function confirmDelete(id) {

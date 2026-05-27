@@ -76,13 +76,6 @@
     </div>
 
     @push('scripts')
-{{--        <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>--}}
-{{--        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.css">--}}
-{{--        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.js"></script>--}}
-{{--        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.7.1/css/buttons.dataTables.min.css">--}}
-{{--        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>--}}
-{{--        <script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>--}}
-{{--        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/1.7.1/js/buttons.html5.min.js"></script>--}}
 
 <script src="{{ asset('vendor/datatables/jquery-3.5.1.min.js') }}"></script>
 <link rel="stylesheet" type="text/css" href="{{ asset('vendor/datatables/jquery.dataTables.css') }}">

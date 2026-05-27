@@ -1,7 +1,6 @@
 {{--@extends('layouts.app')--}}
 
 {{--@section('content')--}}
-{{--    <script src="https://cdn.tailwindcss.com"></script>--}}
 {{--    <style>--}}
 {{--        .modal {--}}
 {{--            background-color: rgba(0, 0, 0, 0.5);--}}
@@ -310,7 +309,6 @@
 {{--                        listItem.innerHTML = `--}}
 {{--                            <span>${imei}</span>--}}
 {{--                            <button type="button" data-imei="${imei}" class="remove-imei-btn text-red-500 hover:text-red-700 font-bold transition-colors">--}}
-{{--                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">--}}
 {{--                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />--}}
 {{--                                </svg>--}}
 {{--                            </button>--}}
@@ -484,10 +482,9 @@
 @extends('layouts.app')
 
 @section('content')
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ asset('assets/css/tailwind.min.css') }}">
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
@@ -1101,5 +1098,4 @@
 
     {{--    </script>--}}
 @endsection
-
 

@@ -6,9 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'POS')</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ asset('assets/css/tailwind.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/all.min.css') }}">
+    <script src="{{ asset('assets/js/chart.min.js') }}"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -99,9 +99,9 @@
 
 <div class="flex min-h-screen overflow-hidden">
     <!-- Sidebar for desktop -->
-    <aside class="fixed inset-y-0 left-0 w-60 bg-[#AD5D29] text-white p-4 hidden lg:flex flex-col z-40 overflow-hidden" x-data="{ manageOpen: false }">
+    <aside style="background-color: #AD5D29" class="fixed inset-y-0 left-0 w-60 bg-[#AD5D29] text-white p-4 hidden lg:flex flex-col z-40 overflow-hidden" x-data="{ manageOpen: false }">
         <h2 class="text-xl font-bold mb-6">@if(isset($settings['organization_logo_path']) && $settings['organization_logo_path'])
-                <img src="{{ asset('storage/' . $settings['organization_logo_path']) }}" alt="Logo" class="logo">
+                <img src="{{ asset('storage/' . $settings['organization_logo_path']) }}" alt="Logo" class="logo" style="border-radius: 20%">
             @endif{{ $settings['organization_name'] ?? ' ' }}</h2>
         <nav class="space-y-2 overflow-hidden">
             @can('view dashboard')
@@ -201,7 +201,9 @@
                 </button>
             </form>
                 <div class="mt-auto flex items-center gap-3 px-3 py-2 border-t border-white/30">
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=AD5D29&color=fff&size=40" alt="Avatar" class="w-10 h-10 rounded-full" />
+                    <div class="w-10 h-10 rounded-full bg-[#AD5D29] text-white flex items-center justify-center font-bold">
+                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                    </div>
                     <div>
                         <div class="font-semibold text-sm leading-none">{{ Auth::user()->name }}</div>
                         <div class="text-xs text-white/70">{{ Auth::user()->email }}</div>
@@ -281,7 +283,7 @@
     </div>
 </div>
 
-<script src="//unpkg.com/alpinejs" defer></script>
+<script src="{{ asset('assets/js/alpinejs.js') }}" defer></script>
 <script>
     document.getElementById('menuToggle').addEventListener('click', () => {
         document.getElementById('mobileSidebar').classList.toggle('active');

@@ -62,8 +62,6 @@
     </div>
 
     <!-- SweetAlert2 and Font Awesome -->
-{{--    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>--}}
-{{--    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" xintegrity="sha512-iecdLmaskl7CV0A5B7P4o+1241yC+x4f7A+w5+I8+4q5+4Q0+eC4p8A+a0b9x8yT" crossorigin="anonymous" referrerpolicy="no-referrer" />--}}
     <!-- Offline SweetAlert2 -->
     <script src="{{ asset('assets/js/sweetalert2.min.js') }}"></script>
     <link rel="stylesheet" href="{{ asset('assets/css/all.min.css') }}">

@@ -1,11 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <script src="https://cdn.tailwindcss.com"></script>
-
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
@@ -186,12 +182,12 @@
             <div class="flex items-center justify-between mt-6">
                 <button type="submit"
                         class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full focus:outline-none focus:shadow-outline transition duration-300 ease-in-out shadow-lg">
-                    Receive Cashew Stock
+                    Receive  Stock
                 </button>
 
                 <a href="{{ route('cashews.index') }}"
                    class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
-                    View All Cashew Products
+                    View All  Products
                 </a>
             </div>
 
@@ -376,7 +372,7 @@
             </div>
         </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="{{ asset('assets/js/xlsx.full.min.js') }}"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {

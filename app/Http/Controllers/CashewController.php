@@ -77,7 +77,7 @@ class CashewController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'Failed to receive cashew stock. ' . $e->getMessage());
+                ->with('error', 'Failed to receive  stock. ' . $e->getMessage());
         }
     }
 
