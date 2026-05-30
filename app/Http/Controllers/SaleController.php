@@ -66,7 +66,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     public function index()
     {
         // Eager load saleItems and their associated medicines, and installmentPlan if it exists
-        $sales = Sale::with(['saleItems.cashews.product', 'installmentPlan'])
+        $sales = Sale::with(['saleItems.product', 'saleItems.cashews.product', 'installmentPlan', 'soldBy'])
             ->orderBy('sale_date', 'desc')
             ->paginate(5);
 
@@ -95,13 +95,15 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
 
         $availableCashews = Cashew::with('product')
             ->where('quantity', '>', 0)
+            ->where('status', 'available')
             ->get()
+            ->groupBy('product_id')
             ->map(fn($c) => [
-                'id' => $c->product_id,
-                'barcode' => $c->barcode,
-                'product_name' => $c->product?->name ?? 'N/A',
-                'selling_price' => $c->selling_price,
-            ]);
+                'id' => $c->first()->product_id,
+                'barcode' => $c->first()->barcode,
+                'product_name' => $c->first()->product?->name ?? 'N/A',
+                'selling_price' => $c->first()->selling_price,
+            ])->values();
 
 
 
@@ -111,7 +113,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     public function printReceipt($id)
     {
         $receipt = SaleReceipt::with('sale')->where('sale_id', $id)->firstOrFail();
-        $receipt->load(['sale.saleItems.cashews.product']);
+        $receipt->load(['sale.saleItems.product', 'sale.saleItems.cashews.product', 'sale.soldBy']);
         $settings = Setting::all()->pluck('value', 'key')->toArray();
 
         return view('sales.print_receipt', compact('receipt', 'settings'));
@@ -152,34 +154,22 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
         ]);
 
 
-        // 2. Validate product stock before creating a sale
-        $totalAmount = 0;
-        $cashewsToSell = [];
-
-        // Validate and get cashew details
-        $totalAmount = 0;
-        $cashewIds = $request->input('cashew_ids', []);
-        $quantities = $request->input('quantities', []);
-        foreach ($cashewIds as $index => $productId) {
-            $qty = $quantities[$index] ?? 0;
-            $cashew = Cashew::where('product_id', $productId)->first();
-            if (!$cashew) {
-                throw ValidationException::withMessages([
-                    'items' => "Product not found for ID {$productId}"
-                ]);
+        $requestedProducts = [];
+        foreach ($request->input('cashew_ids', []) as $index => $productId) {
+            $qty = (int) ($request->input("quantities.{$index}") ?? 0);
+            if ($qty <= 0) {
+                throw ValidationException::withMessages(['items' => 'Sale quantities must be greater than zero.']);
             }
-            if ($cashew->quantity < $qty) {
-                throw ValidationException::withMessages([
-                    'items' => "Not enough stock for the product "
-                ]);
-            }
-            $totalAmount += $cashew->selling_price * $qty;
+            $requestedProducts[$productId] = ($requestedProducts[$productId] ?? 0) + $qty;
         }
+
+        $totalAmount = $this->calculateFifoTotal($requestedProducts);
 
 
         // Calculate final amount after discount
 
-        $finalAmount = $totalAmount - $validated['discount_amount'];
+        $discountAmount = $validated['discount_amount'] ?? 0;
+        $finalAmount = $totalAmount - $discountAmount;
         if ($finalAmount < 0) {
             throw ValidationException::withMessages(['discount_amount' => 'Discount cannot exceed the total amount.']);
         }
@@ -197,7 +187,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
         }
 
         // Calculate the remaining balance (the "credit" amount)
-        if($validated['credit_sale'] == 1){
+        if(($validated['credit_sale'] ?? false) == 1){
             $amountDue = $finalAmount - $amountPaid;
         }else{
             $amountDue =0;
@@ -207,22 +197,10 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
         try {
             DB::beginTransaction();
 
-            // Re-validate and get products inside the transaction with a lock
-            $cashewIds = $request->cashew_ids;
-            $quantities = $request->quantities;
-            foreach ($cashewIds as $index => $productId) {
-                $qty = $quantities[$index];
-                $cashew = Cashew::where('product_id', $productId)->lockForUpdate()->first();
-                if (!$cashew) {
-                    throw ValidationException::withMessages([
-                        'items' => "Product not found for ID {$productId}"
-                    ]);
-                }
-                if ($cashew->quantity < $qty) {
-                    throw ValidationException::withMessages([
-                        'items' => "Not enough stock for the product"
-                    ]);
-                }
+            $totalAmount = $this->calculateFifoTotal($requestedProducts, true);
+            $finalAmount = $totalAmount - $discountAmount;
+            if ($finalAmount < 0) {
+                throw ValidationException::withMessages(['discount_amount' => 'Discount cannot exceed the total amount.']);
             }
             // 3. Create the Sale record with the calculated total amount and payment details
             $payment_option = null;
@@ -247,7 +225,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 'customer_name' => $validated['customer_name'],
                 'customer_email' => $validated['customer_email'],
                 'total_amount' => $totalAmount,
-                'discount_amount' => $validated['discount_amount'],
+                'discount_amount' => $discountAmount,
                 'final_amount' => $finalAmount,
                 'amount_paid' => $amountPaid,
                 'amount_due' => $amountDue,
@@ -257,20 +235,40 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 'user_id' => auth()->id(),
             ]);
 
-            // 4. Create sale items and update stock
-            foreach ($validated['cashew_ids'] as $index => $productId) {
-                $cashew = Cashew::where('product_id', $productId)->first();
-                 $qty = $validated['quantities'][$index];
-                $sale->saleItems()->create([
-                    'product_id' => $cashew->product_id,
-                    'cosmetic_id' => null,
-                    'unit_price' => $cashew->selling_price,
-                    'unit_cost' => $cashew->unit_price,
-                    'quantity' => $qty,
-                ]);
-                // reduce stock
-                $cashew->quantity -= $qty;
-                $cashew->save();
+            // 4. Create sale items and update stock by FIFO batch order.
+            foreach ($requestedProducts as $productId => $requestedQty) {
+                $remainingQty = $requestedQty;
+                $batches = $this->fifoBatches($productId, true)->get();
+
+                foreach ($batches as $batch) {
+                    if ($remainingQty <= 0) {
+                        break;
+                    }
+
+                    $soldQty = min((int) $batch->quantity, $remainingQty);
+                    $sale->saleItems()->create([
+                        'product_id' => $batch->product_id,
+                        'cashew_id' => $batch->id,
+                        'cosmetic_id' => null,
+                        'unit_price' => $batch->selling_price,
+                        'unit_cost' => $batch->unit_price,
+                        'quantity' => $soldQty,
+                    ]);
+
+                    $batch->quantity -= $soldQty;
+                    if ($batch->quantity <= 0) {
+                        $batch->quantity = 0;
+                        $batch->status = 'sold';
+                    }
+                    $batch->save();
+                    $remainingQty -= $soldQty;
+                }
+
+                if ($remainingQty > 0) {
+                    throw ValidationException::withMessages([
+                        'items' => 'Not enough stock for the selected product.',
+                    ]);
+                }
             }
 
 
@@ -313,6 +311,52 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
         }
     }
 
+    private function fifoBatches(int $productId, bool $lock = false)
+    {
+        $query = Cashew::where('product_id', $productId)
+            ->where('status', 'available')
+            ->where('quantity', '>', 0)
+            ->orderByRaw('received_at IS NULL')
+            ->orderBy('received_at')
+            ->orderBy('id');
+
+        return $lock ? $query->lockForUpdate() : $query;
+    }
+
+    private function calculateFifoTotal(array $requestedProducts, bool $lock = false): float
+    {
+        $totalAmount = 0;
+
+        foreach ($requestedProducts as $productId => $requestedQty) {
+            $remainingQty = (int) $requestedQty;
+            $batches = $this->fifoBatches((int) $productId, $lock)->get();
+
+            if ($batches->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'items' => "Product not found for ID {$productId}",
+                ]);
+            }
+
+            foreach ($batches as $batch) {
+                if ($remainingQty <= 0) {
+                    break;
+                }
+
+                $soldQty = min((int) $batch->quantity, $remainingQty);
+                $totalAmount += (float) $batch->selling_price * $soldQty;
+                $remainingQty -= $soldQty;
+            }
+
+            if ($remainingQty > 0) {
+                throw ValidationException::withMessages([
+                    'items' => 'Not enough stock for the selected product.',
+                ]);
+            }
+        }
+
+        return $totalAmount;
+    }
+
 
     /**
      * Display the specified sale.
@@ -323,7 +367,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     public function show(Sale $sale)
     {
         // Eager load related data for the sale details page
-        $sale->load(['saleItems.medicine', 'installmentPlan.installmentPayments']);
+        $sale->load(['saleItems.product', 'saleItems.cashews.product', 'soldBy', 'installmentPlan.installmentPayments']);
         return view('sales.show', compact('sale'));
     }
 

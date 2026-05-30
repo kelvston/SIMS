@@ -144,6 +144,7 @@
                             <th scope="col" class="hidden md:table-cell px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit</th>
                             <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Type</th>
                             <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Option</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sold By</th>
                         </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -154,36 +155,25 @@
                                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->sale_date->format('M d, Y') }}</td>
                                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->customer_name }}</td>
                                     <td class="px-2 py-4 text-sm text-gray-900">
-                                        @if ($item->cashews)
-                                            <li>{{ $item->cashews->product->name ?? 'N/A' }} (Qty: {{ $item->quantity }})</li>
+                                        @if ($item->product || $item->cashews)
+                                            <li>{{ $item->product->name ?? $item->cashews->product->name ?? 'N/A' }} (Qty: {{ $item->quantity }})</li>
                                         @else
                                             <li>Unknown Item (Qty: {{ $item->quantity }})</li>
                                         @endif
                                     </td>
                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
-{{--                                        {{ number_format($item->unit_price, 2) }}--}}
-                                       {{ number_format(($item->cashews->unit_price * $item->quantity) ?? 0, 2) }}
+                                       {{ number_format(((float) $item->unit_price * (int) $item->quantity), 2) }}
                                     </td>
 
                                     <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        @if($item->cashews)
-                                            {{ number_format(($item->cashews->selling_price * $item->quantity) ?? 0, 2) }}
-                                        @endif
+                                        {{ number_format(((float) $item->unit_cost * (int) $item->quantity), 2) }}
                                     </td>
 
                                     {{-- Profit Column --}}
                                     <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm
-                                        {{
-                                            ($item->cashews && ((($item->cashews->selling_price * $item->quantity) - ($item->cashews->unit_price* $item->quantity)) ) > 0) ||
-                                            ($item->cashews && ((($item->cashews->selling_price * $item->quantity) - ($item->cashews->unit_price* $item->quantity))) < 0)
-
-                                                ? 'text-green-600 font-semibold'
-                                                : 'text-red-600 font-semibold'
-                                        }}">
-                                        @if($item->cashews)
-                                            {{ number_format((($item->cashews->selling_price * $item->quantity) - ($item->cashews->unit_price* $item->quantity)) ?? 0, 2) }}
-                                        @endif
-</td>
+                                        {{ (((float) $item->unit_price - (float) $item->unit_cost) * (int) $item->quantity) >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
+                                        {{ number_format((((float) $item->unit_price - (float) $item->unit_cost) * (int) $item->quantity), 2) }}
+                                    </td>
 
                                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
                                         @if($sale->is_installment)
@@ -193,11 +183,12 @@
                                         @endif
                                     </td>
                                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->payment_option }}</td>
+                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->soldBy->name ?? 'N/A' }}</td>
                                 </tr>
                             @endforeach
                         @empty
                             <tr>
-                                <td colspan="8" class="px-2 py-4 text-center text-sm text-gray-500">No sales found for the selected date range.</td>
+                                <td colspan="10" class="px-2 py-4 text-center text-sm text-gray-500">No sales found for the selected date range.</td>
                             </tr>
                         @endforelse
                         </tbody>

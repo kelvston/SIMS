@@ -80,10 +80,14 @@
                                 </label>
                                 <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <input type="checkbox" checked class="column-toggle" data-column="7">
-                                    <span class="ml-2">Type</span>
+                                    <span class="ml-2">Sold By</span>
                                 </label>
                                 <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <input type="checkbox" checked class="column-toggle" data-column="8">
+                                    <span class="ml-2">Type</span>
+                                </label>
+                                <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <input type="checkbox" checked class="column-toggle" data-column="9">
                                     <span class="ml-2">Actions</span>
                                 </label>
                             </div>
@@ -108,6 +112,7 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Due</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sold By</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -120,8 +125,8 @@
                             <td class="px-4 py-3 text-sm text-gray-900">
                                 <ul class="list-disc list-inside">
                                     @foreach ($sale->saleItems as $item)
-                                        @if ($item->cashews)
-                                            <li>{{ $item->cashews->product->name ?? 'N/A' }} (Qty: {{ $item->quantity }})</li>
+                                        @if ($item->product || $item->cashews)
+                                            <li>{{ $item->product->name ?? $item->cashews->product->name ?? 'N/A' }} (Qty: {{ $item->quantity }})</li>
                                         @else
                                             <li>Unknown Item (Qty: {{ $item->quantity }})</li>
                                         @endif
@@ -132,6 +137,7 @@
                             <td class="px-4 py-3 text-sm text-gray-900">{{ number_format($sale->amount_paid, 2) }}</td>
                             <td class="px-4 py-3 text-sm text-gray-900">{{ number_format($sale->amount_due, 2) }}</td>
                             <td class="px-4 py-3 text-sm text-gray-900">{{ $sale->sale_date->format('Y-m-d H:i') }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900">{{ $sale->soldBy->name ?? 'N/A' }}</td>
                             <td class="px-4 py-3 text-sm text-gray-900">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                     @if($sale->is_installment) bg-yellow-100 text-yellow-800
@@ -200,7 +206,7 @@
                             extend: 'csvHtml5',
                             text: 'Download CSV',
                             exportOptions: {
-                                columns: [0, 1, 2, 3, 4, 5, 6, 7] // Columns to export
+                                columns: [0, 1, 2, 3, 4, 5, 6, 7, 8] // Columns to export
                             }
                         },
                         {

@@ -15,6 +15,7 @@
             <div class="detail-item"><span class="detail-label">Customer Name:</span> <span class="detail-value">{{ $sale->customer_name }}</span></div>
             <div class="detail-item"><span class="detail-label">Customer Phone:</span> <span class="detail-value">{{ $sale->customer_phone ?? 'N/A' }}</span></div>
             <div class="detail-item"><span class="detail-label">Sale Date:</span> <span class="detail-value">{{ $sale->sale_date->format('Y-m-d H:i') }}</span></div>
+            <div class="detail-item"><span class="detail-label">Sold By:</span> <span class="detail-value">{{ $sale->soldBy->name ?? 'N/A' }}</span></div>
             <div class="detail-item"><span class="detail-label">Sale Type:</span>
                 <span class="detail-value">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
@@ -45,40 +46,16 @@
         <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Items Sold</h2>
 
-            {{-- Phones Sold --}}
-            @php
-                $phonesSold = $sale->saleItems->filter(fn($item) => $item->phone !== null);
-            @endphp
-            <h3 class="text-xl font-semibold text-gray-600 mb-2">Phones Sold</h3>
-            @if ($phonesSold->isEmpty())
-                <p class="text-gray-600 mb-4">No phones associated with this sale.</p>
+            @if ($sale->saleItems->isEmpty())
+                <p class="text-gray-600 mb-4">No products associated with this sale.</p>
             @else
                 <ul class="list-disc list-inside space-y-2 mb-4">
-                    @foreach ($phonesSold as $item)
+                    @foreach ($sale->saleItems as $item)
                         <li class="text-gray-700">
-                            <strong>{{ $item->phone->brand->name }} {{ $item->phone->model }}</strong>
-                            ({{ $item->phone->color }}, {{ $item->phone->storage_capacity }}) -
-                            IMEI: {{ $item->phone->imei }} -
-                            Sold Price: {{ number_format($item->unit_price, 2) }}
-                        </li>
-                    @endforeach
-                </ul>
-            @endif
-
-            {{-- Accessories Sold --}}
-            @php
-                $cosmeticsSold = $sale->saleItems->filter(fn($item) => $item->accessory !== null);
-            @endphp
-            <h3 class="text-xl font-semibold text-gray-600 mb-2">Accessories Sold</h3>
-            @if ($cosmeticsSold->isEmpty())
-                <p class="text-gray-600">No cosmetics associated with this sale.</p>
-            @else
-                <ul class="list-disc list-inside space-y-2">
-                    @foreach ($cosmeticsSold as $item)
-                        <li class="text-gray-700">
-                            <strong>{{ $item->accessory->name }}</strong>
+                            <strong>{{ $item->product->name ?? $item->cashews->product->name ?? 'N/A' }}</strong>
                             (Quantity: {{ $item->quantity }}) -
-                            Sold Price: {{ number_format($item->unit_price, 2) }} each
+                            Unit Price: {{ number_format($item->unit_price, 2) }} -
+                            Batch: {{ $item->cashews->batch_number ?? 'N/A' }}
                         </li>
                     @endforeach
                 </ul>

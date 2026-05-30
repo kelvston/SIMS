@@ -77,7 +77,7 @@
                         </div>
                         <button id="download-medicines-pdf" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition duration-300">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-                            PDF
+                            CSV
                         </button>
                     </div>
                 </div>
@@ -183,7 +183,7 @@
                         </div>
                         <button id="download-cosmetics-pdf" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition duration-300">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-                            PDF
+                            CSV
                         </button>
                     </div>
                 </div>
@@ -240,12 +240,9 @@
         </div> <!-- End of main grid container -->
     </div>
 
-    <!-- jspdf and jspdf-autotable for client-side PDF generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Function to handle search, column visibility, and PDF download for a given table
+            // Function to handle search, column visibility, and CSV download for a given table
             function setupTableFeatures(tableId, searchInputId, columnsToggleId, columnsMenuId, downloadPdfButtonId) {
                 const table = document.getElementById(tableId);
                 const searchInput = document.getElementById(searchInputId);
@@ -295,43 +292,39 @@
                     });
                 });
 
-                // --- PDF Download Functionality ---
+                // --- CSV Download Functionality ---
                 downloadPdfButton.addEventListener('click', function() {
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF();
-
-                    // Get only the visible headers
-                    const visibleHeaders = [];
+                    const csvRows = [];
                     const headers = table.querySelectorAll('thead th');
-                    headers.forEach((header, index) => {
-                        if (header.style.display !== 'none') {
-                            visibleHeaders.push(header.textContent.trim());
-                        }
-                    });
+                    csvRows.push(Array.from(headers)
+                        .filter(header => header.style.display !== 'none')
+                        .map(header => csvCell(header.textContent.trim()))
+                        .join(','));
 
-                    // Get only the visible row data
-                    const visibleData = [];
                     const rows = table.querySelectorAll('tbody tr');
                     rows.forEach(row => {
                         if (row.style.display !== 'none') {
-                            const rowData = [];
-                            row.querySelectorAll('td').forEach((cell, index) => {
+                            const rowData = Array.from(row.querySelectorAll('td')).filter((cell, index) => {
                                 if (headers[index].style.display !== 'none') {
-                                    rowData.push(cell.textContent.trim());
+                                    return true;
                                 }
-                            });
-                            visibleData.push(rowData);
+                                return false;
+                            }).map(cell => csvCell(cell.textContent.trim()));
+                            csvRows.push(rowData.join(','));
                         }
                     });
 
-                    doc.text(tableId.toUpperCase().replace('-', ' ') + ' Inventory Report', 14, 15);
-                    doc.autoTable({
-                        head: [visibleHeaders],
-                        body: visibleData,
-                        startY: 25,
-                    });
-                    doc.save(tableId + '-inventory.pdf');
+                    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = tableId + '-inventory.csv';
+                    link.click();
+                    URL.revokeObjectURL(link.href);
                 });
+            }
+
+            function csvCell(value) {
+                return '"' + String(value).replace(/"/g, '""') + '"';
             }
 
             // Setup the features for both tables

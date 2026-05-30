@@ -6,6 +6,7 @@ use App\Models\Cashew;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CashewController extends Controller
 {
@@ -25,12 +26,17 @@ class CashewController extends Controller
     {
         $request->validate([
             'cashews' => 'required|array|min:1',
-            'cashews.*.product_id' => 'required',
+            'cashews.*.product_id' => 'required|exists:products,id',
+            'cashews.*.unit' => 'required|string|max:50',
             'cashews.*.unit_price' => 'required|numeric|min:0',
             'cashews.*.selling_price' => 'required|numeric|min:0',
             'cashews.*.stock_origin' => 'nullable|string|max:255',
             'cashews.*.quantity' => 'required|integer|min:1',
             'cashews.*.low_stock_threshold' => 'nullable|integer|min:0',
+            'cashews.*.condition' => 'nullable|string|max:255',
+            'cashews.*.batch_number' => 'nullable|string|max:255',
+            'cashews.*.received_at' => 'nullable|date',
+            'cashews.*.description' => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
@@ -38,6 +44,8 @@ class CashewController extends Controller
         try {
 
             foreach ($request->cashews as $item) {
+                $receivedAt = $item['received_at'] ?? now()->toDateString();
+
                 Cashew::create([
                     'product_id' => $item['product_id'],
                     'unit' => $item['unit'] ?? null,
@@ -45,6 +53,11 @@ class CashewController extends Controller
                     'selling_price' => $item['selling_price'],
                     'quantity' => $item['quantity'],
                     'low_stock_threshold' => $item['low_stock_threshold'] ?? 5,
+                    'stock_origin' => $item['stock_origin'] ?? null,
+                    'condition' => $item['condition'] ?? null,
+                    'batch_number' => $item['batch_number'] ?: 'BATCH-' . now()->format('Ymd') . '-' . Str::upper(Str::random(5)),
+                    'received_at' => $receivedAt,
+                    'description' => $item['description'] ?? null,
                     'status' => 'available',
                 ]);
             }

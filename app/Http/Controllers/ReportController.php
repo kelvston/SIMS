@@ -251,9 +251,69 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             $salesQuery->whereDate('sale_date', '<=', $endDate);
         }
 
-        $sales = $salesQuery->with('saleItems.cashews.product')
+        $sales = $salesQuery->with(['saleItems.product', 'saleItems.cashews.product', 'soldBy'])
             ->orderBy('sale_date', 'desc')
             ->paginate(10);
+
+        if ($request->boolean('download')) {
+            $downloadSalesQuery = Sale::query();
+            if ($startDate) {
+                $downloadSalesQuery->whereDate('sale_date', '>=', $startDate);
+            }
+            if ($endDate) {
+                $downloadSalesQuery->whereDate('sale_date', '<=', $endDate);
+            }
+
+            $downloadSales = $downloadSalesQuery
+                ->with(['saleItems.product', 'saleItems.cashews.product', 'soldBy'])
+                ->orderBy('sale_date', 'desc')
+                ->get();
+
+            $filename = 'sales-report-' . now()->format('Y-m-d-His') . '.csv';
+
+            return response()->streamDownload(function () use ($downloadSales) {
+                $handle = fopen('php://output', 'w');
+                fputcsv($handle, [
+                    'Sale ID',
+                    'Date',
+                    'Customer',
+                    'Item',
+                    'Quantity',
+                    'Unit Price',
+                    'Unit Cost',
+                    'Profit',
+                    'Payment Type',
+                    'Payment Option',
+                    'Sold By',
+                ]);
+
+                foreach ($downloadSales as $sale) {
+                    foreach ($sale->saleItems as $item) {
+                        $quantity = (int) $item->quantity;
+                        $unitPrice = (float) $item->unit_price;
+                        $unitCost = (float) $item->unit_cost;
+
+                        fputcsv($handle, [
+                            $sale->id,
+                            optional($sale->sale_date)->format('Y-m-d H:i'),
+                            $sale->customer_name,
+                            optional($item->product)->name ?? optional(optional($item->cashews)->product)->name ?? 'Unknown Item',
+                            $quantity,
+                            number_format($unitPrice, 2, '.', ''),
+                            number_format($unitCost, 2, '.', ''),
+                            number_format(($unitPrice - $unitCost) * $quantity, 2, '.', ''),
+                            $sale->is_installment ? 'Installment' : ($sale->amount_due > 0 ? 'Credit Sale' : 'Full Payment'),
+                            $sale->payment_option,
+                            optional($sale->soldBy)->name ?? 'N/A',
+                        ]);
+                    }
+                }
+
+                fclose($handle);
+            }, $filename, [
+                'Content-Type' => 'text/csv',
+            ]);
+        }
 
         // Calculate summary statistics
         // Re-run the query for aggregates to ensure they reflect the filtered results
@@ -385,7 +445,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         }
 
         // Eager load sale items and their associated cashews to get purchase prices
-        $sales = $salesQuery->with('saleItems.cashews')->get();;
+        $sales = $salesQuery->with('saleItems')->get();;
         $expenses = $expensesQuery->get(); // NEW: Get filtered expenses
 
         $totalRevenue = $sales->sum('final_amount');
@@ -393,9 +453,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         foreach ($sales as $sale) {
             foreach ($sale->saleItems as $saleItem) {
-                if ($saleItem->cashews) {
-                    $totalCostOfGoodsSold += $saleItem->cashews->unit_price * $saleItem->quantity;
-                }
+                $totalCostOfGoodsSold += (float) $saleItem->unit_cost * (int) $saleItem->quantity;
             }
         }
 

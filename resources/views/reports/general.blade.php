@@ -4,7 +4,6 @@
 @section('title', 'General Business Report')
 
 @push('styles')
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
             --navy:       #0f1f3d;
@@ -550,7 +549,6 @@
     </div>
 
     @push('scripts')
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
         <script>
             Chart.defaults.font.family = "'DM Sans', sans-serif";
             Chart.defaults.color = '#64748b';

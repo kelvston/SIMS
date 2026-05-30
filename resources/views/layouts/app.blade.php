@@ -6,9 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'POS')</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -201,7 +199,9 @@
                 </button>
             </form>
                 <div class="mt-auto flex items-center gap-3 px-3 py-2 border-t border-white/30">
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=AD5D29&color=fff&size=40" alt="Avatar" class="w-10 h-10 rounded-full" />
+                    <div class="w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center font-bold">
+                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                    </div>
                     <div>
                         <div class="font-semibold text-sm leading-none">{{ Auth::user()->name }}</div>
                         <div class="text-xs text-white/70">{{ Auth::user()->email }}</div>
@@ -281,7 +281,6 @@
     </div>
 </div>
 
-<script src="//unpkg.com/alpinejs" defer></script>
 <script>
     document.getElementById('menuToggle').addEventListener('click', () => {
         document.getElementById('mobileSidebar').classList.toggle('active');
@@ -294,8 +293,7 @@
         }
     });
 </script>
-<!-- Vite JS -->
-@vite(['resources/js/app.js'])
+<script src="{{ asset('assets/js/chart.min.js') }}"></script>
 @stack('scripts')
 </body>
 </html>

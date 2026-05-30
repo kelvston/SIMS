@@ -35,6 +35,8 @@ class Cashew extends Model
         'received_at',
         'condition',
         'batch_number',
+        'stock_origin',
+        'description',
     ];
 
     // Define the casts for attributes
@@ -51,6 +53,11 @@ class Cashew extends Model
      */
     public function product(){
         return $this->belongsTo(Product::class);
+    }
+
+    public function saleItems()
+    {
+        return $this->hasMany(SaleItem::class);
     }
 
 }

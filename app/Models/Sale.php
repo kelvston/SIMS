@@ -47,5 +47,9 @@ class Sale extends Model
         return $this->hasOne(InstallmentPlan::class);
     }
 
+    public function soldBy()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
 }

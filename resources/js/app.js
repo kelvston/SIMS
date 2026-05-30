@@ -5,6 +5,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import Chart from 'chart.js/auto';
 import jQuery from 'jquery';
 window.$ = window.jQuery = jQuery;
+window.Chart = Chart;
 
 // Import DataTables
 import 'datatables.net-bs5';
