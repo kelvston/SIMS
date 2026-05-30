@@ -69,7 +69,13 @@
                         <td class="px-6 py-4 text-sm text-gray-900">
                             <ul class="list-disc list-inside">
                                 @foreach ($sale->saleItems as $item)
-                                    <li>{{ $item->phone->brand->name }} {{ $item->phone->model }}</li>
+                                    <li>
+                                        @if($item->phone)
+                                            {{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }}
+                                        @else
+                                            Phone removed
+                                        @endif
+                                    </li>
                                 @endforeach
                             </ul>
                         </td>

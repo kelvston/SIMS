@@ -43,6 +43,17 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
     {
         // This method is now protected by 'permission:receive phones' middleware
         // ... (rest of your existing storeReceivedPhones logic) ...
+        $request->merge([
+            'imeis' => collect($request->input('imeis', []))
+                ->map(fn ($imei) => trim((string) $imei))
+                ->filter()
+                ->values()
+                ->all(),
+            'model' => trim((string) $request->input('model')),
+            'color' => trim((string) $request->input('color')),
+            'storage_capacity' => trim((string) $request->input('storage_capacity')),
+        ]);
+
         $request->validate([
             'brand_id' => 'required|exists:brands,id',
             'model' => 'required|string|max:255',
@@ -81,7 +92,7 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
                 'model' => $request->model,
                 'color' => $request->color,
             ]);
-            $stockLevel->current_stock += $newPhonesCount;
+            $stockLevel->current_stock = (int) $stockLevel->current_stock + $newPhonesCount;
             $stockLevel->last_updated_at = now();
             $stockLevel->save();
 

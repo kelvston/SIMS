@@ -38,10 +38,11 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
     public function showPaymentForm(InstallmentPlan $installmentPlan)
     {
         // Load related sale and phone data for display
-        $installmentPlan->load(['sale.saleItems.phone', 'installmentPayments']);
+        $installmentPlan->load(['sale.saleItems.phone', 'sale.saleReceipt', 'installmentPayments']);
 
         // Calculate total paid and remaining amount
-        $totalPaid = $installmentPlan->installmentPayments->sum('amount_paid');
+        $receiptPaid = optional(optional($installmentPlan->sale)->saleReceipt)->paid_amount ?? 0;
+        $totalPaid = $installmentPlan->installmentPayments->sum('amount_paid') + $receiptPaid;
         $remainingAmount = $installmentPlan->sale->final_amount - $totalPaid;
 
         return view('installments.pay', compact('installmentPlan', 'totalPaid', 'remainingAmount'));
@@ -64,9 +65,11 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
 
         try {
             DB::beginTransaction();
+            $installmentPlan->load(['sale.saleReceipt', 'installmentPayments']);
 
             // Calculate current total paid and remaining balance
-            $totalPaid = $installmentPlan->installmentPayments->sum('amount_paid');
+            $receiptPaid = optional(optional($installmentPlan->sale)->saleReceipt)->paid_amount ?? 0;
+            $totalPaid = $installmentPlan->installmentPayments->sum('amount_paid') + $receiptPaid;
             $remainingAmount = $installmentPlan->sale->final_amount - $totalPaid;
 
             $amountToPay = $request->amount_paid;
@@ -98,6 +101,10 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
                 $installmentPlan->next_payment_date = now()->addMonth();
             }
             $installmentPlan->save();
+
+            $installmentPlan->sale->amount_paid = $newTotalPaid;
+            $installmentPlan->sale->amount_due = max($installmentPlan->sale->final_amount - $newTotalPaid, 0);
+            $installmentPlan->sale->save();
 
             DB::commit();
 

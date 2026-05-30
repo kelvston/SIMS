@@ -17,8 +17,7 @@ class CheckLowStock extends Command
         Log::info('[CheckLowStock] Starting low stock check...');
 
         $lowStockItems = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')
-            ->join('phones', 'phones.brand_id', '=', 'stock_levels.brand_id')
-            ->with('brand')->where('status','=','available')
+            ->with('brand')
             ->get();
 
         if ($lowStockItems->isEmpty()) {

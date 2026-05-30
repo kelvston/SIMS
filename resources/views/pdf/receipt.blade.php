@@ -140,11 +140,11 @@
             <tbody>
             @foreach ($sale->saleItems as $item)
                 <tr>
-                    <td>{{ $item->phone->imei }}</td>
-                    <td>{{ $item->phone->brand->name ?? 'N/A' }}</td>
-                    <td>{{ $item->phone->model }}</td>
-                    <td>{{ $item->phone->color }}</td>
-                    <td>{{ $item->phone->storage_capacity }}</td>
+                    <td>{{ optional($item->phone)->imei ?? 'N/A' }}</td>
+                    <td>{{ optional(optional($item->phone)->brand)->name ?? 'N/A' }}</td>
+                    <td>{{ optional($item->phone)->model ?? 'Phone removed' }}</td>
+                    <td>{{ optional($item->phone)->color ?? 'N/A' }}</td>
+                    <td>{{ optional($item->phone)->storage_capacity ?? 'N/A' }}</td>
                     <td class="right">{{ number_format($item->unit_price, 2) }}</td>
                 </tr>
             @endforeach

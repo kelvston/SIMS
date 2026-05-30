@@ -76,7 +76,7 @@
                             <option value="">Select a Phone (IMEI - Model - Color - Price)</option>
                             @foreach ($availablePhones as $phone)
                                 <option value="{{ $phone->imei }}" data-price="{{ $phone->selling_price }}">
-                                    {{ $phone->imei }} - {{ $phone->brand->name }} {{ $phone->model }} ({{ $phone->color }}) - ${{ number_format($phone->selling_price, 2) }}
+                                    {{ $phone->imei }} - {{ $phone->brand->name ?? 'N/A' }} {{ $phone->model }} ({{ $phone->color }}, {{ $phone->storage_capacity }}) - ${{ number_format($phone->selling_price, 2) }}
                                 </option>
                             @endforeach
                         </select>
@@ -157,7 +157,7 @@
             availablePhones.forEach(phone => {
                 optionsHtml += `<option value="${phone.imei}" data-price="${phone.selling_price}">
                     {{--${phone.imei} - ${phone.brand.name} ${phone.model} (${phone.color}) - ${{ number_format($phone->selling_price, 2) }}--}}
-                ${phone.imei} - ${phone.brand.name} ${phone.model} (${phone.color}) - $${parseFloat(phone.selling_price).toFixed(2)}
+                ${phone.imei} - ${(phone.brand && phone.brand.name) || 'N/A'} ${phone.model} (${phone.color}, ${phone.storage_capacity}) - $${parseFloat(phone.selling_price).toFixed(2)}
 
                 </option>`;
             });

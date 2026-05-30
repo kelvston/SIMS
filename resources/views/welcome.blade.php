@@ -4,11 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - PhoneStore Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: Poppins, ui-sans-serif, system-ui, sans-serif;
             background: linear-gradient(to bottom right, #AD5D29 0%, #f5e6da 40%, #AD5D29 75%, #6e3618 100%);
             margin: 0;
             padding: 0;

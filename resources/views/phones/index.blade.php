@@ -41,7 +41,7 @@
                     @foreach ($phones as $phone)
                         <tr>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->imei }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->brand->name }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->brand->name ?? 'N/A' }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->model }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->color }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->storage_capacity }}</td>
@@ -56,7 +56,7 @@
                                 {{ ucfirst(str_replace('_', ' ', $phone->status)) }}
                             </span>
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->received_at->format('Y-m-d H:i') }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ optional($phone->received_at)->format('Y-m-d H:i') ?? 'N/A' }}</td>
                             <td class="px-4 py-2 flex gap-2">
                                 @can('edit phones')
                                     <a href="{{ route('phones.edit', $phone->id) }}"
@@ -87,33 +87,16 @@
             </div>
         @endif
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function confirmDelete(id) {
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "This action cannot be undone!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, delete it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    document.getElementById('delete-form-' + id).submit();
-                }
-            });
+            if (confirm('Are you sure? This action cannot be undone!')) {
+                document.getElementById('delete-form-' + id).submit();
+            }
         }
     </script>
     <script>
         @if(session('success'))
-        Swal.fire({
-            icon: 'success',
-            title: 'Success!',
-            text: '{{ session('success') }}',
-            timer: 2000,
-            showConfirmButton: false
-        });
+        alert(@json(session('success')));
         @endif
     </script>
 @endsection

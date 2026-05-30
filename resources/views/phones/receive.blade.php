@@ -1,8 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .imei-input-group {
             display: flex;
@@ -16,8 +14,6 @@
             margin-left: 8px;
         }
     </style>
-</head>
-<body class="bg-gray-100 p-6">
 <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10">
     <img src="{{ asset('images/watermark.png') }}"
          alt="Watermark"
@@ -146,7 +142,7 @@
         const div = document.createElement('div');
         div.className = 'imei-input-group';
         div.innerHTML = `
-                <input type="text" name="imeis[]" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Enter IMEI or scan barcode">
+                <input type="text" name="imeis[]" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Enter IMEI or scan barcode" autocomplete="off">
                 <button type="button" onclick="removeImeiInput(this)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">Remove</button>
             `;
         container.appendChild(div);

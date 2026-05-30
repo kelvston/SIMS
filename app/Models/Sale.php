@@ -19,6 +19,9 @@ class Sale extends Model
         'sale_date',
         'is_installment',
         'customer_email',
+        'amount_paid',
+        'amount_due',
+        'payment_option',
     ];
 
     // Define the casts for attributes
@@ -43,5 +46,9 @@ class Sale extends Model
         return $this->hasOne(InstallmentPlan::class);
     }
 
+    public function saleReceipt()
+    {
+        return $this->hasOne(SaleReceipt::class);
+    }
 
 }

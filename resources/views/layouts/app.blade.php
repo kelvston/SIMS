@@ -4,12 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@yield('title', 'PhoneStore Pro')</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: Inter, ui-sans-serif, system-ui, sans-serif;
         }
 
         .sidebar-mobile {
@@ -141,6 +139,7 @@
                             </a>
                                 <a href="{{ route('reports.general') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">  <span class="mr-2">👥</span>General Report</a>
 
+
                             @endcan
                         @can('manage brands')
                             <a href="{{ route('reports.profit_loss') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
@@ -189,11 +188,14 @@
                     <span class="mr-2">🚪</span> Log Out
                 </button>
             </form>
+                @php($currentUser = Auth::user())
                 <div class="mt-auto flex items-center gap-3 px-3 py-2 border-t border-white/30">
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=AD5D29&color=fff&size=40" alt="Avatar" class="w-10 h-10 rounded-full" />
+                    <div class="w-10 h-10 rounded-full bg-[#C87137] text-white flex items-center justify-center font-bold">
+                        {{ strtoupper(mb_substr($currentUser?->name ?? 'User', 0, 1)) }}
+                    </div>
                     <div>
-                        <div class="font-semibold text-sm leading-none">{{ Auth::user()->name }}</div>
-                        <div class="text-xs text-white/70">{{ Auth::user()->email }}</div>
+                        <div class="font-semibold text-sm leading-none">{{ $currentUser?->name ?? 'User' }}</div>
+                        <div class="text-xs text-white/70">{{ $currentUser?->email ?? '' }}</div>
                     </div>
                 </div>
         </nav>
@@ -270,7 +272,6 @@
     </div>
 </div>
 
-<script src="//unpkg.com/alpinejs" defer></script>
 <script>
     document.getElementById('menuToggle').addEventListener('click', () => {
         document.getElementById('mobileSidebar').classList.toggle('active');
@@ -283,8 +284,7 @@
         }
     });
 </script>
-<!-- Vite JS -->
-@vite(['resources/js/app.js'])
+<script src="{{ asset('vendor/chart.js/chart.umd.min.js') }}"></script>
 @stack('scripts')
 </body>
 </html>

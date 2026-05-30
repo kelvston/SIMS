@@ -60,7 +60,6 @@
                 </a>
             @endcan
 
-            <!-- Summary block unchanged -->
             <div class="lg:col-span-1 p-3 bg-white rounded-md shadow-sm border border-gray-200">
                 <h2 class="text-xs font-bold mb-2 text-gray-800 flex items-center gap-1">
                     <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2"
@@ -75,15 +74,15 @@
                     </tr>
                     <tr>
                         <td>Invested:</td>
-                        <td><b>1,221,133,311</b></td>
+                        <td><b>{{ number_format($totalInvested, 2) }}</b></td>
                     </tr>
                     <tr>
-                        <td>Profit:</td>
-                        <td><b>1,221,992,722</b></td>
+                        <td>Net Profit:</td>
+                        <td><b>{{ number_format($totalProfit, 2) }}</b></td>
                     </tr>
                     <tr>
                         <td>Loss:</td>
-                        <td><b>12,211,223</b></td>
+                        <td><b>{{ number_format($totalLoss, 2) }}</b></td>
                     </tr>
                 </table>
             </div>
@@ -97,7 +96,7 @@
                 ['icon' => '📱', 'label' => 'Phones', 'value' => number_format($totalPhones), 'color' => 'indigo'],
                 ['icon' => '💰', 'label' => 'Sales (' . \Carbon\Carbon::now()->format('M') . ')', 'value' => '$' . number_format($monthlySales, 2), 'color' => 'green'],
                 ['icon' => '⏳', 'label' => 'Pending', 'value' => '$' . number_format($pendingInstallmentsAmount, 2), 'color' => 'yellow'],
-                ['icon' => '📈', 'label' => 'Profit', 'value' => number_format($profitMarginPercentage, 2) . '%', 'color' => $profitMarginPercentage >= 0 ? 'green' : 'red'],
+                ['icon' => '📈', 'label' => 'Net Margin', 'value' => number_format($profitMarginPercentage, 2) . '%', 'color' => $profitMarginPercentage >= 0 ? 'green' : 'red'],
             ];
         @endphp
 

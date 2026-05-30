@@ -94,8 +94,6 @@ Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function
     Route::post('/general/email',   [ReportController::class, 'sendGeneralReportEmail'])->name('general.email');
 });
 
-
-Route::get('/dashboard', [ReportController::class, 'home'])->name('dashboard');
 // To view all installment plans
 
 

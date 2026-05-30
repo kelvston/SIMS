@@ -117,6 +117,7 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'receive phones']);
         Permission::firstOrCreate(['name' => 'edit phones']);
         Permission::firstOrCreate(['name' => 'delete phones']);
+        Permission::firstOrCreate(['name' => 'view general reports']);
 
         // Sales Permissions
         Permission::firstOrCreate(['name' => 'view sales']);

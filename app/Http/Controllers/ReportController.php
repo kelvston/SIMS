@@ -18,6 +18,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
  use Barryvdh\DomPDF\Facade\Pdf;
  use Illuminate\Support\Facades\Mail;
  use App\Mail\GeneralReportMail;
+use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Exceptions\UnauthorizedException; // Import for better error handling
 
 class ReportController extends Controller // <<< IMPORTANT: Ensure it extends App\Http\Controllers\Controller
@@ -51,12 +52,13 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         // 3. Pending Installments Amount
         $pendingInstallmentsAmount = 0;
         $activeInstallmentPlans = InstallmentPlan::where('status', 'active')
-            ->with(['sale', 'installmentPayments'])
+            ->with(['sale.saleReceipt', 'installmentPayments'])
             ->get();
 
         foreach ($activeInstallmentPlans as $plan) {
-            $totalPaid = $plan->installmentPayments->sum('amount_paid');
-            $remainingAmount = $plan->sale->final_amount - $totalPaid;
+            $receiptPaid = optional(optional($plan->sale)->saleReceipt)->paid_amount ?? 0;
+            $totalPaid = $plan->installmentPayments->sum('amount_paid') + $receiptPaid;
+            $remainingAmount = optional($plan->sale)->final_amount - $totalPaid;
             if ($remainingAmount > 0) {
                 $pendingInstallmentsAmount += $remainingAmount;
             }
@@ -73,11 +75,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             ->with('phone')
             ->get();
 
-        foreach ($soldPhonesThisMonth as $saleItem) {
-            if ($saleItem->phone) {
-                $totalCogsThisMonth += $saleItem->phone->purchase_price;
-            }
-        }
+        $totalCogsThisMonth = $this->saleItemsCostValue($soldPhonesThisMonth);
 
         // NEW: Total Expenses for the current month
         $totalMonthlyExpenses = Expense::whereMonth('expense_date', $currentMonth)
@@ -139,7 +137,11 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             ->take(5)
             ->get()
             ->map(function($sale) {
-                $phoneNames = $sale->saleItems->map(fn($item) => $item->phone->brand->name . ' ' . $item->phone->model)->implode(', ');
+                $phoneNames = $sale->saleItems
+                    ->map(fn($item) => $item->phone
+                        ? (optional($item->phone->brand)->name ?? 'N/A') . ' ' . $item->phone->model
+                        : 'Phone removed')
+                    ->implode(', ');
                 return [
                     'type' => 'sale',
                     'description' => "✔️ {$phoneNames} sold to {$sale->customer_name} - $" . number_format($sale->final_amount, 2),
@@ -155,7 +157,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             ->map(function($phone) {
                 return [
                     'type' => 'received',
-                    'description' => "📦 1 {$phone->brand->name} {$phone->model} ({$phone->color}) received into inventory (IMEI: {$phone->imei})",
+                    'description' => 'Received ' . (optional($phone->brand)->name ?? 'N/A') . " {$phone->model} ({$phone->color}) into inventory (IMEI: {$phone->imei})",
                     'date' => $phone->received_at,
                     'link' => route('phones.index') // Link to general phone inventory
                 ];
@@ -169,13 +171,15 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                 $phoneName = 'N/A';
                 if ($payment->installmentPlan && $payment->installmentPlan->sale && $payment->installmentPlan->sale->saleItems->isNotEmpty()) {
                     $firstPhone = $payment->installmentPlan->sale->saleItems->first()->phone;
-                    $phoneName = $firstPhone->brand->name . ' ' . $firstPhone->model;
+                    $phoneName = $firstPhone
+                        ? (optional($firstPhone->brand)->name ?? 'N/A') . ' ' . $firstPhone->model
+                        : 'Phone removed';
                 }
                 return [
                     'type' => 'payment',
                     'description' => "💵 Installment payment received for {$phoneName} - $" . number_format($payment->amount_paid, 2),
                     'date' => $payment->payment_date,
-                    'link' => route('sales.show', $payment->installmentPlan->sale->id) // Link to the sale details
+                    'link' => $payment->installmentPlan?->sale ? route('sales.show', $payment->installmentPlan->sale->id) : route('installments.index')
                 ];
             });
 
@@ -318,17 +322,13 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $totalCostOfGoodsSold = 0;
 
         foreach ($sales as $sale) {
-            foreach ($sale->saleItems as $saleItem) {
-                // Ensure the phone relationship exists before accessing purchase_price
-                if ($saleItem->phone) {
-                    $totalCostOfGoodsSold += $saleItem->phone->purchase_price;
-                }
-            }
+            $totalCostOfGoodsSold += $this->saleItemsCostValue($sale->saleItems);
         }
 
         $totalExpenses = $expenses->sum('amount'); // NEW: Sum of all filtered expenses
 
-        $grossProfit = $totalRevenue - $totalCostOfGoodsSold - $totalExpenses; // Deduct total expenses
+        $grossProfit = $totalRevenue - $totalCostOfGoodsSold;
+        $netProfit = $grossProfit - $totalExpenses;
 
         $grossProfitMarginPercentage = 0;
         if ($totalRevenue > 0) {
@@ -342,7 +342,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             'grossProfitMarginPercentage',
             'startDate',
             'endDate',
-            'totalExpenses' // NEW: Pass total expenses to the report
+            'totalExpenses',
+            'netProfit'
         ));
     }
     private function buildGeneralReportData(Request $request): array
@@ -367,7 +368,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                 ->whereDate('sale_date', '<=', $endDate);
         })->with('phone')->get();
 
-        $totalCogs = $soldItems->sum(fn($item) => optional($item->phone)->purchase_price ?? 0);
+        $totalCogs = $this->saleItemsCostValue($soldItems);
 
         // ── Expenses ──────────────────────────────────────────────────────
         $expensesQuery = Expense::query()
@@ -390,8 +391,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         // ── Inventory ─────────────────────────────────────────────────────
         $availablePhones      = Phone::where('status', 'available')->count();
-        $soldPhones           = Phone::where('status', 'sold')->count();
-        $inventoryValue       = Phone::where('status', 'available')->sum('purchase_price');
+        $soldPhones           = Phone::whereIn('status', ['sold', 'under_installment'])->count();
+        $inventoryValue       = $this->inventoryCostValue();
 
         $stockByBrand = Phone::where('status', 'available')
             ->select('brand_id', DB::raw('count(*) as count'), DB::raw('SUM(purchase_price) as value'))
@@ -405,13 +406,14 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         // ── Installments ──────────────────────────────────────────────────
         $activePlans          = InstallmentPlan::where('status', 'active')
-            ->with(['sale', 'installmentPayments'])
+            ->with(['sale.saleReceipt', 'installmentPayments'])
             ->get();
 
         $pendingInstallments  = 0;
         foreach ($activePlans as $plan) {
-            $paid = $plan->installmentPayments->sum('amount_paid');
-            $remaining = $plan->sale->final_amount - $paid;
+            $receiptPaid = optional(optional($plan->sale)->saleReceipt)->paid_amount ?? 0;
+            $paid = $plan->installmentPayments->sum('amount_paid') + $receiptPaid;
+            $remaining = optional($plan->sale)->final_amount - $paid;
             if ($remaining > 0) {
                 $pendingInstallments += $remaining;
             }
@@ -435,10 +437,14 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             $q->whereDate('sale_date', '>=', $startDate)
                 ->whereDate('sale_date', '<=', $endDate);
         })
-            ->join('phones', 'sale_items.phone_id', '=', 'phones.id')
-            ->join('brands', 'phones.brand_id', '=', 'brands.id')
-            ->select('brands.name as brand_name', DB::raw('COUNT(*) as units_sold'), DB::raw('SUM(phones.selling_price) as revenue'))
-            ->groupBy('brands.name')
+            ->leftJoin('phones', 'sale_items.phone_id', '=', 'phones.id')
+            ->leftJoin('brands', 'phones.brand_id', '=', 'brands.id')
+            ->select(
+                DB::raw("COALESCE(brands.name, 'Unknown') as brand_name"),
+                DB::raw('COUNT(*) as units_sold'),
+                DB::raw('SUM(sale_items.unit_price) as revenue')
+            )
+            ->groupBy(DB::raw("COALESCE(brands.name, 'Unknown')"))
             ->orderByDesc('units_sold')
             ->limit(5)
             ->get();
@@ -460,6 +466,40 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             'pendingInstallments', 'activeInstallmentCount',
             'dailySales', 'topBrands', 'recentSales'
         );
+    }
+
+    private function inventoryCostValue(): float
+    {
+        $phoneValue = (float) Phone::where('status', 'available')->sum('purchase_price');
+        if ($phoneValue > 0 || ! Schema::hasTable('cashews')) {
+            return $phoneValue;
+        }
+
+        return (float) DB::table('cashews')
+            ->where('status', 'available')
+            ->selectRaw('COALESCE(SUM(CAST(quantity AS DECIMAL(15, 2)) * CAST(unit_price AS DECIMAL(15, 2))), 0) as total')
+            ->value('total');
+    }
+
+    private function saleItemsCostValue($saleItems): float
+    {
+        $productCosts = Schema::hasTable('cashews')
+            ? DB::table('cashews')
+                ->select('product_id', DB::raw('MAX(CAST(unit_price AS DECIMAL(15, 2))) as unit_cost'))
+                ->groupBy('product_id')
+                ->pluck('unit_cost', 'product_id')
+            : collect();
+
+        return (float) $saleItems->sum(function ($item) use ($productCosts) {
+            $quantity = (float) ($item->quantity ?? 1);
+
+            if ($item->phone) {
+                return (float) $item->phone->purchase_price * $quantity;
+            }
+
+            $unitCost = $productCosts[$item->product_id] ?? $item->unit_cost ?? 0;
+            return (float) $unitCost * $quantity;
+        });
     }
 
     /**

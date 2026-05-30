@@ -43,10 +43,15 @@
                 <ul class="list-disc list-inside space-y-2">
                     @foreach ($sale->saleItems as $item)
                         <li class="text-gray-700">
-                            <strong>{{ $item->phone->brand->name }} {{ $item->phone->model }}</strong>
-                            ({{ $item->phone->color }}, {{ $item->phone->storage_capacity }}) -
-                            IMEI: {{ $item->phone->imei }} -
-                            Sold Price: ${{ number_format($item->unit_price, 2) }}
+                            @if($item->phone)
+                                <strong>{{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }}</strong>
+                                ({{ $item->phone->color }}, {{ $item->phone->storage_capacity }}) -
+                                IMEI: {{ $item->phone->imei }} -
+                                Sold Price: ${{ number_format($item->unit_price, 2) }}
+                            @else
+                                <strong>Phone removed</strong> -
+                                Sold Price: ${{ number_format($item->unit_price, 2) }}
+                            @endif
                         </li>
                     @endforeach
                 </ul>
