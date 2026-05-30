@@ -1,11 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <script src="https://cdn.tailwindcss.com"></script>
-
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;

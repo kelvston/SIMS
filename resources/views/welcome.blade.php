@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - Phage Pro</title>
     <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}">
-    <script src="{{ asset('assets/js/tailwind.min.js') }}"></script>
-    <script src="{{ asset('assets/js/chart.min.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset('assets/css/tailwind.min.css') }}">
     <style>
         body {
             font-family: 'Poppins', sans-serif;

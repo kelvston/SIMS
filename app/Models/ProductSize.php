@@ -15,7 +15,7 @@ class ProductSize extends Model
 
     public function cashew()
     {
-        return $this->belongsTo(Cashew::class);
+        return $this->belongsTo(Cashew::class, 'product_id', 'product_id');
     }
 
     public function product()

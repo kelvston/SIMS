@@ -4,7 +4,6 @@
 @section('title', 'General Business Report')
 
 @push('styles')
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
             --navy:       #0f1f3d;
@@ -407,17 +406,18 @@
                     <span class="dot" style="background:var(--amber)"></span> Top Selling Products
                 </div>
                 <table class="rpt-table">
-                    <thead><tr><th>#</th><th>Product</th><th class="r">Units</th><th class="r">Revenue</th></tr></thead>
+                    <thead><tr><th>#</th><th>Product</th><th>Size / Color</th><th class="r">Units</th><th class="r">Revenue</th></tr></thead>
                     <tbody>
                     @forelse($topBrands as $i => $brand)
                         <tr>
                             <td style="color:var(--text-muted);font-size:12px;font-weight:600">{{ $i + 1 }}</td>
                             <td style="font-weight:600">{{ $brand->product_name }}</td>
+                            <td style="color:var(--text-muted);font-size:12px">{{ $brand->variant_label ?? 'N/A' }}</td>
                             <td class="r">{{ $brand->units_sold }}</td>
                             <td class="r" style="color:var(--emerald)">Tsh {{ number_format($brand->revenue, 2) }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:28px">No sales data.</td></tr>
+                        <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:28px">No sales data.</td></tr>
                     @endforelse
                     </tbody>
                 </table>
@@ -432,19 +432,26 @@
                     <span class="dot" style="background:var(--navy)"></span> Stock by Product
                 </div>
                 <table class="rpt-table">
-                    <thead><tr><th>Product</th><th class="r">Units in Stock</th><th class="r">Stock Value (Cost)</th></tr></thead>
+                    <thead><tr><th>Product</th><th>Size / Color</th><th class="r">Units in Stock</th><th class="r">Stock Value (Cost)</th></tr></thead>
                     <tbody>
                     @forelse($stockByBrand as $stock)
                         <tr>
                             <td style="font-weight:500">{{ optional($stock->product)->name ?? 'Unknown' }}</td>
+                            <td style="color:var(--text-muted);font-size:12px">
+                                @if(optional($stock->product)->productSizes && $stock->product->productSizes->isNotEmpty())
+                                    {{ $stock->product->productSizes->map(fn($variant) => $variant->size . ' / ' . $variant->color . ' (' . $variant->quantity . ')')->implode(', ') }}
+                                @else
+                                    N/A
+                                @endif
+                            </td>
                             <td class="r">{{ $stock->count }}</td>
                             <td class="r">Tsh {{ number_format($stock->value, 2) }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">No inventory data.</td></tr>
+                        <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:28px">No inventory data.</td></tr>
                     @endforelse
                     </tbody>
-                    <tfoot><tr><td>Total</td><td class="r">{{ $availablePhones }}</td><td class="r">Tsh {{ number_format($inventoryValue, 2) }}</td></tr></tfoot>
+                    <tfoot><tr><td colspan="2">Total</td><td class="r">{{ $availablePhones }}</td><td class="r">Tsh {{ number_format($inventoryValue, 2) }}</td></tr></tfoot>
                 </table>
             </div>
         </div>
@@ -468,7 +475,7 @@
                         <thead>
                         <tr>
                             <th>Date</th><th>Customer</th><th>Items</th>
-                            <th class="r">Amount</th><th class="r">Type</th>
+                            <th>Sold By</th><th class="r">Amount</th><th class="r">Type</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -477,8 +484,9 @@
                                 <td style="color:var(--text-muted);white-space:nowrap;font-size:12px">{{ \Carbon\Carbon::parse($sale->sale_date)->format('d M Y') }}</td>
                                 <td style="font-weight:500">{{ $sale->customer_name }}</td>
                                 <td style="color:var(--text-muted);font-size:12px;max-width:200px">
-                                    {{ $sale->saleItems->map(fn($i) => (optional($i->product)->name ?? 'Unknown') . ' x ' . $i->quantity)->implode(', ') }}
+                                    {{ $sale->saleItems->map(fn($i) => (optional($i->product)->name ?? 'Unknown') . ($i->productSize ? ' (' . $i->productSize->size . ' / ' . $i->productSize->color . ')' : '') . ' x ' . $i->quantity)->implode(', ') }}
                                 </td>
+                                <td style="color:var(--text-muted);font-size:12px">{{ $sale->soldBy->name ?? 'Unknown' }}</td>
                                 <td class="r" style="color:var(--emerald);font-weight:600">Tsh {{ number_format($sale->final_amount, 2) }}</td>
                                 <td class="r">
                                 <span class="badge-pill {{ $sale->is_installment ? 'badge-install' : 'badge-full' }}">
@@ -487,7 +495,54 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:32px">No sales in this period.</td></tr>
+                            <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">No sales in this period.</td></tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {{--recently received stock--}}
+        <p class="section-label fade-up">Recently Received Products</p>
+        <div class="full-panel fade-up">
+            <div class="rpt-panel">
+                <div class="rpt-panel-header">
+                    <span class="dot" style="background:var(--emerald)"></span> Received Stock (up to 10)
+                </div>
+                <div style="overflow-x:auto">
+                    <table class="rpt-table">
+                        <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Product</th>
+                            <th>Size / Color</th>
+                            <th style="text-align:right">Qty</th>
+                            <th>Received By</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @forelse($recentReceivedStock as $stock)
+                            <tr>
+                                <td style="color:var(--text-muted);white-space:nowrap;font-size:12px">
+                                    {{ \Carbon\Carbon::parse($stock->received_at ?? $stock->created_at)->format('d M Y') }}
+                                </td>
+                                <td style="font-weight:500">{{ optional($stock->product)->name ?? 'Unknown' }}</td>
+                                <td style="color:var(--text-muted);font-size:12px">
+                                    @if($stock->productSizes->isNotEmpty())
+                                        {{ $stock->productSizes->map(fn($variant) => $variant->size . ' / ' . $variant->color . ' (' . $variant->quantity . ')')->implode(', ') }}
+                                    @else
+                                        N/A
+                                    @endif
+                                </td>
+                                <td style="text-align:right;color:var(--emerald);font-weight:600">{{ $stock->quantity }}</td>
+                                <td style="color:var(--text-muted)">{{ $stock->receivedBy->name ?? 'Unknown' }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" style="text-align:center;color:var(--text-muted);padding:32px">
+                                    No received products in this period.
+                                </td>
+                            </tr>
                         @endforelse
                         </tbody>
                     </table>
@@ -520,7 +575,7 @@
                                     {{ \Carbon\Carbon::parse($adjustment->created_at)->format('d M Y') }}
                                 </td>
                                 <td style="color:var(--emerald);font-weight:600">
-                                    {{ $adjustment->cashew->product->name }}
+                                    {{ optional(optional($adjustment->cashew)->product)->name ?? 'Unknown' }}
                                 </td>
                                 <td style="text-align:right;color:var(--emerald);font-weight:600">
                                     {{ $adjustment->old_quantity }}
@@ -529,10 +584,10 @@
                                     {{ $adjustment->new_quantity }}
                                 </td>
                                 <td style="text-align:right;color:var(--emerald);font-weight:600">
-                                    Tsh {{ number_format((($adjustment->old_quantity) - ($adjustment->new_quantity)) * $adjustment->cashew->unit_price, 2) }}
+                                    Tsh {{ number_format((($adjustment->old_quantity) - ($adjustment->new_quantity)) * (optional($adjustment->cashew)->unit_price ?? 0), 2) }}
                                 </td>
                                 <td style="color:var(--text-muted)">
-                                    {{ $adjustment->adjustedBy->name }}
+                                    {{ $adjustment->adjustedBy->name ?? 'Unknown' }}
                                 </td>
                             </tr>
                         @empty
@@ -550,7 +605,7 @@
     </div>
 
     @push('scripts')
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+        <script src="{{ asset('assets/js/chart.min.js') }}"></script>
         <script>
             Chart.defaults.font.family = "'DM Sans', sans-serif";
             Chart.defaults.color = '#64748b';

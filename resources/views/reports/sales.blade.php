@@ -138,7 +138,9 @@
                             <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale ID</th>
                             <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                             <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sold By</th>
                             <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>
+                            <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size / Color</th>
                             <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Price</th>
                             <th scope="col" class="hidden md:table-cell px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Cost</th>
                             <th scope="col" class="hidden md:table-cell px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit</th>
@@ -149,41 +151,46 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($sales as $sale)
                             @foreach($sale->saleItems as $item)
+                                @php
+                                    $quantity = (int) $item->quantity;
+                                    $unitPrice = (float) ($item->unit_price ?? optional($item->cashews)->selling_price ?? 0);
+                                    $unitCost = (float) ($item->unit_cost ?? optional($item->cashews)->unit_price ?? 0);
+                                    $linePrice = $unitPrice * $quantity;
+                                    $lineCost = $unitCost * $quantity;
+                                    $lineProfit = $linePrice - $lineCost;
+                                @endphp
                                 <tr>
                                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->id }}</td>
                                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->sale_date->format('M d, Y') }}</td>
                                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->customer_name }}</td>
+                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{{ $sale->soldBy->name ?? 'Unknown' }}</td>
                                     <td class="px-2 py-4 text-sm text-gray-900">
                                         @if ($item->cashews)
-                                            <li>{{ $item->cashews->product->name ?? 'N/A' }} (Qty: {{ $item->quantity }})</li>
+                                            <div>{{ $item->cashews->product->name ?? 'N/A' }} (Qty: {{ $item->quantity }})</div>
                                         @else
-                                            <li>Unknown Item (Qty: {{ $item->quantity }})</li>
+                                            <div>Unknown Item (Qty: {{ $item->quantity }})</div>
+                                        @endif
+                                    </td>
+                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        @if($item->productSize)
+                                            {{ $item->productSize->size }} / {{ $item->productSize->color }}
+                                        @else
+                                            N/A
                                         @endif
                                     </td>
                                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
-{{--                                        {{ number_format($item->unit_price, 2) }}--}}
-                                       {{ number_format(($item->cashews->unit_price * $item->quantity) ?? 0, 2) }}
+                                       {{ number_format($linePrice, 2) }}
                                     </td>
 
                                     <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        @if($item->cashews)
-                                            {{ number_format(($item->cashews->selling_price * $item->quantity) ?? 0, 2) }}
-                                        @endif
+                                        {{ number_format($lineCost, 2) }}
                                     </td>
 
                                     {{-- Profit Column --}}
                                     <td class="hidden md:table-cell px-2 py-4 whitespace-nowrap text-sm
-                                        {{
-                                            ($item->cashews && ((($item->cashews->selling_price * $item->quantity) - ($item->cashews->unit_price* $item->quantity)) ) > 0) ||
-                                            ($item->cashews && ((($item->cashews->selling_price * $item->quantity) - ($item->cashews->unit_price* $item->quantity))) < 0)
-
-                                                ? 'text-green-600 font-semibold'
-                                                : 'text-red-600 font-semibold'
-                                        }}">
-                                        @if($item->cashews)
-                                            {{ number_format((($item->cashews->selling_price * $item->quantity) - ($item->cashews->unit_price* $item->quantity)) ?? 0, 2) }}
-                                        @endif
-</td>
+                                        {{ $lineProfit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold' }}">
+                                        {{ number_format($lineProfit, 2) }}
+                                    </td>
 
                                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
                                         @if($sale->is_installment)
@@ -197,7 +204,7 @@
                             @endforeach
                         @empty
                             <tr>
-                                <td colspan="8" class="px-2 py-4 text-center text-sm text-gray-500">No sales found for the selected date range.</td>
+                                <td colspan="11" class="px-2 py-4 text-center text-sm text-gray-500">No sales found for the selected date range.</td>
                             </tr>
                         @endforelse
                         </tbody>

@@ -40,6 +40,16 @@ class Sale extends Model
         return $this->hasMany(SaleItem::class);
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function soldBy()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     /**
      * Get the installment plan associated with the sale.
      */

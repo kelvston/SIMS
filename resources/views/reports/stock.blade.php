@@ -8,7 +8,7 @@
         <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
             <form action="{{ route('reports.stock') }}" method="GET" class="flex flex-col md:flex-row gap-4 items-end">
                 <div class="w-full md:w-auto">
-                    <label for="product_id" class="block text-sm font-medium text-gray-700">Filter by Product (Medicines)</label>
+                    <label for="product_id" class="block text-sm font-medium text-gray-700">Filter by Product</label>
                     <select name="product_id" id="product_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         <option value="">All Products</option>
                         @foreach($products as $product)
@@ -61,18 +61,20 @@
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                     <h2 class="text-xl font-semibold text-gray-800">Product Stock Levels</h2>
-                    <input type="text" id="medicineSearchInput" onkeyup="renderTable('medicineTable')" placeholder="Search for medicines..." class="px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <input type="text" id="medicineSearchInput" onkeyup="renderTable('medicineTable')" placeholder="Search products..." class="px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full divide-y divide-gray-200 table-auto" id="medicineTable">
                         <thead class="bg-gray-50">
                         <tr>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 0)">Product <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 1)">Quantity <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 2)">Cost Value <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 3)">Selling Price <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 4)">Profit <i class="fas fa-sort ml-1"></i></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 5)">% profit <i class="fas fa-sort ml-1"></i></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 1)">Size / Color <i class="fas fa-sort ml-1"></i></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 2)">Quantity <i class="fas fa-sort ml-1"></i></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 3)">Cost Value <i class="fas fa-sort ml-1"></i></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 4)">Selling Price <i class="fas fa-sort ml-1"></i></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 5)">Profit <i class="fas fa-sort ml-1"></i></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 6)">% profit <i class="fas fa-sort ml-1"></i></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable" onclick="sortTable('medicineTable', 7)">Received By <i class="fas fa-sort ml-1"></i></th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                         </thead>
@@ -80,6 +82,19 @@
                         @forelse($medicineStock as $medicine)
                             <tr data-id="{{ $medicine->id }}">
                                 <td class="px-4 py-3 text-sm text-gray-500">{{ $medicine->product->name ?? 'N/A' }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-500">
+                                    @if($medicine->productSizes->isNotEmpty())
+                                        <div class="flex flex-wrap gap-1">
+                                            @foreach($medicine->productSizes as $variant)
+                                                <span class="inline-flex rounded-full bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700">
+                                                    {{ $variant->size }} / {{ $variant->color }}: {{ $variant->quantity }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-gray-400">N/A</span>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $medicine->quantity }}">{{ $medicine->quantity }}</td>
                                 <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $medicine->unit_price * $medicine->quantity }}">{{ number_format($medicine->unit_price * $medicine->quantity, 2) }}</td>
                                 <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $medicine->selling_price * $medicine->quantity  }}">{{ number_format($medicine->selling_price * $medicine->quantity , 2) }}</td>
@@ -87,6 +102,7 @@
                                 <td class="px-4 py-3 text-sm text-gray-500" data-value="{{ $medicine->unit_price > 0 ? (($medicine->selling_price - $medicine->unit_price) / $medicine->unit_price) * 100 : 0 }}">
                                     {{ $medicine->unit_price > 0 ? number_format((($medicine->selling_price - $medicine->unit_price) / $medicine->unit_price) * 100, 1) : '0.0' }}%
                                 </td>
+                                <td class="px-4 py-3 text-sm text-gray-500">{{ $medicine->receivedBy->name ?? 'Unknown' }}</td>
                                 <td class="px-4 py-3 text-sm text-gray-500">
                                     <button onclick="editQuantity('medicineTable', this.closest('tr'), '{{ $medicine->id }}')" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200">
                                         <i class="fas fa-pencil-alt"></i>
@@ -95,7 +111,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-4 py-3 text-center text-sm text-gray-500">No medicine stock found.</td>
+                                <td colspan="9" class="px-4 py-3 text-center text-sm text-gray-500">No product stock found.</td>
                             </tr>
                         @endforelse
                         </tbody>
@@ -138,9 +154,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Link to Font Awesome for sort icons -->
-{{--    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>--}}
 
     <script>
         // Store current sort state for each table
@@ -269,7 +282,7 @@
             modalMessage.classList.remove('hidden');
             stockAdjustmentForm.classList.add('hidden');
 
-            const quantityCell = rowElement.cells[1];
+            const quantityCell = rowElement.cells[2];
             const currentQuantity = parseInt(quantityCell.textContent.trim(), 10);
             const itemName = rowElement.cells[0].textContent.trim();
             const itemId = rowId || rowElement.dataset.id;
@@ -340,30 +353,35 @@
                     // Find the table row and update the values
                     const row = document.querySelector(`#medicineTable tr[data-id="${stockItemId}"]`);
                     if (row) {
-                        const quantityCell = row.cells[1];
+                        const quantityCell = row.cells[2];
                         const oldQuantity = parseInt(quantityCell.dataset.value || quantityCell.textContent.trim(), 10);
-                        const oldTotalCost = parseFloat(row.cells[2].dataset.value || 0);
-                        const oldTotalSelling = parseFloat(row.cells[3].dataset.value || 0);
+                        const oldTotalCost = parseFloat(row.cells[3].dataset.value || 0);
+                        const oldTotalSelling = parseFloat(row.cells[4].dataset.value || 0);
                         const costPerItem = oldQuantity > 0 ? oldTotalCost / oldQuantity : 0;
                         const sellingPricePerItem = oldQuantity > 0 ? oldTotalSelling / oldQuantity : 0;
 
                         quantityCell.dataset.value = newQuantity;
                         quantityCell.textContent = newQuantity;
 
-                        const totalCostCell = row.cells[2];
+                        const totalCostCell = row.cells[3];
                         const newTotalCost = costPerItem * newQuantity;
                         totalCostCell.dataset.value = newTotalCost;
                         totalCostCell.textContent = newTotalCost.toFixed(2);
 
-                        const totalSellingCell = row.cells[3];
+                        const totalSellingCell = row.cells[4];
                         const newTotalSelling = sellingPricePerItem * newQuantity;
                         totalSellingCell.dataset.value = newTotalSelling;
                         totalSellingCell.textContent = newTotalSelling.toFixed(2);
 
-                        const profitCell = row.cells[4];
+                        const profitCell = row.cells[5];
                         const newProfit = newTotalSelling - newTotalCost;
                         profitCell.dataset.value = newProfit;
                         profitCell.textContent = newProfit.toFixed(2);
+
+                        const profitPercentCell = row.cells[6];
+                        const newProfitPercent = costPerItem > 0 ? ((sellingPricePerItem - costPerItem) / costPerItem) * 100 : 0;
+                        profitPercentCell.dataset.value = newProfitPercent;
+                        profitPercentCell.textContent = `${newProfitPercent.toFixed(1)}%`;
 
                         renderTable('medicineTable');
                     }

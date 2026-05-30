@@ -42,6 +42,10 @@
                         </th>
 
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Size / Color
+                        </th>
+
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Low Stock Threshold
                         </th>
 
@@ -66,6 +70,10 @@
                             Received At
                         </th>
 
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Received By
+                        </th>
+
                         @canany(['edit cashews', 'delete cashews'])
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Actions
@@ -85,6 +93,20 @@
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                 {{ $cashew->quantity }}
+                            </td>
+
+                            <td class="px-4 py-3 text-sm text-gray-900">
+                                @if($cashew->productSizes->isNotEmpty())
+                                    <div class="flex flex-wrap gap-1">
+                                        @foreach($cashew->productSizes as $variant)
+                                            <span class="inline-flex items-center rounded-full bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700">
+                                                {{ $variant->size }} / {{ $variant->color }}: {{ $variant->quantity }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <span class="text-gray-400">N/A</span>
+                                @endif
                             </td>
 
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
@@ -116,9 +138,14 @@
                             </td>
 
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                {{ $cashew->created_at->format('Y-m-d H:i') }}
+                                {{ optional($cashew->received_at ?? $cashew->created_at)->format('Y-m-d H:i') }}
                             </td>
 
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                {{ $cashew->receivedBy->name ?? 'Unknown' }}
+                            </td>
+
+                            @canany(['edit cashews', 'delete cashews'])
                             <td class="px-4 py-2 flex gap-2">
                                 @can('edit cashews')
                                     <a href="{{ route('cashews.edit', $cashew->id) }}"
@@ -143,6 +170,7 @@
                                     </form>
                                 @endcan
                             </td>
+                            @endcanany
                         </tr>
                     @endforeach
                     </tbody>
@@ -155,7 +183,7 @@
         @endif
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('assets/js/sweetalert2.min.js') }}"></script>
 
     <script>
         function confirmDelete(id) {

@@ -64,26 +64,34 @@
                                 </label>
                                 <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <input type="checkbox" checked class="column-toggle" data-column="3">
-                                    <span class="ml-2">Final Amount</span>
+                                    <span class="ml-2">Size / Color</span>
                                 </label>
                                 <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <input type="checkbox" checked class="column-toggle" data-column="4">
-                                    <span class="ml-2">Amount Paid</span>
+                                    <span class="ml-2">Final Amount</span>
                                 </label>
                                 <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <input type="checkbox" checked class="column-toggle" data-column="5">
-                                    <span class="ml-2">Amount Due</span>
+                                    <span class="ml-2">Amount Paid</span>
                                 </label>
                                 <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <input type="checkbox" checked class="column-toggle" data-column="6">
-                                    <span class="ml-2">Sale Date</span>
+                                    <span class="ml-2">Amount Due</span>
                                 </label>
                                 <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <input type="checkbox" checked class="column-toggle" data-column="7">
-                                    <span class="ml-2">Type</span>
+                                    <span class="ml-2">Sale Date</span>
                                 </label>
                                 <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <input type="checkbox" checked class="column-toggle" data-column="8">
+                                    <span class="ml-2">Sold By</span>
+                                </label>
+                                <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <input type="checkbox" checked class="column-toggle" data-column="9">
+                                    <span class="ml-2">Type</span>
+                                </label>
+                                <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <input type="checkbox" checked class="column-toggle" data-column="10">
                                     <span class="ml-2">Actions</span>
                                 </label>
                             </div>
@@ -104,12 +112,12 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale ID</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items Sold</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size / Color</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final Amount</th>
-                        @if($hasOutstandingBalance)
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Due</th>
-                        @endif
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Due</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sold By</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -133,11 +141,6 @@
                                         @if ($item->cashews)
                                             <li>
                                                 {{ $item->cashews->product->name ?? 'N/A' }}
-                                                @if ($item->productSize)
-                                                    <span class="text-gray-500 text-xs">
-                                                        — {{ $item->productSize->size }} / {{ $item->productSize->color }}
-                                                    </span>
-                                                @endif
                                                 (Qty: {{ $item->quantity }})
                                             </li>
                                         @else
@@ -146,12 +149,26 @@
                                     @endforeach
                                 </ul>
                             </td>
+                            <td class="px-4 py-3 text-sm text-gray-900">
+                                <ul class="space-y-1">
+                                    @foreach ($sale->saleItems as $item)
+                                        <li>
+                                            @if ($item->productSize)
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700">
+                                                    {{ $item->productSize->size }} / {{ $item->productSize->color }}
+                                                </span>
+                                            @else
+                                                <span class="text-gray-400 text-xs">N/A</span>
+                                            @endif
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </td>
                             <td class="px-4 py-3 text-sm text-gray-900">{{ number_format($sale->final_amount, 2) }}</td>
-                            @if($hasOutstandingBalance)
                             <td class="px-4 py-3 text-sm text-gray-900">{{ number_format($sale->amount_paid, 2) }}</td>
                             <td class="px-4 py-3 text-sm text-gray-900">{{ number_format($sale->amount_due, 2) }}</td>
-                            @endif
                             <td class="px-4 py-3 text-sm text-gray-900">{{ $sale->sale_date->format('Y-m-d H:i') }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900">{{ $sale->soldBy->name ?? 'Unknown' }}</td>
                             <td class="px-4 py-3 text-sm text-gray-900">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                     @if($sale->is_installment) bg-yellow-100 text-yellow-800
@@ -187,21 +204,14 @@
         @endif
     </div>
 
-    @push('scripts')
-        <!-- DataTables CDN -->
-{{--        <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>--}}
-{{--        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.css">--}}
-{{--        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.js"></script>--}}
-{{--        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.7.1/css/buttons.dataTables.min.css">--}}
-{{--        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>--}}
-{{--        <script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>--}}
-{{--        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/1.7.1/js/buttons.html5.min.js"></script>--}}
-{{--        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/1.7.1/js/buttons.colVis.min.js"></script>--}}
-
-        <script src="{{ asset('vendor/datatables/jquery-3.5.1.min.js') }}"></script>
+    @push('styles')
         <link rel="stylesheet" type="text/css" href="{{ asset('vendor/datatables/jquery.dataTables.css') }}">
-        <script type="text/javascript" charset="utf8" src="{{ asset('vendor/datatables/jquery.dataTables.js') }}"></script>
         <link rel="stylesheet" type="text/css" href="{{ asset('vendor/datatables/buttons.dataTables.min.css') }}">
+    @endpush
+
+    @push('scripts')
+        <script src="{{ asset('vendor/datatables/jquery-3.5.1.min.js') }}"></script>
+        <script type="text/javascript" charset="utf8" src="{{ asset('vendor/datatables/jquery.dataTables.js') }}"></script>
         <script type="text/javascript" charset="utf8" src="{{ asset('vendor/datatables/dataTables.buttons.min.js') }}"></script>
         <script type="text/javascript" charset="utf8" src="{{ asset('vendor/datatables/jszip.min.js') }}"></script>
         <script type="text/javascript" charset="utf8" src="{{ asset('vendor/datatables/buttons.html5.min.js') }}"></script>
@@ -220,7 +230,7 @@
                             extend: 'csvHtml5',
                             text: 'Download CSV',
                             exportOptions: {
-                                columns: [0, 1, 2, 3, 4, 5, 6, 7] // Columns to export
+                                columns: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
                             }
                         },
                         {

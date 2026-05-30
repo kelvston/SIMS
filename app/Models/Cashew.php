@@ -35,6 +35,7 @@ class Cashew extends Model
         'received_at',
         'condition',
         'batch_number',
+        'user_id',
     ];
 
     // Define the casts for attributes
@@ -55,7 +56,17 @@ class Cashew extends Model
 
     public function productSizes()
     {
-        return $this->hasMany(ProductSize::class,'product_id');
+        return $this->hasMany(ProductSize::class, 'product_id', 'product_id');
+    }
+
+    public function receivedBy()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
 }

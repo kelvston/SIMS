@@ -66,8 +66,11 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     public function index()
     {
         // Eager load saleItems and their associated medicines, and installmentPlan if it exists
-        $sales = Sale::with(['saleItems.cashews.product', 'installmentPlan',
-            'saleItems.productSize'
+        $sales = Sale::with([
+            'saleItems.cashews.product',
+            'saleItems.productSize',
+            'installmentPlan',
+            'soldBy',
         ])
             ->orderBy('sale_date', 'desc')
             ->paginate(5);
@@ -157,7 +160,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     public function printReceipt($id)
     {
         $receipt = SaleReceipt::with('sale')->where('sale_id', $id)->firstOrFail();
-        $receipt->load(['sale.saleItems.cashews.product']);
+        $receipt->load(['sale.saleItems.cashews.product', 'sale.saleItems.productSize', 'sale.soldBy']);
         $settings = Setting::all()->pluck('value', 'key')->toArray();
 
         return view('sales.print_receipt', compact('receipt', 'settings'));
@@ -398,7 +401,9 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
 
             if ($sizeId) {
                 // Variant product — check size stock
-                $sizeVariant = \App\Models\ProductSize::find($sizeId);
+                $sizeVariant = \App\Models\ProductSize::whereKey($sizeId)
+                    ->where('product_id', $cashew->product_id)
+                    ->first();
                 if (!$sizeVariant || $sizeVariant->quantity < $qty) {
                     throw ValidationException::withMessages([
                         'items' => "Not enough stock for size/color variant."
@@ -453,7 +458,10 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 $cashew = Cashew::lockForUpdate()->find($cashewId);
 
                 if ($sizeId) {
-                    $sizeVariant = \App\Models\ProductSize::lockForUpdate()->find($sizeId);
+                    $sizeVariant = \App\Models\ProductSize::whereKey($sizeId)
+                        ->where('product_id', $cashew->product_id)
+                        ->lockForUpdate()
+                        ->first();
                     if (!$sizeVariant || $sizeVariant->quantity < $qty) {
                         throw ValidationException::withMessages(['items' => 'Not enough stock for size/color variant (locked check).']);
                     }
@@ -551,7 +559,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     public function show(Sale $sale)
     {
         // Eager load related data for the sale details page
-        $sale->load(['saleItems.medicine', 'installmentPlan.installmentPayments']);
+        $sale->load(['saleItems.cashews.product', 'saleItems.productSize', 'installmentPlan.installmentPayments', 'soldBy']);
         return view('sales.show', compact('sale'));
     }
 

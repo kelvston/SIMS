@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generated Barcodes</title>
-    <!-- Use Tailwind CSS for a modern look -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ asset('assets/css/tailwind.min.css') }}">
     <style>
         /* This is the key to hiding the buttons on print */
         @media print {

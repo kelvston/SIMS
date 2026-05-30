@@ -33,4 +33,9 @@ class Product extends Model
     {
         return $this->hasMany(Cosmetic::class);
     }
+
+    public function productSizes()
+    {
+        return $this->hasMany(ProductSize::class);
+    }
 }

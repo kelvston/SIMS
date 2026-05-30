@@ -240,12 +240,86 @@
         </div> <!-- End of main grid container -->
     </div>
 
-    <!-- jspdf and jspdf-autotable for client-side PDF generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Function to handle search, column visibility, and PDF download for a given table
+            function escapeHtml(value) {
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function printVisibleTable(table, reportTitle) {
+                const headers = table.querySelectorAll('thead th');
+                const visibleHeaders = [];
+                const visibleData = [];
+
+                headers.forEach(header => {
+                    if (header.style.display !== 'none') {
+                        visibleHeaders.push(header.textContent.trim());
+                    }
+                });
+
+                table.querySelectorAll('tbody tr').forEach(row => {
+                    if (row.style.display !== 'none') {
+                        const rowData = [];
+
+                        row.querySelectorAll('td').forEach((cell, index) => {
+                            if (headers[index].style.display !== 'none') {
+                                rowData.push(cell.textContent.trim());
+                            }
+                        });
+
+                        visibleData.push(rowData);
+                    }
+                });
+
+                const printWindow = window.open('', '_blank', 'width=1024,height=768');
+                if (!printWindow) {
+                    window.print();
+                    return;
+                }
+
+                const tableHead = visibleHeaders
+                    .map(header => `<th>${escapeHtml(header)}</th>`)
+                    .join('');
+                const tableBody = visibleData
+                    .map(row => `<tr>${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`)
+                    .join('');
+
+                printWindow.document.open();
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>${escapeHtml(reportTitle)}</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; color: #111827; margin: 24px; }
+                            h1 { font-size: 20px; margin-bottom: 16px; }
+                            table { border-collapse: collapse; width: 100%; }
+                            th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; font-size: 12px; }
+                            th { background: #f3f4f6; text-transform: uppercase; }
+                            @media print { body { margin: 12mm; } }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>${escapeHtml(reportTitle)}</h1>
+                        <table>
+                            <thead><tr>${tableHead}</tr></thead>
+                            <tbody>${tableBody}</tbody>
+                        </table>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => printWindow.print(), 250);
+            }
+
+            // Function to handle search, column visibility, and offline PDF printing for a given table
             function setupTableFeatures(tableId, searchInputId, columnsToggleId, columnsMenuId, downloadPdfButtonId) {
                 const table = document.getElementById(tableId);
                 const searchInput = document.getElementById(searchInputId);
@@ -253,7 +327,10 @@
                 const columnsMenu = document.getElementById(columnsMenuId);
                 const downloadPdfButton = document.getElementById(downloadPdfButtonId);
 
-                // --- Search Functionality ---
+                if (!table || !searchInput || !columnsToggle || !columnsMenu || !downloadPdfButton) {
+                    return;
+                }
+
                 searchInput.addEventListener('keyup', function() {
                     const searchTerm = searchInput.value.toLowerCase();
                     const rows = table.querySelectorAll('tbody tr');
@@ -264,7 +341,6 @@
                     });
                 });
 
-                // --- Column Visibility Toggle ---
                 columnsToggle.addEventListener('click', function() {
                     columnsMenu.classList.toggle('hidden');
                 });
@@ -295,42 +371,12 @@
                     });
                 });
 
-                // --- PDF Download Functionality ---
                 downloadPdfButton.addEventListener('click', function() {
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF();
+                    const reportTitle = tableId
+                        .replace(/-/g, ' ')
+                        .replace(/\b\w/g, letter => letter.toUpperCase()) + ' Inventory Report';
 
-                    // Get only the visible headers
-                    const visibleHeaders = [];
-                    const headers = table.querySelectorAll('thead th');
-                    headers.forEach((header, index) => {
-                        if (header.style.display !== 'none') {
-                            visibleHeaders.push(header.textContent.trim());
-                        }
-                    });
-
-                    // Get only the visible row data
-                    const visibleData = [];
-                    const rows = table.querySelectorAll('tbody tr');
-                    rows.forEach(row => {
-                        if (row.style.display !== 'none') {
-                            const rowData = [];
-                            row.querySelectorAll('td').forEach((cell, index) => {
-                                if (headers[index].style.display !== 'none') {
-                                    rowData.push(cell.textContent.trim());
-                                }
-                            });
-                            visibleData.push(rowData);
-                        }
-                    });
-
-                    doc.text(tableId.toUpperCase().replace('-', ' ') + ' Inventory Report', 14, 15);
-                    doc.autoTable({
-                        head: [visibleHeaders],
-                        body: visibleData,
-                        startY: 25,
-                    });
-                    doc.save(tableId + '-inventory.pdf');
+                    printVisibleTable(table, reportTitle);
                 });
             }
 

@@ -251,7 +251,63 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             $salesQuery->whereDate('sale_date', '<=', $endDate);
         }
 
-        $sales = $salesQuery->with('saleItems.cashews.product')
+        if ($request->boolean('download')) {
+            $filename = 'sales-report-' . now()->format('Y-m-d-His') . '.csv';
+
+            return response()->streamDownload(function () use ($salesQuery) {
+                $handle = fopen('php://output', 'w');
+
+                fputcsv($handle, [
+                    'Sale ID',
+                    'Date',
+                    'Customer',
+                    'Item',
+                    'Size',
+                    'Color',
+                    'Quantity',
+                    'Item Price',
+                    'Item Cost',
+                    'Profit',
+                    'Payment Type',
+                    'Payment Option',
+                    'Sold By',
+                ]);
+
+                (clone $salesQuery)
+                    ->with(['saleItems.cashews.product', 'saleItems.productSize', 'soldBy'])
+                    ->orderBy('sale_date', 'desc')
+                    ->get()
+                    ->each(function ($sale) use ($handle) {
+                        foreach ($sale->saleItems as $item) {
+                            $quantity = (int) $item->quantity;
+                            $unitPrice = (float) ($item->unit_price ?? optional($item->cashews)->selling_price ?? 0);
+                            $unitCost = (float) ($item->unit_cost ?? optional($item->cashews)->unit_price ?? 0);
+
+                            fputcsv($handle, [
+                                $sale->id,
+                                optional($sale->sale_date)->format('Y-m-d H:i'),
+                                $sale->customer_name,
+                                optional(optional($item->cashews)->product)->name ?? optional($item->product)->name ?? 'Unknown',
+                                optional($item->productSize)->size ?? '',
+                                optional($item->productSize)->color ?? '',
+                                $quantity,
+                                number_format($unitPrice * $quantity, 2, '.', ''),
+                                number_format($unitCost * $quantity, 2, '.', ''),
+                                number_format(($unitPrice - $unitCost) * $quantity, 2, '.', ''),
+                                $sale->is_installment ? 'Installment' : ($sale->amount_due > 0 ? 'Credit Sale' : 'Full Payment'),
+                                $sale->payment_option,
+                                optional($sale->soldBy)->name ?? 'Unknown',
+                            ]);
+                        }
+                    });
+
+                fclose($handle);
+            }, $filename, [
+                'Content-Type' => 'text/csv',
+            ]);
+        }
+
+        $sales = $salesQuery->with(['saleItems.cashews.product', 'saleItems.productSize', 'soldBy'])
             ->orderBy('sale_date', 'desc')
             ->paginate(10);
 
@@ -298,7 +354,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $products = Product::orderBy('name')->get();
 
         // Medicine stock query
-        $medicineQuery = Cashew::with('product'); // adjust model/relationship as needed
+        $medicineQuery = Cashew::with(['product', 'productSizes', 'receivedBy']); // adjust model/relationship as needed
         if ($productId) {
             $medicineQuery->where('product_id', $productId);
         }
@@ -312,11 +368,13 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
                 fputcsv($handle, [
                     'Product',
+                    'Size / Color',
                     'Quantity',
                     'Cost Value',
                     'Selling Price',
                     'Profit',
                     'Profit %',
+                    'Received By',
                 ]);
 
                 foreach ($medicineStock as $stock) {
@@ -329,11 +387,13 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
                     fputcsv($handle, [
                         $stock->product->name ?? 'N/A',
+                        $stock->productSizes->map(fn ($variant) => "{$variant->size}/{$variant->color} ({$variant->quantity})")->implode(', '),
                         $stock->quantity,
                         number_format($costValue, 2, '.', ''),
                         number_format($sellingValue, 2, '.', ''),
                         number_format($profit, 2, '.', ''),
                         number_format($profitPercent, 1, '.', '') . '%',
+                        optional($stock->receivedBy)->name ?? 'Unknown',
                     ]);
                 }
 
@@ -458,7 +518,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $soldItems = SaleItem::whereHas('sale', function ($q) use ($startDate, $endDate) {
             $q->whereDate('sale_date', '>=', $startDate)
                 ->whereDate('sale_date', '<=', $endDate);
-        })->with('product')->get();
+        })->with(['product', 'productSize'])->get();
 
         $totalCogs = $soldItems->sum(function ($item) use ($productCostMap) {
             $quantity = (int) $item->quantity;
@@ -501,7 +561,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                 DB::raw('SUM(CAST(quantity AS REAL)) as count'),
                 DB::raw('SUM(CAST(unit_price AS REAL) * CAST(quantity AS REAL)) as value')
             )
-            ->with('product')
+            ->with('product.productSizes')
             ->groupBy('product_id')
             ->get();
 
@@ -539,12 +599,16 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         // ── Top Selling Products ──────────────────────────────────────────
         $topProducts = $soldItems
-            ->groupBy('product_id')
+            ->groupBy(fn ($item) => $item->product_id . ':' . ($item->product_size_id ?? 'none'))
             ->map(function ($items) {
                 $firstItem = $items->first();
+                $variant = $firstItem->productSize;
 
                 return (object) [
                     'product_name' => optional($firstItem->product)->name ?? 'Unknown',
+                    'size' => optional($variant)->size,
+                    'color' => optional($variant)->color,
+                    'variant_label' => $variant ? "{$variant->size} / {$variant->color}" : 'N/A',
                     'units_sold' => (int) $items->sum(fn ($item) => (int) $item->quantity),
                     'revenue' => (float) $items->sum(fn ($item) => (float) $item->unit_price * (int) $item->quantity),
                 ];
@@ -554,10 +618,17 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             ->values();
 
         // ── Recent Sales ──────────────────────────────────────────────────
-        $recentSales = Sale::with('saleItems.product')
+        $recentSales = Sale::with(['saleItems.product', 'saleItems.productSize', 'soldBy'])
             ->whereDate('sale_date', '>=', $startDate)
             ->whereDate('sale_date', '<=', $endDate)
             ->orderByDesc('sale_date')
+            ->limit(10)
+            ->get();
+
+        $recentReceivedStock = Cashew::with(['product', 'productSizes', 'receivedBy'])
+            ->whereDate(DB::raw('COALESCE(received_at, created_at)'), '>=', $startDate)
+            ->whereDate(DB::raw('COALESCE(received_at, created_at)'), '<=', $endDate)
+            ->orderByDesc(DB::raw('COALESCE(received_at, created_at)'))
             ->limit(10)
             ->get();
 
@@ -576,7 +647,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             'grossProfit', 'netProfit', 'profitMargin',
             'availablePhones', 'soldPhones', 'inventoryValue', 'stockByBrand', 'lowStockItems',
             'pendingInstallments', 'activeInstallmentCount',
-            'dailySales', 'topBrands', 'recentSales','stockAdjustments'
+            'dailySales', 'topBrands', 'recentSales', 'recentReceivedStock', 'stockAdjustments'
         );
     }
 
@@ -663,7 +734,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             \Log::info('Query with dates:', ['start' => $startDate, 'end' => $endDate]);
 
             // Build the query with proper date handling
-            $sales = Sale::with(['saleItems.cashews.product'])
+            $sales = Sale::with(['saleItems.cashews.product', 'saleItems.productSize', 'soldBy'])
                 ->where('sale_date', '>=', $startDate . ' 00:00:00')
                 ->where('sale_date', '<=', $endDate . ' 23:59:59')
                 ->orderBy('sale_date', 'desc');
@@ -679,11 +750,15 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                         $phones = [];
                         foreach ($sale->saleItems as $item) {
                             if ($item->cashews && $item->cashews->product) {
-                                $phones[] = e($item->cashews->product->name);
+                                $variant = $item->productSize
+                                    ? ' - ' . e($item->productSize->size . ' / ' . $item->productSize->color)
+                                    : '';
+                                $phones[] = e($item->cashews->product->name) . $variant;
                             }
                         }
                         return implode('<br>', $phones);
                     })
+                    ->addColumn('sold_by', fn ($sale) => e(optional($sale->soldBy)->name ?? 'Unknown'))
                     ->addColumn('final_amount', function($sale) {
                         return '$' . number_format($sale->final_amount, 2);
                     })
@@ -726,8 +801,11 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                         'id' => $sale->id,
                         'customer_name' => $sale->customer_name,
                         'phones_sold' => implode(', ', $sale->saleItems->map(function($item) {
-                            return optional($item->cashews)->product->name;
+                            $name = optional(optional($item->cashews)->product)->name ?? 'Unknown';
+                            $variant = $item->productSize ? " - {$item->productSize->size}/{$item->productSize->color}" : '';
+                            return $name . $variant;
                         })->toArray()),
+                        'sold_by' => optional($sale->soldBy)->name ?? 'Unknown',
                         'final_amount' => '$' . number_format($sale->final_amount, 2),
                         'discount_amount' => '$' . number_format($sale->discount_amount, 2),
                         'sale_date' => $sale->sale_date instanceof Carbon ? $sale->sale_date->format('Y-m-d H:i') : date('Y-m-d H:i', strtotime($sale->sale_date)),

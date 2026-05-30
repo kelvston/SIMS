@@ -52,6 +52,8 @@ class CashewController extends Controller
                     'quantity' => $item['quantity'],
                     'low_stock_threshold' => $item['low_stock_threshold'] ?? 5,
                     'status' => 'available',
+                    'received_at' => now(),
+                    'user_id' => auth()->id(),
                 ]);
 
                 // Store size/color variants if provided
@@ -90,7 +92,7 @@ class CashewController extends Controller
      */
     public function index()
     {
-        $cashews = Cashew::with('product','productSizes')->latest()->paginate(10);
+        $cashews = Cashew::with(['product', 'productSizes', 'receivedBy'])->latest()->paginate(10);
 
         return view('cashews.index', compact('cashews'));
     }

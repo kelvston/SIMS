@@ -134,16 +134,17 @@
         </td>
         <td>
             <table class="report">
-                <thead><tr><th>Product</th><th class="r">Units</th><th class="r">Revenue</th></tr></thead>
+                <thead><tr><th>Product</th><th>Size / Color</th><th class="r">Units</th><th class="r">Revenue</th></tr></thead>
                 <tbody>
                 @forelse($topBrands as $brand)
                     <tr>
                         <td>{{ $brand->product_name }}</td>
+                        <td>{{ $brand->variant_label ?? 'N/A' }}</td>
                         <td class="r">{{ $brand->units_sold }}</td>
                         <td class="r">Tsh {{ number_format($brand->revenue, 2) }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="3" style="text-align:center;color:#999">No data.</td></tr>
+                    <tr><td colspan="4" style="text-align:center;color:#999">No data.</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -154,19 +155,26 @@
 {{-- ── Inventory ────────────────────────────────────────────────────────────── --}}
 <div class="section-title">Inventory by Product</div>
 <table class="report">
-    <thead><tr><th>Product</th><th class="r">Units in Stock</th><th class="r">Stock Value (Cost)</th></tr></thead>
+    <thead><tr><th>Product</th><th>Size / Color</th><th class="r">Units in Stock</th><th class="r">Stock Value (Cost)</th></tr></thead>
     <tbody>
     @forelse($stockByBrand as $stock)
         <tr>
             <td>{{ optional($stock->product)->name ?? 'Unknown' }}</td>
+            <td>
+                @if(optional($stock->product)->productSizes && $stock->product->productSizes->isNotEmpty())
+                    {{ $stock->product->productSizes->map(fn($variant) => $variant->size . ' / ' . $variant->color . ' (' . $variant->quantity . ')')->implode(', ') }}
+                @else
+                    N/A
+                @endif
+            </td>
             <td class="r">{{ $stock->count }}</td>
             <td class="r">Tsh {{ number_format($stock->value, 2) }}</td>
         </tr>
     @empty
-        <tr><td colspan="3" style="text-align:center;color:#999">No inventory data.</td></tr>
+        <tr><td colspan="4" style="text-align:center;color:#999">No inventory data.</td></tr>
     @endforelse
     </tbody>
-    <tfoot><tr><td>Total</td><td class="r">{{ $availablePhones }}</td><td class="r">Tsh {{ number_format($inventoryValue, 2) }}</td></tr></tfoot>
+    <tfoot><tr><td colspan="2">Total</td><td class="r">{{ $availablePhones }}</td><td class="r">Tsh {{ number_format($inventoryValue, 2) }}</td></tr></tfoot>
 </table>
 
 @if($lowStockItems->isNotEmpty())
@@ -179,18 +187,44 @@
 {{-- ── Recent Sales ─────────────────────────────────────────────────────────── --}}
 <div class="section-title">Recent Sales</div>
 <table class="report">
-    <thead><tr><th>Date</th><th>Customer</th><th>Items</th><th class="r">Amount</th><th class="r">Type</th></tr></thead>
+    <thead><tr><th>Date</th><th>Customer</th><th>Items</th><th>Sold By</th><th class="r">Amount</th><th class="r">Type</th></tr></thead>
     <tbody>
     @forelse($recentSales as $sale)
         <tr>
             <td>{{ \Carbon\Carbon::parse($sale->sale_date)->format('d M Y') }}</td>
             <td>{{ $sale->customer_name }}</td>
-            <td>{{ $sale->saleItems->map(fn($i) => (optional($i->product)->name ?? 'Unknown') . ' x ' . $i->quantity)->implode(', ') }}</td>
+            <td>{{ $sale->saleItems->map(fn($i) => (optional($i->product)->name ?? 'Unknown') . ($i->productSize ? ' (' . $i->productSize->size . ' / ' . $i->productSize->color . ')' : '') . ' x ' . $i->quantity)->implode(', ') }}</td>
+            <td>{{ $sale->soldBy->name ?? 'Unknown' }}</td>
             <td class="r">Tsh {{ number_format($sale->final_amount, 2) }}</td>
             <td class="r">{{ $sale->is_installment ? 'Installment' : 'Full' }}</td>
         </tr>
     @empty
-        <tr><td colspan="5" style="text-align:center;color:#999">No sales.</td></tr>
+        <tr><td colspan="6" style="text-align:center;color:#999">No sales.</td></tr>
+    @endforelse
+    </tbody>
+</table>
+
+{{-- ── Recently Received Products ──────────────────────────────────────────── --}}
+<div class="section-title">Recently Received Products</div>
+<table class="report">
+    <thead><tr><th>Date</th><th>Product</th><th>Size / Color</th><th class="r">Qty</th><th>Received By</th></tr></thead>
+    <tbody>
+    @forelse($recentReceivedStock as $stock)
+        <tr>
+            <td>{{ \Carbon\Carbon::parse($stock->received_at ?? $stock->created_at)->format('d M Y') }}</td>
+            <td>{{ optional($stock->product)->name ?? 'Unknown' }}</td>
+            <td>
+                @if($stock->productSizes->isNotEmpty())
+                    {{ $stock->productSizes->map(fn($variant) => $variant->size . ' / ' . $variant->color . ' (' . $variant->quantity . ')')->implode(', ') }}
+                @else
+                    N/A
+                @endif
+            </td>
+            <td class="r">{{ $stock->quantity }}</td>
+            <td>{{ $stock->receivedBy->name ?? 'Unknown' }}</td>
+        </tr>
+    @empty
+        <tr><td colspan="5" style="text-align:center;color:#999">No received products.</td></tr>
     @endforelse
     </tbody>
 </table>
