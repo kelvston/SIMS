@@ -92,9 +92,11 @@ Route::get('/cashew', [CashewController::class, 'index'])->name('cashews.index')
 Route::get('/sales/create', [SaleController::class, 'create'])->name('sales.create');
 Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
 Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
-Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
 Route::get('/sales/return', [SaleController::class, 'showReturnPage'])->name('sales.return');
 Route::get('/sales/print/{id}', [SaleController::class, 'printReceipt'])->name('sales.print');
+Route::get('/sales/{sale}/pay', [SaleController::class, 'payForm'])->name('sales.pay.form');
+Route::post('/sales/{sale}/pay', [SaleController::class, 'storePayment'])->name('sales.pay.store');
+Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
 // For viewing a single sale detail
 
 // Installment Routes
@@ -103,12 +105,19 @@ Route::post('/installments/{installmentPlan}/pay', [InstallmentController::class
 Route::get('/installments', [InstallmentController::class, 'index'])->name('installments.index');
 Route::post('/installment/payment', [InstallmentController::class, 'store'])->name('installment.payment.store');
 // Reporting Routes
+Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 Route::get('/reports/sales', [ReportController::class, 'salesReport'])->name('reports.sales');
 Route::get('/reports/stock', [ReportController::class, 'stockReport'])->name('reports.stock');
 Route::post('/reports/stock/update-quantity', [ReportController::class, 'stockUpdate'])->name('reports.stock.update-quantity');
 
 
 Route::get('/reports/profit-loss', [ReportController::class, 'profitLossReport'])->name('reports.profit_loss'); // New P&L route
+Route::get('/reports/expenses', [ReportController::class, 'expensesReport'])->name('reports.expenses');
+Route::get('/reports/installments', [ReportController::class, 'installmentsReport'])->name('reports.installments');
+Route::get('/reports/users', [ReportController::class, 'usersReport'])->name('reports.users');
+Route::get('/reports/credit-sales', [ReportController::class, 'creditSaleReport'])->name('reports.credit_sale');
+Route::get('/reports/customers', [ReportController::class, 'customersReport'])->name('reports.customers');
+Route::get('/reports/stock-adjustments', [ReportController::class, 'stockAdjustmentReport'])->name('reports.stock_adjustments');
 Route::get('/reports/sales-data', [ReportController::class, 'getSalesData'])->name('reports.sales.data');
 Route::get('/reports/sales-summary', [ReportController::class, 'getSalesSummary'])->name('reports.sales.summary');
 //Route::get('/index', [UserController::class, 'index'])->name('users.index');

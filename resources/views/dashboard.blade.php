@@ -47,7 +47,7 @@
     <!-- Hexagon Buttons and Arrows Wrapper -->
     <div class="relative">
         <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 relative z-10">
-            @can('receive cashew')
+            @can('receive cashews')
                 <a href="{{ route('cashew.receive.form') }}"
                    class="hexagon-shape flex items-center justify-center gap-1 w-full text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-1 transition duration-200 mt-6">
                     <i class="fas fa-download text-[14px]"></i> Receive

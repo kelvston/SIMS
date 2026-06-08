@@ -18,9 +18,9 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         DB::table('users')->updateOrInsert(
-            ['email' => 'admin@tari.com'], // use your existing user email or unique identifier
+            ['email' => 'admin@tari.com'],
             [
-                'name' => 'Julius Butindi',
+                'name' => 'JAdmin',
                 'email' => 'admin@tari.com',
                 'phone_number' => '0784252900',
                 'password' => Hash::make('admin@123'),
@@ -29,7 +29,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
         $this->call([
-//            RolesAndPermissionsSeeder::class, // Add your new seeder here
+            RolesAndPermissionsSeeder::class, // Add your new seeder here
             CashewProductSeeder::class, // Add your new seeder here
         ]);
     }

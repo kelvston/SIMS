@@ -45,16 +45,10 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                     @foreach ($stock_adjustment as $adjustment)
                         @php
-                            if ($adjustment->phone_id) {
-                                $status = 'removed';
-                            } elseif ($adjustment->accessory_id) {
-                                if ($adjustment->old_quantity < $adjustment->new_quantity) {
-                                    $status = 'added';
-                                } elseif ($adjustment->old_quantity > $adjustment->new_quantity) {
-                                    $status = 'reduced';
-                                } else {
-                                    $status = '';
-                                }
+                            if ($adjustment->old_quantity < $adjustment->new_quantity) {
+                                $status = 'added';
+                            } elseif ($adjustment->old_quantity > $adjustment->new_quantity) {
+                                $status = 'reduced';
                             } else {
                                 $status = '';
                             }
@@ -69,17 +63,11 @@
                         @endphp
                         <tr>
                             <td class="px-4 py-3 text-sm">{{ \Carbon\Carbon::parse($adjustment->created_at)->format('Y-m-d H:i') }}</td>
-                            <td class="px-4 py-3 text-sm">{{ $adjustment->name ?? 'N/A' }}</td>
-                            <td class="px-4 py-3 text-sm break-words">{{ $adjustment->email ?? 'N/A' }}</td>
-                            <td class="px-4 py-3 text-sm whitespace-nowrap">{{ $adjustment->phone_number ?? 'N/A' }}</td>
+                            <td class="px-4 py-3 text-sm">{{ $adjustment->adjustedBy?->name ?? 'N/A' }}</td>
+                            <td class="px-4 py-3 text-sm break-words">{{ $adjustment->adjustedBy?->email ?? 'N/A' }}</td>
+                            <td class="px-4 py-3 text-sm whitespace-nowrap">{{ $adjustment->adjustedBy?->phone_number ?? 'N/A' }}</td>
                             <td class="px-4 py-3 text-sm">
-                                @if($adjustment->accessory)
-                                    {{ $adjustment->accessory }}
-                                @elseif($adjustment->model)
-                                    {{ $adjustment->model }} (IMEI: {{ $adjustment->imei ?? '-' }})
-                                @else
-                                    N/A
-                                @endif
+                                {{ $adjustment->cashew?->product?->name ?? 'N/A' }}
                             </td>
                             <td class="px-4 py-3 text-sm">{{ $adjustment->old_quantity }}</td>
                             <td class="px-4 py-3 text-sm">{{ $adjustment->new_quantity }}</td>

@@ -38,7 +38,7 @@
                             <td class="px-4 py-3 text-sm text-gray-900">
                                 <ul class="list-disc list-inside space-y-1">
                                     @foreach ($plan->sale->saleItems as $item)
-                                        <li>{{ $item->phone->brand->name }} {{ $item->phone->model }}</li>
+                                        <li>{{ $item->product->name ?? $item->cashews->product->name ?? 'N/A' }} x {{ $item->quantity }}</li>
                                     @endforeach
                                 </ul>
                             </td>

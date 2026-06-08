@@ -119,7 +119,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
 
     public function printSingleReceipt(SaleReceipt $receipt)
     {
-        $receipt->load(['sale.saleItems.medicine', 'sale.saleItems.cosmetic']);
+        $receipt->load(['sale.saleItems.product', 'sale.saleItems.cashews.product']);
         $settings = Setting::all()->pluck('value', 'key')->toArray();
         return view('sales.print_receipt', compact('receipt', 'settings'));
     }
@@ -277,7 +277,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
 
             // 5. Handle installment details if applicable
             if ($sale->is_installment) {
-                $sale->installment()->create([
+                $sale->installmentPlan()->create([
                     'total_installments' => $validated['total_installments'],
                     'installment_amount' => $validated['installment_amount'],
                     'start_date' => $validated['start_date'],
@@ -323,7 +323,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     public function show(Sale $sale)
     {
         // Eager load related data for the sale details page
-        $sale->load(['saleItems.medicine', 'installmentPlan.installmentPayments']);
+        $sale->load(['saleItems.product', 'saleItems.cashews.product', 'installmentPlan.installmentPayments']);
         return view('sales.show', compact('sale'));
     }
 
@@ -381,7 +381,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             'customer_medicine' => 'nullable|string',
         ]);
 
-        $query = Sale::with(['saleItems.medicine', 'saleItems.cosmetic']);
+        $query = Sale::with(['saleItems.product', 'saleItems.cashews.product']);
 
         $query->join('sale_receipts', 'sales.id', '=', 'sale_receipts.sale_id');
         $query->where('sale_receipts.receipt_number', $validatedData['invoice_number']);

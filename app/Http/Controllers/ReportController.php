@@ -36,6 +36,11 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $this->middleware('permission:view general reports')->only(['generalReport', 'downloadGeneralReport', 'sendGeneralReportEmail']);
     }
 
+    public function index()
+    {
+        return view('reports.index');
+    }
+
 
     public function home()
     {
@@ -58,7 +63,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         foreach ($activeInstallmentPlans as $plan) {
             $totalPaid = $plan->installmentPayments->sum('amount_paid');
-            $remainingAmount = $plan->sale->final_amount - $totalPaid;
+            $remainingAmount = (optional($plan->sale)->final_amount ?? 0) - $totalPaid;
             if ($remainingAmount > 0) {
                 $pendingInstallmentsAmount += $remainingAmount;
             }
@@ -78,7 +83,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         foreach ($soldCashewsThisMonth as $saleItem) {
             if ($saleItem->cashew) {
-                $totalCogsThisMonth += $saleItem->cashews->unit_price;
+                $totalCogsThisMonth += $saleItem->cashew->unit_price * $saleItem->quantity;
             }
         }
 
@@ -141,11 +146,14 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             ->take(5)
             ->get()
             ->map(function($sale) {
-                $cashewNames = $sale->saleItems;
-//                dd($cashewNames);
+                $cashewNames = $sale->saleItems
+                    ->map(fn ($item) => optional($item->product)->name ?? optional(optional($item->cashews)->product)->name)
+                    ->filter()
+                    ->implode(', ');
+
                 return [
                     'type' => 'sale',
-                    'description' => "✔️ {$cashewNames} sold to {$sale->customer_name} - $" . number_format($sale->final_amount, 2),
+                    'description' => "{$cashewNames} sold to {$sale->customer_name} - Tsh " . number_format($sale->final_amount, 2),
                     'date' => $sale->sale_date,
                     'link' => route('sales.show', $sale->id)
                 ];
@@ -169,14 +177,18 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             ->map(function($payment) {
                 $phoneName = 'N/A';
                 if ($payment->installmentPlan && $payment->installmentPlan->sale && $payment->installmentPlan->sale->saleItems->isNotEmpty()) {
-                    $firstPhone = $payment->installmentPlan->sale->saleItems->first()->phone;
-                    $phoneName = $firstPhone->brand->name . ' ' . $firstPhone->model;
+                    $firstItem = $payment->installmentPlan->sale->saleItems->first();
+                    $phoneName = optional($firstItem->product)->name
+                        ?? optional(optional($firstItem->cashews)->product)->name
+                        ?? 'N/A';
                 }
                 return [
                     'type' => 'payment',
-                    'description' => "💵 Installment payment received for {$phoneName} - $" . number_format($payment->amount_paid, 2),
+                    'description' => "Installment payment received for {$phoneName} - Tsh " . number_format($payment->amount_paid, 2),
                     'date' => $payment->payment_date,
-                    'link' => route('sales.show', $payment->installmentPlan->sale->id) // Link to the sale details
+                    'link' => $payment->installmentPlan?->sale
+                        ? route('sales.show', $payment->installmentPlan->sale->id)
+                        : route('installments.index')
                 ];
             });
 
@@ -187,7 +199,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             ->map(function($expense) {
                 return [
                     'type' => 'expense',
-                    'description' => "💸 Expense: {$expense->description} ({$expense->category}) - $" . number_format($expense->amount, 2),
+                    'description' => "Expense: {$expense->description} ({$expense->category}) - Tsh " . number_format($expense->amount, 2),
                     'date' => $expense->expense_date,
                     'link' => route('expenses.index') // Link to expense list
                 ];
@@ -251,7 +263,40 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             $salesQuery->whereDate('sale_date', '<=', $endDate);
         }
 
-        $sales = $salesQuery->with('saleItems.cashews.product')
+        if ($request->boolean('download')) {
+            $filename = 'sales-report-' . now()->format('Y-m-d-His') . '.csv';
+            $salesForExport = (clone $salesQuery)->with(['saleItems.product', 'saleItems.cashews.product'])->orderBy('sale_date', 'desc')->get();
+
+            return response()->streamDownload(function () use ($salesForExport) {
+                $handle = fopen('php://output', 'w');
+                fputcsv($handle, ['Sale ID', 'Date', 'Customer', 'Item', 'Quantity', 'Cost', 'Selling Price', 'Profit', 'Payment Type', 'Payment Option']);
+
+                foreach ($salesForExport as $sale) {
+                    foreach ($sale->saleItems as $item) {
+                        $quantity = (int) $item->quantity;
+                        $unitCost = (float) ($item->unit_cost ?? $item->cashews?->unit_price ?? 0);
+                        $unitPrice = (float) ($item->unit_price ?? $item->cashews?->selling_price ?? 0);
+
+                        fputcsv($handle, [
+                            $sale->id,
+                            optional($sale->sale_date)->format('Y-m-d'),
+                            $sale->customer_name,
+                            $item->product->name ?? $item->cashews?->product?->name ?? 'N/A',
+                            $quantity,
+                            number_format($unitCost * $quantity, 2, '.', ''),
+                            number_format($unitPrice * $quantity, 2, '.', ''),
+                            number_format(($unitPrice - $unitCost) * $quantity, 2, '.', ''),
+                            $sale->is_installment ? 'Installment' : 'Full Payment',
+                            $sale->payment_option,
+                        ]);
+                    }
+                }
+
+                fclose($handle);
+            }, $filename, ['Content-Type' => 'text/csv']);
+        }
+
+        $sales = $salesQuery->with(['saleItems.product', 'saleItems.cashews.product'])
             ->orderBy('sale_date', 'desc')
             ->paginate(10);
 
@@ -394,20 +439,72 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         foreach ($sales as $sale) {
             foreach ($sale->saleItems as $saleItem) {
                 if ($saleItem->cashews) {
-                    $totalCostOfGoodsSold += $saleItem->cashews->unit_price * $saleItem->quantity;
+                    $unitCost = $saleItem->unit_cost !== null
+                        ? (float) $saleItem->unit_cost
+                        : (float) $saleItem->cashews->unit_price;
+                    $totalCostOfGoodsSold += $unitCost * $saleItem->quantity;
                 }
             }
         }
 
         $totalExpenses = $expenses->sum('amount'); // NEW: Sum of all filtered expenses
 
-        $grossProfit = $totalRevenue - $totalCostOfGoodsSold - $totalExpenses; // Deduct total expenses
+        $grossProfit = $totalRevenue - $totalCostOfGoodsSold;
 
         $grossProfitMarginPercentage = 0;
         if ($totalRevenue > 0) {
             $grossProfitMarginPercentage = ($grossProfit / $totalRevenue) * 100;
         }
-        $netProfit            = $grossProfit - $totalExpenses;
+        $netProfit = $grossProfit - $totalExpenses;
+
+        if ($request->boolean('download')) {
+            $filename = 'profit-loss-report-' . now()->format('Y-m-d-His') . '.csv';
+
+            return response()->streamDownload(function () use (
+                $sales,
+                $expenses,
+                $totalRevenue,
+                $totalCostOfGoodsSold,
+                $grossProfit,
+                $totalExpenses,
+                $netProfit
+            ) {
+                $handle = fopen('php://output', 'w');
+
+                fputcsv($handle, ['Summary']);
+                fputcsv($handle, ['Revenue', number_format($totalRevenue, 2, '.', '')]);
+                fputcsv($handle, ['COGS', number_format($totalCostOfGoodsSold, 2, '.', '')]);
+                fputcsv($handle, ['Gross Profit', number_format($grossProfit, 2, '.', '')]);
+                fputcsv($handle, ['Expenses', number_format($totalExpenses, 2, '.', '')]);
+                fputcsv($handle, ['Net Profit', number_format($netProfit, 2, '.', '')]);
+                fputcsv($handle, []);
+
+                fputcsv($handle, ['Sales Transactions']);
+                fputcsv($handle, ['Date', 'Customer', 'Amount']);
+                foreach ($sales as $sale) {
+                    fputcsv($handle, [
+                        optional($sale->sale_date)->format('Y-m-d'),
+                        $sale->customer_name,
+                        number_format($sale->final_amount, 2, '.', ''),
+                    ]);
+                }
+                fputcsv($handle, []);
+
+                fputcsv($handle, ['Expense Transactions']);
+                fputcsv($handle, ['Date', 'Description', 'Category', 'Amount']);
+                foreach ($expenses as $expense) {
+                    fputcsv($handle, [
+                        $expense->expense_date ? Carbon::parse($expense->expense_date)->format('Y-m-d') : null,
+                        $expense->description,
+                        $expense->category,
+                        number_format($expense->amount, 2, '.', ''),
+                    ]);
+                }
+
+                fclose($handle);
+            }, $filename, ['Content-Type' => 'text/csv']);
+        }
+
         return view('reports.profit_loss', compact(
             'totalRevenue',
             'totalCostOfGoodsSold',
@@ -420,6 +517,164 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         'sales',
         'netProfit'// NEW: Pass total expenses to the report
         ));
+    }
+
+    public function expensesReport()
+    {
+        $expenses = Expense::orderByDesc('expense_date')->paginate(10);
+        $totalExpenses = Expense::sum('amount');
+
+        return view('reports.expenses', compact('expenses', 'totalExpenses'));
+    }
+
+    public function installmentsReport(Request $request)
+    {
+        $status = $request->input('status');
+
+        $plansQuery = InstallmentPlan::with(['sale.saleItems.product', 'sale.saleItems.cashews.product', 'installmentPayments'])
+            ->when($status, fn ($query) => $query->where('status', $status))
+            ->orderByDesc('created_at');
+
+        $allPlans = (clone $plansQuery)->get();
+
+        $totalPlans = $allPlans->count();
+        $totalCollectedAmount = $allPlans->sum(fn ($plan) => $plan->installmentPayments->sum('amount_paid'));
+        $totalPendingAmount = $allPlans->sum(function ($plan) {
+            $totalPaid = $plan->installmentPayments->sum('amount_paid');
+            return max((optional($plan->sale)->final_amount ?? 0) - $totalPaid, 0);
+        });
+        $totalPlansCompleted = $allPlans->whereIn('status', ['paid', 'completed'])->count();
+        $totalPlansDefaulted = $allPlans->where('status', 'defaulted')->count();
+
+        if ($request->boolean('download')) {
+            $filename = 'installments-report-' . now()->format('Y-m-d-His') . '.csv';
+
+            return response()->streamDownload(function () use ($allPlans) {
+                $handle = fopen('php://output', 'w');
+                fputcsv($handle, ['Customer', 'Total Amount', 'Paid Amount', 'Remaining', 'Last Payment', 'Status']);
+
+                foreach ($allPlans as $plan) {
+                    $totalPaid = $plan->installmentPayments->sum('amount_paid');
+                    $remaining = max((optional($plan->sale)->final_amount ?? 0) - $totalPaid, 0);
+                    $lastPayment = $plan->installmentPayments->sortByDesc('payment_date')->first();
+
+                    fputcsv($handle, [
+                        optional($plan->sale)->customer_name ?? 'N/A',
+                        number_format(optional($plan->sale)->final_amount ?? 0, 2, '.', ''),
+                        number_format($totalPaid, 2, '.', ''),
+                        number_format($remaining, 2, '.', ''),
+                        optional(optional($lastPayment)->payment_date)->format('Y-m-d') ?? 'N/A',
+                        $plan->status,
+                    ]);
+                }
+
+                fclose($handle);
+            }, $filename, ['Content-Type' => 'text/csv']);
+        }
+
+        $installmentPlans = $plansQuery->paginate(10)->withQueryString();
+
+        return view('reports.installments', compact(
+            'installmentPlans',
+            'totalPlans',
+            'totalCollectedAmount',
+            'totalPendingAmount',
+            'totalPlansCompleted',
+            'totalPlansDefaulted'
+        ));
+    }
+
+    public function usersReport()
+    {
+        $recentSales = Sale::with('saleItems.product')
+            ->latest('sale_date')
+            ->take(25)
+            ->get()
+            ->map(fn ($sale) => [
+                'type' => 'sale',
+                'description' => 'Sale #' . $sale->id . ' recorded for ' . ($sale->customer_name ?: 'Walk-in customer'),
+                'date' => $sale->sale_date,
+            ]);
+
+        $recentPayments = InstallmentPayment::with('installmentPlan.sale')
+            ->latest('payment_date')
+            ->take(25)
+            ->get()
+            ->map(fn ($payment) => [
+                'type' => 'payment',
+                'description' => 'Installment payment of Tsh ' . number_format($payment->amount_paid, 2) . ' recorded',
+                'date' => $payment->payment_date,
+            ]);
+
+        $recentExpenses = Expense::latest('expense_date')
+            ->take(25)
+            ->get()
+            ->map(fn ($expense) => [
+                'type' => 'expense',
+                'description' => $expense->description,
+                'date' => $expense->expense_date,
+            ]);
+
+        $allActivitiesCollection = collect()
+            ->concat($recentSales)
+            ->concat($recentPayments)
+            ->concat($recentExpenses)
+            ->sortByDesc('date')
+            ->values();
+
+        return view('reports.users', compact('allActivitiesCollection'));
+    }
+
+    public function creditSaleReport()
+    {
+        $creditSales = Sale::where('amount_due', '>', 0)
+            ->where('is_installment', false)
+            ->orderByDesc('sale_date')
+            ->get();
+
+        return view('reports.credit_sale', compact('creditSales'));
+    }
+
+    public function customersReport()
+    {
+        $sales = Sale::with(['saleItems.product', 'saleItems.cashews.product'])
+            ->whereNotNull('customer_name')
+            ->orderByDesc('sale_date')
+            ->get();
+
+        $customers = $sales
+            ->groupBy(fn ($sale) => $sale->customer_name . '|' . ($sale->customer_phone ?? '') . '|' . ($sale->customer_email ?? ''))
+            ->map(function ($customerSales) {
+                $first = $customerSales->first();
+
+                return (object) [
+                    'customer_name' => $first->customer_name,
+                    'customer_phone' => $first->customer_phone,
+                    'customer_email' => $first->customer_email,
+                    'sales' => $customerSales->map(fn ($sale) => [
+                        'id' => $sale->id,
+                        'date' => optional($sale->sale_date)->format('Y-m-d'),
+                        'cashews' => $sale->saleItems
+                            ->map(fn ($item) => optional($item->product)->name ?? optional(optional($item->cashews)->product)->name)
+                            ->filter()
+                            ->values()
+                            ->all(),
+                        'accessories' => [],
+                    ])->values()->all(),
+                ];
+            })
+            ->values();
+
+        return view('reports.customers', compact('customers'));
+    }
+
+    public function stockAdjustmentReport()
+    {
+        $stock_adjustment = StockAdjustment::with(['cashew.product', 'adjustedBy'])
+            ->latest()
+            ->get();
+
+        return view('reports.stock_adjustment', compact('stock_adjustment'));
     }
     private function buildGeneralReportData(Request $request): array
     {
@@ -663,7 +918,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             \Log::info('Query with dates:', ['start' => $startDate, 'end' => $endDate]);
 
             // Build the query with proper date handling
-            $sales = Sale::with(['saleItems.cashews.product'])
+            $sales = Sale::with(['saleItems.product', 'saleItems.cashews.product'])
                 ->where('sale_date', '>=', $startDate . ' 00:00:00')
                 ->where('sale_date', '<=', $endDate . ' 23:59:59')
                 ->orderBy('sale_date', 'desc');
@@ -678,8 +933,9 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                     ->addColumn('phones_sold', function($sale) {
                         $phones = [];
                         foreach ($sale->saleItems as $item) {
-                            if ($item->cashews && $item->cashews->product) {
-                                $phones[] = e($item->cashews->product->name);
+                            $productName = $item->product->name ?? $item->cashews?->product?->name;
+                            if ($productName) {
+                                $phones[] = e($productName);
                             }
                         }
                         return implode('<br>', $phones);
@@ -726,7 +982,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                         'id' => $sale->id,
                         'customer_name' => $sale->customer_name,
                         'phones_sold' => implode(', ', $sale->saleItems->map(function($item) {
-                            return optional($item->cashews)->product->name;
+                            return $item->product->name ?? $item->cashews?->product?->name;
                         })->toArray()),
                         'final_amount' => '$' . number_format($sale->final_amount, 2),
                         'discount_amount' => '$' . number_format($sale->discount_amount, 2),

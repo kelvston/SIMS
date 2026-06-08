@@ -12,7 +12,7 @@
                     <select name="status" id="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         <option value="">All Statuses</option>
                         <option value="active" @if(request('status') == 'active') selected @endif>Active</option>
-                        <option value="paid" @if(request('status') == 'paid') selected @endif>Paid Off</option>
+                        <option value="completed" @if(request('status') == 'completed') selected @endif>Paid Off</option>
                         <option value="defaulted" @if(request('status') == 'defaulted') selected @endif>Defaulted</option>
                     </select>
                 </div>
@@ -80,10 +80,10 @@
                     @forelse($installmentPlans as $plan)
                         @php
                             $totalPaid = $plan->installmentPayments->sum('amount_paid');
-                            $remaining = ($plan->sale->final_amount ?? 0) - $totalPaid;
+                            $remaining = ($plan->sale?->final_amount ?? 0) - $totalPaid;
 
                             $statusClass = '';
-                            if ($plan->status == 'paid') {
+                            if (in_array($plan->status, ['paid', 'completed'])) {
                                 $statusClass = 'bg-green-100 text-green-800';
                             } elseif ($plan->status == 'defaulted') {
                                 $statusClass = 'bg-red-100 text-red-800';
@@ -92,17 +92,13 @@
                             }
                         @endphp
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $plan->sale->customer_name ?? 'N/A' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $plan->sale?->customer_name ?? 'N/A' }}</td>
                             <td class="px-6 py-4 text-sm text-gray-900">
-                                @foreach($plan->sale->saleItems as $item)
-                                    @if($item->phone)
-                                        {{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }}<br>
-                                    @elseif($item->accessory)
-                                        {{ $item->accessory->name }}<br>
-                                    @endif
+                                @foreach($plan->sale?->saleItems ?? [] as $item)
+                                    {{ $item->product?->name ?? $item->cashews?->product?->name ?? 'N/A' }} x {{ $item->quantity }}<br>
                                 @endforeach
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ number_format($plan->sale->final_amount ?? 0, 2) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ number_format($plan->sale?->final_amount ?? 0, 2) }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ number_format($totalPaid, 2) }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-red-500 font-semibold">{{ number_format($remaining, 2) }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $plan->installmentPayments->last() ? $plan->installmentPayments->last()->payment_date->format('M d, Y') : 'N/A' }}</td>

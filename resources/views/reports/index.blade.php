@@ -30,8 +30,8 @@
             </a>
 
             <!-- Profit & Loss Reports Tab -->
-            <a href="{{ route('reports.profitloss') }}" class="py-2 px-6 text-center text-sm font-semibold rounded-lg shadow-md transition duration-300
-                    @if(request()->routeIs('reports.profitloss'))
+            <a href="{{ route('reports.profit_loss') }}" class="py-2 px-6 text-center text-sm font-semibold rounded-lg shadow-md transition duration-300
+                    @if(request()->routeIs('reports.profit_loss'))
                         bg-white text-indigo-600 border-b-2 border-indigo-600
                     @else
                         bg-gray-200 text-gray-700 hover:bg-gray-300
@@ -77,7 +77,7 @@
                 General Report
             </a>
             <a href="{{ route('reports.credit_sale') }}" class="py-2 px-6 text-center text-sm font-semibold rounded-lg shadow-md transition duration-300
-                    @if(request()->routeIs('reports.general'))
+                    @if(request()->routeIs('reports.credit_sale'))
                         bg-white text-indigo-600 border-b-2 border-indigo-600
                     @else
                         bg-gray-200 text-gray-700 hover:bg-gray-300
@@ -85,20 +85,20 @@
                 Credit Sale Report
             </a>
             <a href="{{ route('reports.customers') }}" class="py-2 px-6 text-center text-sm font-semibold rounded-lg shadow-md transition duration-300
-                    @if(request()->routeIs('reports.general'))
+                    @if(request()->routeIs('reports.customers'))
                         bg-white text-indigo-600 border-b-2 border-indigo-600
                     @else
                         bg-gray-200 text-gray-700 hover:bg-gray-300
                     @endif">
                 Customers Report
             </a>
-            <a href="{{ route('reports.sale_adjustment') }}" class="py-2 px-6 text-center text-sm font-semibold rounded-lg shadow-md transition duration-300
-                    @if(request()->routeIs('reports.general'))
+            <a href="{{ route('reports.stock_adjustments') }}" class="py-2 px-6 text-center text-sm font-semibold rounded-lg shadow-md transition duration-300
+                    @if(request()->routeIs('reports.stock_adjustments'))
                         bg-white text-indigo-600 border-b-2 border-indigo-600
                     @else
                         bg-gray-200 text-gray-700 hover:bg-gray-300
                     @endif">
-                Sale Adjustment Report
+                Stock Adjustment Report
             </a>
         </div>
 

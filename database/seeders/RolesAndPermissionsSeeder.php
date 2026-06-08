@@ -117,6 +117,7 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'receive cashews']);
         Permission::firstOrCreate(['name' => 'edit cashews']);
         Permission::firstOrCreate(['name' => 'delete cashews']);
+        Permission::firstOrCreate(['name' => 'view general reports']);
 
         // Sales Permissions
         Permission::firstOrCreate(['name' => 'view sales']);

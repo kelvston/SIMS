@@ -520,7 +520,7 @@
                                     {{ \Carbon\Carbon::parse($adjustment->created_at)->format('d M Y') }}
                                 </td>
                                 <td style="color:var(--emerald);font-weight:600">
-                                    {{ $adjustment->cashew->product->name }}
+                                    {{ $adjustment->cashew?->product?->name ?? 'N/A' }}
                                 </td>
                                 <td style="text-align:right;color:var(--emerald);font-weight:600">
                                     {{ $adjustment->old_quantity }}
@@ -529,10 +529,10 @@
                                     {{ $adjustment->new_quantity }}
                                 </td>
                                 <td style="text-align:right;color:var(--emerald);font-weight:600">
-                                    Tsh {{ number_format((($adjustment->old_quantity) - ($adjustment->new_quantity)) * $adjustment->cashew->unit_price, 2) }}
+                                    Tsh {{ number_format((($adjustment->old_quantity) - ($adjustment->new_quantity)) * ($adjustment->cashew?->unit_price ?? 0), 2) }}
                                 </td>
                                 <td style="color:var(--text-muted)">
-                                    {{ $adjustment->adjustedBy->name }}
+                                    {{ $adjustment->adjustedBy?->name ?? 'N/A' }}
                                 </td>
                             </tr>
                         @empty

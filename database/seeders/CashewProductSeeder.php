@@ -36,6 +36,6 @@ class CashewProductSeeder extends Seeder
         ];
 
         // Insert the data into the 'model' table
-        DB::table('products')->insert($products);
+        DB::table('products')->insertOrIgnore($products);
     }
 }

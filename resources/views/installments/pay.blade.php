@@ -79,10 +79,10 @@
                     </span>
                 </div>
                 <div class="detail-item">
-                    <span class="detail-label">Phone(s) Sold:</span>
+                    <span class="detail-label">Product(s) Sold:</span>
                     <span class="detail-value">
                         @foreach ($installmentPlan->sale->saleItems as $item)
-                            {{ $item->phone->brand->name }} {{ $item->phone->model }} (IMEI: {{ $item->phone->imei }})<br>
+                            {{ $item->product->name ?? $item->cashews->product->name ?? 'N/A' }} x {{ $item->quantity }}<br>
                         @endforeach
                     </span>
                 </div>
