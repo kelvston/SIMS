@@ -35,6 +35,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/phones/{phone}/edit', [DashboardController::class, 'editPhone'])->name('phones.edit');
     Route::delete('/phones/{phone}', [DashboardController::class, 'deletePhone'])->name('phones.destroy');
     Route::put('/phones/{phone}', [DashboardController::class, 'updatePhone'])->name('phones.update'); // <--- Add this
+    Route::get('/accessories/{product}/edit', [DashboardController::class, 'editAccessory'])->name('accessories.edit');
+    Route::put('/accessories/{product}', [DashboardController::class, 'updateAccessory'])->name('accessories.update');
 
 });
 Route::middleware('auth')->group(function () {
@@ -55,6 +57,8 @@ Route::get('/phones', [PhoneController::class, 'index'])->name('phones.index');
 Route::get('/sales/create', [SaleController::class, 'create'])->name('sales.create');
 Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
 Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
+Route::post('/sales/{sale}/void', [SaleController::class, 'void'])->name('sales.void');
+Route::get('/sales/{sale}/receipt', [SaleController::class, 'receipt'])->name('sales.receipt');
 Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
 // For viewing a single sale detail
 

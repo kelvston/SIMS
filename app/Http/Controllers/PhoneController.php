@@ -3,7 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Brand;
+use App\Models\AccessoryStock;
+use App\Models\Color;
 use App\Models\Phone;
+use App\Models\PhoneModel;
+use App\Models\PhoneStorageCapacity;
+use App\Models\Product;
 use App\Models\StockLevel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,8 +34,33 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
     public function showReceiveForm()
     {
         // This method is now protected by 'permission:view phones' middleware
-        $brands = Brand::all();
-        return view('phones.receive', compact('brands'));
+        $brands = Brand::with([
+            'phoneModels' => fn ($query) => $query->orderBy('name'),
+            'phoneModels.colors' => fn ($query) => $query->orderBy('name'),
+            'phoneModels.storageCapacities' => fn ($query) => $query->orderBy('name'),
+        ])->orderBy('name')->get();
+
+        $brandOptions = $brands->mapWithKeys(function ($brand) {
+            return [
+                $brand->id => [
+                    'name' => $brand->name,
+                    'models' => $brand->phoneModels->mapWithKeys(function ($model) {
+                        return [
+                            $model->name => [
+                                'colors' => $model->colors->pluck('name')->values(),
+                                'storage_capacities' => $model->storageCapacities->pluck('name')->values(),
+                            ],
+                        ];
+                    }),
+                ],
+            ];
+        });
+
+        $accessories = Product::withSum(['accessoryStocks as available_quantity' => function ($query) {
+            $query->where('status', 'available');
+        }], 'quantity')->orderBy('name')->get();
+
+        return view('phones.receive', compact('brands', 'brandOptions', 'accessories'));
     }
 
     /**
@@ -41,11 +71,17 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
      */
     public function storeReceivedPhones(Request $request)
     {
+        $productType = $request->input('product_type', 'phone');
+
+        if ($productType === 'accessory') {
+            return $this->storeReceivedAccessories($request);
+        }
+
         // This method is now protected by 'permission:receive phones' middleware
         // ... (rest of your existing storeReceivedPhones logic) ...
         $request->merge([
             'imeis' => collect($request->input('imeis', []))
-                ->map(fn ($imei) => trim((string) $imei))
+                ->map(fn ($imei) => preg_replace('/\s+/', '', trim((string) $imei)))
                 ->filter()
                 ->values()
                 ->all(),
@@ -70,6 +106,20 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
 
             $brand = Brand::findOrFail($request->brand_id);
             $newPhonesCount = 0;
+            $phoneModel = PhoneModel::firstOrCreate([
+                'brand_id' => $brand->id,
+                'name' => $request->model,
+            ]);
+
+            Color::firstOrCreate([
+                'phone_model_id' => $phoneModel->id,
+                'name' => $request->color,
+            ]);
+
+            PhoneStorageCapacity::firstOrCreate([
+                'phone_model_id' => $phoneModel->id,
+                'name' => $request->storage_capacity,
+            ]);
 
             foreach ($request->imeis as $imei) {
                 Phone::create([
@@ -110,6 +160,58 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
         }
     }
 
+    private function storeReceivedAccessories(Request $request)
+    {
+        $request->merge([
+            'accessory_name' => trim((string) $request->input('accessory_name')),
+            'accessory_quantity' => $request->filled('accessory_quantity') ? $request->input('accessory_quantity') : 0,
+            'accessory_unit' => trim((string) $request->input('accessory_unit', 'piece')) ?: 'piece',
+            'accessory_low_stock_threshold' => $request->filled('accessory_low_stock_threshold') ? $request->input('accessory_low_stock_threshold') : 5,
+        ]);
+
+        $request->validate([
+            'product_type' => 'required|in:phone,accessory',
+            'accessory_name' => 'required|string|max:255',
+            'accessory_quantity' => 'required|integer|min:1',
+            'accessory_purchase_price' => 'required|numeric|min:0',
+            'accessory_selling_price' => 'required|numeric|min:0|gte:accessory_purchase_price',
+            'accessory_unit' => 'required|string|max:50',
+            'accessory_low_stock_threshold' => 'nullable|integer|min:0',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $product = Product::firstOrCreate(['name' => $request->accessory_name]);
+
+            AccessoryStock::create([
+                'product_id' => $product->id,
+                'status' => 'available',
+                'received_at' => now()->toDateString(),
+                'batch_number' => 'ACC-' . now()->format('YmdHis'),
+                'condition' => 'new',
+                'quantity' => (int) $request->accessory_quantity,
+                'unit' => $request->accessory_unit,
+                'unit_price' => $request->accessory_purchase_price,
+                'selling_price' => $request->accessory_selling_price,
+                'barcode' => null,
+                'user_id' => auth()->id(),
+                'low_stock_threshold' => (int) $request->accessory_low_stock_threshold,
+            ]);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', $request->accessory_quantity . ' ' . $request->accessory_unit . '(s) of ' . $product->name . ' received successfully!');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error receiving accessories: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to receive accessories. Please try again. Error: ' . $e->getMessage())->withInput();
+        }
+    }
+
     /**
      * Display a listing of the phones.
      *
@@ -118,7 +220,22 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
     public function index()
     {
         // This method is now protected by 'permission:view phones' middleware
-        $phones = Phone::with('brand')->orderBy('received_at', 'desc')->paginate(10);
-        return view('phones.index', compact('phones'));
+        $phones = Phone::with(['brand', 'saleItem'])->orderBy('received_at', 'desc')->paginate(10);
+        $accessories = Product::withSum(['accessoryStocks as current_stock' => function ($query) {
+            $query->where('status', 'available');
+        }], 'quantity')
+            ->withMax(['accessoryStocks as selling_price' => function ($query) {
+                $query->where('status', 'available')->where('quantity', '>', 0);
+            }], 'selling_price')
+            ->withMax(['accessoryStocks as unit_price' => function ($query) {
+                $query->where('status', 'available')->where('quantity', '>', 0);
+            }], 'unit_price')
+            ->withMax(['accessoryStocks as low_stock_threshold' => function ($query) {
+                $query->where('status', 'available');
+            }], 'low_stock_threshold')
+            ->orderBy('name')
+            ->get();
+
+        return view('phones.index', compact('phones', 'accessories'));
     }
 }

@@ -90,6 +90,8 @@
                 <tr><td>Total Revenue</td><td class="r c-green">${{ number_format($totalRevenue, 2) }}</td></tr>
                 <tr><td>Cost of Goods Sold</td><td class="r c-red">– ${{ number_format($totalCogs, 2) }}</td></tr>
                 <tr class="highlight"><td>Gross Profit</td><td class="r">${{ number_format($grossProfit, 2) }}</td></tr>
+                <tr><td>Accessory Revenue</td><td class="r">${{ number_format($accessoryRevenue, 2) }}</td></tr>
+                <tr><td>Accessory Profit/Loss</td><td class="r">${{ number_format($accessoryGrossProfit, 2) }}</td></tr>
                 <tr><td>Total Operating Expenses</td><td class="r c-red">– ${{ number_format($totalExpenses, 2) }}</td></tr>
                 <tr class="total"><td>Net Profit</td><td class="r">${{ number_format($netProfit, 2) }}</td></tr>
                 <tr><td>Discounts Given</td><td class="r">– ${{ number_format($totalDiscounts, 2) }}</td></tr>
@@ -185,7 +187,7 @@
         <tr>
             <td>{{ \Carbon\Carbon::parse($sale->sale_date)->format('d M Y') }}</td>
             <td>{{ $sale->customer_name }}</td>
-            <td>{{ $sale->saleItems->map(fn($i) => optional(optional($i->phone)->brand)->name . ' ' . optional($i->phone)->model)->implode(', ') }}</td>
+            <td>{{ $sale->saleItems->map(fn($i) => $i->phone ? optional($i->phone->brand)->name . ' ' . $i->phone->model : ($i->product ? $i->product->name . ' x ' . $i->quantity : 'Item removed'))->implode(', ') }}</td>
             <td class="r">${{ number_format($sale->final_amount, 2) }}</td>
             <td class="r">{{ $sale->is_installment ? 'Installment' : 'Full' }}</td>
         </tr>

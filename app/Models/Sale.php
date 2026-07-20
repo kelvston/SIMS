@@ -22,12 +22,24 @@ class Sale extends Model
         'amount_paid',
         'amount_due',
         'payment_option',
+        'status',
+        'voided_at',
+        'voided_by',
+        'void_reason',
+        'original_final_amount',
     ];
 
     // Define the casts for attributes
     protected $casts = [
         'sale_date' => 'datetime',
         'is_installment' => 'boolean',
+        'total_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'final_amount' => 'decimal:2',
+        'amount_paid' => 'decimal:2',
+        'amount_due' => 'decimal:2',
+        'voided_at' => 'datetime',
+        'original_final_amount' => 'decimal:2',
     ];
 
     /**
@@ -49,6 +61,24 @@ class Sale extends Model
     public function saleReceipt()
     {
         return $this->hasOne(SaleReceipt::class);
+    }
+
+    public function voidedBy()
+    {
+        return $this->belongsTo(User::class, 'voided_by');
+    }
+
+    public function getIsVoidedAttribute(): bool
+    {
+        return $this->status === 'voided' || $this->voided_at !== null;
+    }
+
+    public function scopeActiveTransaction($query)
+    {
+        return $query->where(function ($query) {
+            $query->whereNull('status')
+                ->orWhere('status', '!=', 'voided');
+        });
     }
 
 }

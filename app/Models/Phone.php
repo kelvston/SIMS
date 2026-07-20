@@ -25,6 +25,8 @@ class Phone extends Model
     // Define the casts for attributes
     protected $casts = [
         'received_at' => 'datetime',
+        'purchase_price' => 'decimal:2',
+        'selling_price' => 'decimal:2',
     ];
 
     /**

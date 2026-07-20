@@ -24,6 +24,7 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
     public function index()
     {
         $installmentPlans = InstallmentPlan::with(['sale.saleItems.phone', 'installmentPayments'])
+            ->whereHas('sale', fn ($query) => $query->activeTransaction())
             ->orderBy('next_payment_date', 'asc')
             ->paginate(5);
         return view('installments.index', compact('installmentPlans'));
@@ -39,6 +40,10 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
     {
         // Load related sale and phone data for display
         $installmentPlan->load(['sale.saleItems.phone', 'sale.saleReceipt', 'installmentPayments']);
+
+        if (! $installmentPlan->sale || $installmentPlan->sale->is_voided) {
+            return redirect()->route('installments.index')->with('error', 'This installment sale has been voided. Payments cannot be recorded.');
+        }
 
         // Calculate total paid and remaining amount
         $receiptPaid = optional(optional($installmentPlan->sale)->saleReceipt)->paid_amount ?? 0;
@@ -66,6 +71,12 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
         try {
             DB::beginTransaction();
             $installmentPlan->load(['sale.saleReceipt', 'installmentPayments']);
+
+            if (! $installmentPlan->sale || $installmentPlan->sale->is_voided) {
+                throw ValidationException::withMessages([
+                    'amount_paid' => ['This installment sale has been voided. Payments cannot be recorded.'],
+                ]);
+            }
 
             // Calculate current total paid and remaining balance
             $receiptPaid = optional(optional($installmentPlan->sale)->saleReceipt)->paid_amount ?? 0;

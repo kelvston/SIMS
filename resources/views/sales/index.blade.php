@@ -27,6 +27,20 @@
             </div>
         @endif
 
+        @if (session('warning'))
+            <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">Warning!</strong>
+                <span class="block sm:inline">{{ session('warning') }}</span>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">Error!</strong>
+                <span class="block sm:inline">{{ session('error') }}</span>
+            </div>
+        @endif
+
         @if ($sales->isEmpty())
             <p class="text-center text-gray-600">No sales recorded yet. Start by creating a new sale!</p>
         @else
@@ -36,16 +50,17 @@
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale ID</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phones Sold</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items Sold</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final Amount</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale Date</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                     @foreach ($sales as $sale)
-                        <tr>
+                        <tr class="{{ $sale->is_voided ? 'bg-red-50' : '' }}">
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $sale->id }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $sale->customer_name }}</td>
                             <td class="px-4 py-3 text-sm text-gray-900">
@@ -53,8 +68,10 @@
                                     @foreach ($sale->saleItems as $item)
                                         @if($item->phone)
                                             <li>{{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }} {{ $item->phone->storage_capacity }} (IMEI: {{ $item->phone->imei }})</li>
+                                        @elseif($item->product)
+                                            <li>{{ $item->product->name }} x {{ $item->quantity }}</li>
                                         @else
-                                            <li>Phone removed</li>
+                                            <li>Item removed</li>
                                         @endif
                                     @endforeach
                                 </ul>
@@ -67,6 +84,21 @@
                                     @else bg-blue-100 text-blue-800 @endif">
                                     {{ $sale->is_installment ? 'Installment' : 'Full Payment' }}
                                 </span>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                @if($sale->is_voided)
+                                    <div class="space-y-1">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Voided</span>
+                                        <div class="text-xs text-gray-600">
+                                            {{ optional($sale->voided_at)->format('Y-m-d H:i') }}
+                                            @if($sale->voidedBy)
+                                                by {{ $sale->voidedBy->name }}
+                                            @endif
+                                        </div>
+                                    </div>
+                                @else
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
+                                @endif
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
                                 <a href="{{ route('sales.show', $sale->id) }}" class="text-indigo-600 hover:text-indigo-900">View Details</a>

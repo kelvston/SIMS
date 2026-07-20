@@ -20,4 +20,9 @@ class PhoneModel extends Model
     {
         return $this->hasMany(Color::class);
     }
+
+    public function storageCapacities()
+    {
+        return $this->hasMany(PhoneStorageCapacity::class);
+    }
 }

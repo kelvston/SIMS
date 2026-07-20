@@ -4,7 +4,9 @@ import Alpine from 'alpinejs';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import Chart from 'chart.js/auto';
 import jQuery from 'jquery';
+import Swal from 'sweetalert2';
 window.$ = window.jQuery = jQuery;
+window.Swal = Swal;
 
 // Import DataTables
 import 'datatables.net-bs5';

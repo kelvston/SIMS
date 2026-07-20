@@ -9,12 +9,56 @@
 
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Sale Details #{{ $sale->id }}</h1>
 
+        @if (session('success'))
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">Success!</strong>
+                <span class="block sm:inline">{{ session('success') }}</span>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">Error!</strong>
+                <span class="block sm:inline">{{ session('error') }}</span>
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">Please fix:</strong>
+                <ul class="list-disc list-inside mt-2">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @if($sale->is_voided)
+            <div class="mb-8 p-6 bg-red-50 rounded-lg border border-red-200">
+                <h2 class="text-2xl font-semibold text-red-800 mb-4">Voided Sale</h2>
+                <div class="detail-item"><span class="detail-label">Voided By:</span> <span class="detail-value">{{ $sale->voidedBy->name ?? 'Unknown user' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Voided At:</span> <span class="detail-value">{{ optional($sale->voided_at)->format('Y-m-d H:i') ?? 'N/A' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Reason:</span> <span class="detail-value">{{ $sale->void_reason ?? 'N/A' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Original Final Amount:</span> <span class="detail-value">${{ number_format($sale->original_final_amount ?? $sale->final_amount, 2) }}</span></div>
+            </div>
+        @endif
+
         {{-- Customer Info --}}
         <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Customer Information</h2>
             <div class="detail-item"><span class="detail-label">Customer Name:</span> <span class="detail-value">{{ $sale->customer_name }}</span></div>
             <div class="detail-item"><span class="detail-label">Customer Phone:</span> <span class="detail-value">{{ $sale->customer_phone ?? 'N/A' }}</span></div>
             <div class="detail-item"><span class="detail-label">Sale Date:</span> <span class="detail-value">{{ $sale->sale_date->format('Y-m-d H:i') }}</span></div>
+            <div class="detail-item"><span class="detail-label">Status:</span>
+                <span class="detail-value">
+                    @if($sale->is_voided)
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Voided</span>
+                    @else
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
+                    @endif
+                </span>
+            </div>
             <div class="detail-item"><span class="detail-label">Sale Type:</span>
                 <span class="detail-value">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
@@ -34,11 +78,11 @@
             <div class="detail-item font-bold text-lg"><span class="detail-label">Final Amount:</span> <span class="detail-value">${{ number_format($sale->final_amount, 2) }}</span></div>
         </div>
 
-        {{-- Phones Sold --}}
+        {{-- Items Sold --}}
         <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Phones Sold</h2>
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Items Sold</h2>
             @if ($sale->saleItems->isEmpty())
-                <p class="text-gray-600">No phones associated with this sale.</p>
+                <p class="text-gray-600">No items associated with this sale.</p>
             @else
                 <ul class="list-disc list-inside space-y-2">
                     @foreach ($sale->saleItems as $item)
@@ -48,8 +92,13 @@
                                 ({{ $item->phone->color }}, {{ $item->phone->storage_capacity }}) -
                                 IMEI: {{ $item->phone->imei }} -
                                 Sold Price: ${{ number_format($item->unit_price, 2) }}
+                            @elseif($item->product)
+                                <strong>{{ $item->product->name }}</strong>
+                                Qty: {{ $item->quantity }} -
+                                Unit Price: ${{ number_format($item->unit_price, 2) }} -
+                                Line Total: ${{ number_format($item->unit_price * $item->quantity, 2) }}
                             @else
-                                <strong>Phone removed</strong> -
+                                <strong>Item removed</strong> -
                                 Sold Price: ${{ number_format($item->unit_price, 2) }}
                             @endif
                         </li>
@@ -105,7 +154,7 @@
 
                 {{-- Add Payment Button --}}
                 @can('record installment payments')
-                    @if ($sale->installmentPlan->status == 'active')
+                    @if (! $sale->is_voided && $sale->installmentPlan->status == 'active')
                         <div class="flex justify-end mt-6">
                             <a href="{{ route('installments.pay.form', $sale->installmentPlan->id) }}"
                                class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-full transition duration-300 ease-in-out shadow-lg">
@@ -117,7 +166,32 @@
             </div>
         @endif
 
+        @can('delete sales')
+            @if(! $sale->is_voided)
+                <div class="mb-8 p-6 bg-red-50 rounded-lg border border-red-200">
+                    <h2 class="text-2xl font-semibold text-red-800 mb-4">Void Sale</h2>
+                    <p class="text-sm text-red-700 mb-4">Use this only for a mistaken sale. The sale stays visible for audit, while the items are returned to available stock.</p>
+                    <form id="void-sale-form" action="{{ route('sales.void', $sale->id) }}" method="POST">
+                        @csrf
+                        <label for="void_reason" class="block text-gray-700 text-sm font-bold mb-2">Reason</label>
+                        <textarea id="void_reason" name="void_reason" rows="3" required minlength="5" maxlength="1000" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{{ old('void_reason') }}</textarea>
+                        <div class="flex justify-end mt-4">
+                            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full transition duration-300 ease-in-out shadow-md">
+                                Void Sale
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            @endif
+        @endcan
+
         <div class="flex justify-end mt-8">
+            @if($sale->saleReceipt)
+                <a href="{{ route('sales.receipt', $sale->id) }}"
+                   class="mr-3 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full transition duration-300 ease-in-out shadow-md">
+                    Download Receipt
+                </a>
+            @endif
             <a href="{{ route('sales.index') }}"
                class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-full transition duration-300 ease-in-out shadow-md">
                 Back to All Sales
@@ -125,3 +199,36 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const voidSaleForm = document.getElementById('void-sale-form');
+
+            if (!voidSaleForm) {
+                return;
+            }
+
+            voidSaleForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                Swal.fire({
+                    title: 'Void this sale?',
+                    text: 'Void this sale and return its items to stock? This cannot be undone automatically.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, void sale',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#6b7280',
+                    reverseButtons: true,
+                    focusCancel: true,
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        voidSaleForm.submit();
+                    }
+                });
+            });
+        });
+    </script>
+@endpush

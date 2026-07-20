@@ -103,8 +103,9 @@
 <body>
 <div class="container">
     <header>
-        {{-- Replace with your actual logo path or remove if none --}}
-        <img src="{{ public_path('images/logo.png') }}" alt="Logo" class="logo" />
+        @if(file_exists(public_path('images/logo.png')))
+            <img src="{{ public_path('images/logo.png') }}" alt="Logo" class="logo" />
+        @endif
         <h1>PhoneStore Pro</h1>
         <p>Sales Receipt</p>
 
@@ -129,23 +130,37 @@
         <table>
             <thead>
             <tr>
-                <th>IMEI</th>
-                <th>Brand</th>
-                <th>Model</th>
-                <th>Color</th>
-                <th>Storage</th>
+                <th>Item</th>
+                <th>Identifier</th>
+                <th>Details</th>
+                <th class="right">Qty</th>
                 <th class="right">Unit Price (TZS)</th>
+                <th class="right">Line Total (TZS)</th>
             </tr>
             </thead>
             <tbody>
             @foreach ($sale->saleItems as $item)
                 <tr>
+                    <td>
+                        @if($item->phone)
+                            {{ optional(optional($item->phone)->brand)->name ?? 'N/A' }} {{ $item->phone->model }}
+                        @elseif($item->product)
+                            {{ $item->product->name }}
+                        @else
+                            Item removed
+                        @endif
+                    </td>
                     <td>{{ optional($item->phone)->imei ?? 'N/A' }}</td>
-                    <td>{{ optional(optional($item->phone)->brand)->name ?? 'N/A' }}</td>
-                    <td>{{ optional($item->phone)->model ?? 'Phone removed' }}</td>
-                    <td>{{ optional($item->phone)->color ?? 'N/A' }}</td>
-                    <td>{{ optional($item->phone)->storage_capacity ?? 'N/A' }}</td>
+                    <td>
+                        @if($item->phone)
+                            {{ $item->phone->color }} / {{ $item->phone->storage_capacity }}
+                        @else
+                            Accessory
+                        @endif
+                    </td>
+                    <td class="right">{{ $item->quantity ?? 1 }}</td>
                     <td class="right">{{ number_format($item->unit_price, 2) }}</td>
+                    <td class="right">{{ number_format($item->unit_price * ($item->quantity ?? 1), 2) }}</td>
                 </tr>
             @endforeach
             </tbody>

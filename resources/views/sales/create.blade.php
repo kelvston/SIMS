@@ -4,6 +4,37 @@
 @section('subtitle', 'Record a new sales transaction.')
 
 @section('content')
+    <style>
+        .sale-search-wrap { position: relative; }
+        .sale-search-results {
+            position: absolute;
+            z-index: 40;
+            width: 100%;
+            max-height: 260px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            box-shadow: 0 12px 20px -12px rgba(15, 23, 42, 0.35);
+            margin-top: 0.25rem;
+        }
+        .sale-search-option {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.65rem 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .sale-search-option:last-child { border-bottom: 0; }
+        .sale-search-option:hover, .sale-search-option.active { background: #eff6ff; }
+        .sale-search-empty {
+            padding: 0.75rem;
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+    </style>
+
     <div class="container mx-auto bg-white p-8 rounded-lg shadow-md">
         <img src="{{ asset('images/watermark.png') }}"
              alt="Watermark"
@@ -11,7 +42,6 @@
              style="transform: translate(-50%, -60%);" />
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Create New Sale</h1>
 
-        <!-- Success/Error Messages -->
         @if (session('success'))
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
                 <strong class="font-bold">Success!</strong>
@@ -37,7 +67,7 @@
             </div>
         @endif
 
-        <form action="{{ route('sales.store') }}" method="POST">
+        <form action="{{ route('sales.store') }}" method="POST" id="sale-form">
             @csrf
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -56,39 +86,95 @@
                     <p class="text-red-500 text-xs italic">{{ $message }}</p>
                     @enderror
                 </div>
-            </div>
-            <div>
-                <label for="customer_email" class="block text-gray-700 text-sm font-bold mb-2">Customer Email (Optional):</label>
-                <input type="email" name="customer_email" id="customer_email"
-                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('customer_email') border-red-500 @enderror"
-                       value="{{ old('customer_email') }}" placeholder="customer@example.com">
-                @error('customer_email')
-                <p class="text-red-500 text-xs italic">{{ $message }}</p>
-                @enderror
-            </div>
 
-            <div class="mb-6">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Phones to Sell (IMEI):</label>
-                <div id="phone-imei-inputs">
-                    <!-- Initial phone IMEI input field -->
-                    <div class="phone-item-group">
-                        <select name="phone_imeis[]" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                            <option value="">Select a Phone (IMEI - Model - Color - Price)</option>
-                            @foreach ($availablePhones as $phone)
-                                <option value="{{ $phone->imei }}" data-price="{{ $phone->selling_price }}">
-                                    {{ $phone->imei }} - {{ $phone->brand->name ?? 'N/A' }} {{ $phone->model }} ({{ $phone->color }}, {{ $phone->storage_capacity }}) - ${{ number_format($phone->selling_price, 2) }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <button type="button" onclick="addPhoneInput()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">Add</button>
-                    </div>
-                    @error('phone_imeis')
-                    <p class="text-red-500 text-xs italic">{{ $message }}</p>
-                    @enderror
-                    @error('phone_imeis.*')
+                <div class="md:col-span-2">
+                    <label for="customer_email" class="block text-gray-700 text-sm font-bold mb-2">Customer Email (Optional):</label>
+                    <input type="email" name="customer_email" id="customer_email"
+                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('customer_email') border-red-500 @enderror"
+                           value="{{ old('customer_email') }}" placeholder="customer@example.com">
+                    @error('customer_email')
                     <p class="text-red-500 text-xs italic">{{ $message }}</p>
                     @enderror
                 </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="border rounded-lg p-4 bg-gray-50">
+                    <label for="phone-search" class="block text-gray-700 text-sm font-bold mb-2">Search Phone by IMEI, Brand, or Model:</label>
+                    <div class="sale-search-wrap">
+                        <input type="text" id="phone-search"
+                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                               placeholder="Type or scan IMEI, then select phone" autocomplete="off">
+                        <div id="phone-results" class="sale-search-results hidden"></div>
+                    </div>
+                    <p id="phone-scan-message" class="text-sm mt-2"></p>
+                </div>
+
+                <div class="border rounded-lg p-4 bg-gray-50">
+                    <label for="accessory-search" class="block text-gray-700 text-sm font-bold mb-2">Search Accessory:</label>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                        <div class="sale-search-wrap md:col-span-3">
+                            <input type="text" id="accessory-search"
+                                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                   placeholder="Type accessory name" autocomplete="off">
+                            <div id="accessory-results" class="sale-search-results hidden"></div>
+                        </div>
+                        <input type="number" id="accessory-qty" min="1" step="1" value="1"
+                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                               placeholder="Qty">
+                    </div>
+                    <p id="accessory-message" class="text-sm mt-2"></p>
+                </div>
+            </div>
+
+            <div class="mb-6 border rounded-lg overflow-hidden">
+                <div class="bg-gray-100 px-4 py-3 flex items-center justify-between">
+                    <h2 class="font-semibold text-gray-800">Selected Items</h2>
+                    <span id="selected-count" class="text-sm text-gray-600">0 items</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                        </tr>
+                        </thead>
+                        <tbody id="selected-items-body" class="bg-white divide-y divide-gray-200">
+                        <tr id="selected-empty-row">
+                            <td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">No item selected yet.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="sale-hidden-inputs"></div>
+
+            <div class="bg-gray-50 border rounded-lg p-4 mb-6">
+                <div class="flex justify-between mb-2">
+                    <span class="font-semibold text-gray-700">Subtotal</span>
+                    <span id="sale-subtotal">$0.00</span>
+                </div>
+                <div class="flex justify-between mb-2">
+                    <span class="font-semibold text-gray-700">Discount</span>
+                    <span id="sale-discount">$0.00</span>
+                </div>
+                <div class="flex justify-between text-lg font-bold text-gray-900">
+                    <span>Final Total</span>
+                    <span id="sale-final-total">$0.00</span>
+                </div>
+                <p id="sale-total-warning" class="text-sm text-red-600 mt-2 hidden">Discount cannot exceed subtotal.</p>
+                @error('phone_imeis')
+                <p class="text-red-500 text-xs italic mt-2">{{ $message }}</p>
+                @enderror
+                @error('accessories')
+                <p class="text-red-500 text-xs italic mt-2">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -102,7 +188,6 @@
             </div>
 
             <div class="mb-6">
-                {{-- Hidden input to ensure 'is_installment' is always sent, even when unchecked --}}
                 <input type="hidden" name="is_installment" value="0">
                 <label class="inline-flex items-center">
                     <input type="checkbox" name="is_installment" id="is_installment" class="form-checkbox h-5 w-5 text-blue-600" value="1" {{ old('is_installment') ? 'checked' : '' }}>
@@ -146,43 +231,320 @@
     </div>
 
     <script>
-        const availablePhones = @json($availablePhones); // Pass available phones data to JavaScript
+        const availablePhones = @json($availablePhones);
+        const accessoryProducts = @json($accessoryProducts);
+        const oldPhoneImeis = @json(old('phone_imeis', []));
+        const oldAccessories = @json(old('accessories', []));
 
-        function addPhoneInput() {
-            const container = document.getElementById('phone-imei-inputs');
+        const selectedPhones = new Map();
+        const selectedAccessories = new Map();
+
+        function normalizeImei(value) {
+            return String(value || '').trim().replace(/[\r\n\t ]+/g, '');
+        }
+
+        function moneyToCents(value) {
+            return Math.round((parseFloat(value) || 0) * 100);
+        }
+
+        function formatMoney(cents) {
+            return `$${(cents / 100).toFixed(2)}`;
+        }
+
+        function escapeHtml(value) {
             const div = document.createElement('div');
-            div.className = 'phone-item-group';
+            div.textContent = String(value ?? '');
+            return div.innerHTML;
+        }
 
-            let optionsHtml = '<option value="">Select a Phone (IMEI - Model - Color - Price)</option>';
-            availablePhones.forEach(phone => {
-                optionsHtml += `<option value="${phone.imei}" data-price="${phone.selling_price}">
-                    {{--${phone.imei} - ${phone.brand.name} ${phone.model} (${phone.color}) - ${{ number_format($phone->selling_price, 2) }}--}}
-                ${phone.imei} - ${(phone.brand && phone.brand.name) || 'N/A'} ${phone.model} (${phone.color}, ${phone.storage_capacity}) - $${parseFloat(phone.selling_price).toFixed(2)}
+        function phoneLabel(phone) {
+            return `${phone.imei} - ${(phone.brand && phone.brand.name) || 'N/A'} ${phone.model} (${phone.color}, ${phone.storage_capacity})`;
+        }
 
-                </option>`;
+        function accessoryLabel(accessory) {
+            return `${accessory.name} - Stock: ${Math.floor(Number(accessory.available_quantity || 0))}`;
+        }
+
+        function itemMatches(text, query) {
+            return text.toLowerCase().includes(String(query || '').toLowerCase());
+        }
+
+        function closeSearchResults() {
+            document.querySelectorAll('.sale-search-results').forEach(list => {
+                list.classList.add('hidden');
+                list.innerHTML = '';
+            });
+        }
+
+        function setMessage(id, message, isError = false) {
+            const element = document.getElementById(id);
+            element.textContent = message;
+            element.className = `text-sm mt-2 ${isError ? 'text-red-600' : 'text-green-600'}`;
+        }
+
+        function renderSearchResults(containerId, rows, emptyText, onSelect) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            if (!rows.length) {
+                container.innerHTML = `<div class="sale-search-empty">${emptyText}</div>`;
+                container.classList.remove('hidden');
+                return;
+            }
+
+            rows.forEach(row => {
+                const option = document.createElement('div');
+                option.className = 'sale-search-option';
+                option.innerHTML = `
+                    <span>
+                        <span class="block font-semibold text-gray-800">${row.title}</span>
+                        <span class="block text-xs text-gray-500">${row.subtitle}</span>
+                    </span>
+                    <span class="text-sm font-semibold text-gray-800">${formatMoney(row.priceCents)}</span>
+                `;
+                option.addEventListener('mousedown', event => {
+                    event.preventDefault();
+                    onSelect(row.item);
+                    closeSearchResults();
+                });
+                container.appendChild(option);
             });
 
-            div.innerHTML = `
-                <select name="phone_imeis[]" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                    ${optionsHtml}
-                </select>
-                <button type="button" onclick="removePhoneInput(this)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">Remove</button>
-            `;
-            container.appendChild(div);
+            container.classList.remove('hidden');
         }
 
-        function removePhoneInput(button) {
-            button.closest('.phone-item-group').remove();
+        function searchPhones(query) {
+            const normalized = normalizeImei(query);
+            const searchValue = String(query || '').trim();
+            const matches = availablePhones
+                .filter(phone => !selectedPhones.has(normalizeImei(phone.imei)))
+                .filter(phone => {
+                    const haystack = `${phone.imei} ${(phone.brand && phone.brand.name) || ''} ${phone.model} ${phone.color} ${phone.storage_capacity}`;
+                    return itemMatches(haystack, searchValue);
+                })
+                .slice(0, 20)
+                .map(phone => ({
+                    item: phone,
+                    title: phoneLabel(phone),
+                    subtitle: `IMEI: ${phone.imei}`,
+                    priceCents: moneyToCents(phone.selling_price),
+                }));
+
+            renderSearchResults('phone-results', matches, 'No available phone found.', addPhoneToSale);
+
+            if (normalized) {
+                const exactPhone = availablePhones.find(phone => normalizeImei(phone.imei) === normalized);
+                if (exactPhone && !selectedPhones.has(normalized)) {
+                    return exactPhone;
+                }
+            }
+
+            return null;
         }
 
-        // Toggle installment details visibility
-        document.getElementById('is_installment').addEventListener('change', function() {
-            const installmentDetails = document.getElementById('installment-details');
-            if (this.checked) {
-                installmentDetails.classList.remove('hidden');
-            } else {
-                installmentDetails.classList.add('hidden');
+        function searchAccessories(query) {
+            const searchValue = String(query || '').trim();
+            const matches = accessoryProducts
+                .filter(accessory => itemMatches(accessory.name, searchValue))
+                .slice(0, 20)
+                .map(accessory => ({
+                    item: accessory,
+                    title: accessory.name,
+                    subtitle: `Available: ${Math.floor(Number(accessory.available_quantity || 0))}`,
+                    priceCents: moneyToCents(accessory.selling_price),
+                }));
+
+            renderSearchResults('accessory-results', matches, 'No accessory stock found.', addAccessoryToSale);
+        }
+
+        function addPhoneToSale(phone) {
+            const imei = normalizeImei(phone.imei);
+
+            if (selectedPhones.has(imei)) {
+                setMessage('phone-scan-message', `IMEI ${imei} is already selected.`, true);
+                return;
+            }
+
+            selectedPhones.set(imei, phone);
+            document.getElementById('phone-search').value = '';
+            setMessage('phone-scan-message', `Added ${imei}.`);
+            renderSelectedItems();
+        }
+
+        function addAccessoryToSale(accessory) {
+            const qtyInput = document.getElementById('accessory-qty');
+            const requestedQty = parseInt(qtyInput.value, 10) || 1;
+            const availableQty = Math.floor(Number(accessory.available_quantity || 0));
+            const currentQty = selectedAccessories.get(String(accessory.id))?.quantity || 0;
+            const nextQty = currentQty + requestedQty;
+
+            if (nextQty > availableQty) {
+                setMessage('accessory-message', `${accessory.name} has only ${availableQty} unit(s) available.`, true);
+                return;
+            }
+
+            selectedAccessories.set(String(accessory.id), {
+                item: accessory,
+                quantity: nextQty,
+            });
+
+            document.getElementById('accessory-search').value = '';
+            qtyInput.value = 1;
+            setMessage('accessory-message', `Added ${accessory.name} x ${requestedQty}.`);
+            renderSelectedItems();
+        }
+
+        function removePhone(imei) {
+            selectedPhones.delete(imei);
+            renderSelectedItems();
+        }
+
+        function removeAccessory(productId) {
+            selectedAccessories.delete(String(productId));
+            renderSelectedItems();
+        }
+
+        function updateAccessoryQuantity(productId, quantity) {
+            const line = selectedAccessories.get(String(productId));
+            if (!line) {
+                return;
+            }
+
+            const availableQty = Math.floor(Number(line.item.available_quantity || 0));
+            const nextQty = Math.max(1, parseInt(quantity, 10) || 1);
+            line.quantity = Math.min(nextQty, availableQty);
+            selectedAccessories.set(String(productId), line);
+            renderSelectedItems();
+        }
+
+        function renderSelectedItems() {
+            const body = document.getElementById('selected-items-body');
+            const hiddenInputs = document.getElementById('sale-hidden-inputs');
+            body.innerHTML = '';
+            hiddenInputs.innerHTML = '';
+
+            let subtotalCents = 0;
+            let itemCount = 0;
+
+            selectedPhones.forEach((phone, imei) => {
+                const priceCents = moneyToCents(phone.selling_price);
+                subtotalCents += priceCents;
+                itemCount += 1;
+                hiddenInputs.insertAdjacentHTML('beforeend', `<input type="hidden" name="phone_imeis[]" value="${phone.imei}">`);
+                body.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td class="px-4 py-3 text-sm text-gray-900">${escapeHtml(phoneLabel(phone))}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">Phone</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">1</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">${formatMoney(priceCents)}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">${formatMoney(priceCents)}</td>
+                        <td class="px-4 py-3 text-sm text-right">
+                            <button type="button" onclick="removePhone('${imei}')" class="text-red-600 hover:text-red-800 font-semibold">Remove</button>
+                        </td>
+                    </tr>
+                `);
+            });
+
+            let accessoryIndex = 0;
+            selectedAccessories.forEach((line, productId) => {
+                const unitPriceCents = moneyToCents(line.item.selling_price);
+                const lineTotalCents = unitPriceCents * line.quantity;
+                subtotalCents += lineTotalCents;
+                itemCount += line.quantity;
+                hiddenInputs.insertAdjacentHTML('beforeend', `<input type="hidden" name="accessories[${accessoryIndex}][product_id]" value="${productId}">`);
+                hiddenInputs.insertAdjacentHTML('beforeend', `<input type="hidden" name="accessories[${accessoryIndex}][quantity]" value="${line.quantity}">`);
+                accessoryIndex += 1;
+                body.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td class="px-4 py-3 text-sm text-gray-900">${escapeHtml(line.item.name)}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">Accessory</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">
+                            <input type="number" min="1" max="${Math.floor(Number(line.item.available_quantity || 0))}" value="${line.quantity}" onchange="updateAccessoryQuantity('${productId}', this.value)" class="w-20 text-right border rounded py-1 px-2">
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">${formatMoney(unitPriceCents)}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">${formatMoney(lineTotalCents)}</td>
+                        <td class="px-4 py-3 text-sm text-right">
+                            <button type="button" onclick="removeAccessory('${productId}')" class="text-red-600 hover:text-red-800 font-semibold">Remove</button>
+                        </td>
+                    </tr>
+                `);
+            });
+
+            if (!selectedPhones.size && !selectedAccessories.size) {
+                body.innerHTML = '<tr id="selected-empty-row"><td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">No item selected yet.</td></tr>';
+            }
+
+            const discountCents = moneyToCents(document.getElementById('discount_amount').value);
+            const finalCents = subtotalCents - discountCents;
+            document.getElementById('selected-count').textContent = `${itemCount} item${itemCount === 1 ? '' : 's'}`;
+            document.getElementById('sale-subtotal').textContent = formatMoney(subtotalCents);
+            document.getElementById('sale-discount').textContent = formatMoney(discountCents);
+            document.getElementById('sale-final-total').textContent = formatMoney(Math.max(finalCents, 0));
+            document.getElementById('sale-total-warning').classList.toggle('hidden', finalCents >= 0);
+        }
+
+        document.getElementById('phone-search').addEventListener('input', function() {
+            searchPhones(this.value);
+        });
+
+        document.getElementById('phone-search').addEventListener('keydown', function(event) {
+            if (event.key !== 'Enter') {
+                return;
+            }
+
+            event.preventDefault();
+            const exactPhone = searchPhones(this.value);
+            if (exactPhone) {
+                addPhoneToSale(exactPhone);
+                closeSearchResults();
+                return;
+            }
+
+            setMessage('phone-scan-message', 'Select a phone from the search results.', true);
+        });
+
+        document.getElementById('accessory-search').addEventListener('input', function() {
+            searchAccessories(this.value);
+        });
+
+        document.getElementById('accessory-search').addEventListener('focus', function() {
+            searchAccessories(this.value);
+        });
+
+        document.addEventListener('mousedown', function(event) {
+            if (!event.target.closest('.sale-search-wrap')) {
+                closeSearchResults();
             }
         });
+
+        document.getElementById('discount_amount').addEventListener('input', renderSelectedItems);
+
+        document.getElementById('is_installment').addEventListener('change', function() {
+            document.getElementById('installment-details').classList.toggle('hidden', !this.checked);
+        });
+
+        document.getElementById('sale-form').addEventListener('submit', function(event) {
+            if (!selectedPhones.size && !selectedAccessories.size) {
+                event.preventDefault();
+                setMessage('phone-scan-message', 'Add at least one phone or accessory before recording the sale.', true);
+                setMessage('accessory-message', 'Add at least one phone or accessory before recording the sale.', true);
+            }
+        });
+
+        availablePhones
+            .filter(phone => oldPhoneImeis.map(normalizeImei).includes(normalizeImei(phone.imei)))
+            .forEach(addPhoneToSale);
+
+        oldAccessories.forEach(line => {
+            const accessory = accessoryProducts.find(item => String(item.id) === String(line.product_id));
+            if (accessory) {
+                selectedAccessories.set(String(accessory.id), {
+                    item: accessory,
+                    quantity: parseInt(line.quantity, 10) || 1,
+                });
+            }
+        });
+
+        renderSelectedItems();
     </script>
 @endsection

@@ -22,3 +22,11 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/dist
+
+# Desktop app / NativePHP residues
+/electron.js
+/php-windows.zip
+/native
+/nativephp.json
+/storage/app/native-build

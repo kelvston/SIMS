@@ -13,7 +13,17 @@ class SaleItem extends Model
     protected $fillable = [
         'sale_id',
         'phone_id',
+        'product_id',
+        'cosmetic_id',
         'unit_price',
+        'quantity',
+        'unit_cost',
+    ];
+
+    protected $casts = [
+        'unit_price' => 'decimal:2',
+        'quantity' => 'integer',
+        'unit_cost' => 'decimal:2',
     ];
 
     /**
@@ -30,6 +40,16 @@ class SaleItem extends Model
     public function phone()
     {
         return $this->belongsTo(Phone::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function accessoryStock()
+    {
+        return $this->belongsTo(AccessoryStock::class, 'cosmetic_id');
     }
 
 }

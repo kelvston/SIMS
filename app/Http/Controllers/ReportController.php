@@ -5,10 +5,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Models\AccessoryStock;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockLevel;
 use App\Models\Phone;
+use App\Models\Product;
 use App\Models\InstallmentPlan;
 use App\Models\InstallmentPayment;
 use Illuminate\Http\Request;
@@ -45,13 +47,15 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $currentMonth = Carbon::now()->month;
         $currentYear = Carbon::now()->year;
 
-        $monthlySales = Sale::whereMonth('sale_date', $currentMonth)
+        $monthlySales = Sale::activeTransaction()
+            ->whereMonth('sale_date', $currentMonth)
             ->whereYear('sale_date', $currentYear)
             ->sum('final_amount');
 
         // 3. Pending Installments Amount
         $pendingInstallmentsAmount = 0;
         $activeInstallmentPlans = InstallmentPlan::where('status', 'active')
+            ->whereHas('sale', fn ($query) => $query->activeTransaction())
             ->with(['sale.saleReceipt', 'installmentPayments'])
             ->get();
 
@@ -69,7 +73,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         $totalCogsThisMonth = 0;
         $soldPhonesThisMonth = SaleItem::whereHas('sale', function ($query) use ($currentMonth, $currentYear) {
-            $query->whereMonth('sale_date', $currentMonth)
+            $query->activeTransaction()
+                ->whereMonth('sale_date', $currentMonth)
                 ->whereYear('sale_date', $currentYear);
         })
             ->with('phone')
@@ -89,7 +94,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         }
 
         // 5. Sales Chart Data (Last 30 days)
-        $salesData = Sale::select(
+        $salesData = Sale::activeTransaction()
+            ->select(
             DB::raw('DATE(sale_date) as date'),
             DB::raw('SUM(final_amount) as total_sales')
         )
@@ -120,19 +126,22 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $notificationCount = $lowStockProducts->count();
 
         // New: Total Sales for the Year
-        $totalYearlySales = Sale::whereYear('sale_date', $currentYear)->sum('final_amount');
+        $totalYearlySales = Sale::activeTransaction()->whereYear('sale_date', $currentYear)->sum('final_amount');
 
         // New: Total Sold Phones
         $totalSoldPhones = Phone::where('status', 'sold')->count();
 
         // New: Total Active Installment Plans
-        $totalActiveInstallments = InstallmentPlan::where('status', 'active')->count();
+        $totalActiveInstallments = InstallmentPlan::where('status', 'active')
+            ->whereHas('sale', fn ($query) => $query->activeTransaction())
+            ->count();
 
         // New: Average Selling Price of ALL phones (could be refined to average *sold* price)
         $averageSellingPrice = Phone::avg('selling_price');
 
         // New: Recent Activities (combining sales, received, payments, expenses)
-        $recentSales = Sale::with('saleItems.phone.brand')
+        $recentSales = Sale::activeTransaction()
+            ->with('saleItems.phone.brand')
             ->latest('sale_date')
             ->take(5)
             ->get()
@@ -244,7 +253,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $startDate = $request->input('start_date', ''); // Provide default empty string
         $endDate = $request->input('end_date', '');   // Provide default empty string
 
-        $salesQuery = Sale::query();
+        $salesQuery = Sale::activeTransaction();
 
         if ($startDate) {
             $salesQuery->whereDate('sale_date', '>=', $startDate);
@@ -253,13 +262,13 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             $salesQuery->whereDate('sale_date', '<=', $endDate);
         }
 
-        $sales = $salesQuery->with('saleItems.phone.brand')
+        $sales = $salesQuery->with('saleItems.phone.brand', 'saleItems.product')
             ->orderBy('sale_date', 'desc')
             ->paginate(10);
 
         // Calculate summary statistics
         // Re-run the query for aggregates to ensure they reflect the filtered results
-        $filteredSalesForSummary = Sale::query();
+        $filteredSalesForSummary = Sale::activeTransaction();
         if ($startDate) {
             $filteredSalesForSummary->whereDate('sale_date', '>=', $startDate);
         }
@@ -283,12 +292,24 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
     public function stockReport()
     {
         $stockLevels = StockLevel::with('brand')->orderBy('current_stock', 'asc')->paginate(10);
+        $accessoryStocks = Product::withSum(['accessoryStocks as current_stock' => function ($query) {
+            $query->where('status', 'available');
+        }], 'quantity')
+            ->withMax(['accessoryStocks as low_stock_threshold' => function ($query) {
+                $query->where('status', 'available');
+            }], 'low_stock_threshold')
+            ->withMax(['accessoryStocks as selling_price' => function ($query) {
+                $query->where('status', 'available');
+            }], 'selling_price')
+            ->orderBy('name')
+            ->get();
 
         // Calculate summary statistics for stock
-        $totalStockItems = StockLevel::sum('current_stock');
-        $lowStockCount = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')->count();
+        $totalStockItems = StockLevel::sum('current_stock') + $accessoryStocks->sum(fn ($item) => (int) $item->current_stock);
+        $lowAccessoryCount = $accessoryStocks->filter(fn ($item) => (int) $item->current_stock <= (int) ($item->low_stock_threshold ?? 5))->count();
+        $lowStockCount = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')->count() + $lowAccessoryCount;
 
-        return view('reports.stock', compact('stockLevels', 'totalStockItems', 'lowStockCount'));
+        return view('reports.stock', compact('stockLevels', 'accessoryStocks', 'totalStockItems', 'lowStockCount'));
     }
 
     /**
@@ -302,7 +323,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $startDate = $request->input('start_date', ''); // Provide default empty string
         $endDate = $request->input('end_date', '');   // Provide default empty string
 
-        $salesQuery = Sale::query();
+        $salesQuery = Sale::activeTransaction();
         $expensesQuery = Expense::query(); // NEW: Query for expenses
 
         if ($startDate) {
@@ -315,7 +336,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         }
 
         // Eager load sale items and their associated phones to get purchase prices
-        $sales = $salesQuery->with('saleItems.phone')->get();
+        $sales = $salesQuery->with('saleItems.phone', 'saleItems.product')->get();
         $expenses = $expensesQuery->get(); // NEW: Get filtered expenses
 
         $totalRevenue = $sales->sum('final_amount');
@@ -326,6 +347,10 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         }
 
         $totalExpenses = $expenses->sum('amount'); // NEW: Sum of all filtered expenses
+        $accessoryItems = $sales->flatMap->saleItems->filter(fn ($item) => $item->product_id);
+        $accessoryRevenue = $accessoryItems->sum(fn ($item) => (float) $item->unit_price * (int) ($item->quantity ?? 1));
+        $accessoryCostOfGoodsSold = $this->saleItemsCostValue($accessoryItems);
+        $accessoryGrossProfit = $accessoryRevenue - $accessoryCostOfGoodsSold;
 
         $grossProfit = $totalRevenue - $totalCostOfGoodsSold;
         $netProfit = $grossProfit - $totalExpenses;
@@ -343,7 +368,10 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             'startDate',
             'endDate',
             'totalExpenses',
-            'netProfit'
+            'netProfit',
+            'accessoryRevenue',
+            'accessoryCostOfGoodsSold',
+            'accessoryGrossProfit'
         ));
     }
     private function buildGeneralReportData(Request $request): array
@@ -352,7 +380,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $endDate   = $request->input('end_date',   Carbon::now()->toDateString());
 
         // ── Revenue & Sales ───────────────────────────────────────────────
-        $salesQuery = Sale::query()
+        $salesQuery = Sale::activeTransaction()
             ->whereDate('sale_date', '>=', $startDate)
             ->whereDate('sale_date', '<=', $endDate);
 
@@ -364,11 +392,17 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         // ── Cost of Goods Sold ────────────────────────────────────────────
         $soldItems = SaleItem::whereHas('sale', function ($q) use ($startDate, $endDate) {
-            $q->whereDate('sale_date', '>=', $startDate)
+            $q->activeTransaction()
+                ->whereDate('sale_date', '>=', $startDate)
                 ->whereDate('sale_date', '<=', $endDate);
-        })->with('phone')->get();
+        })->with('phone', 'product')->get();
 
         $totalCogs = $this->saleItemsCostValue($soldItems);
+        $accessoryRevenue = $soldItems
+            ->whereNotNull('product_id')
+            ->sum(fn ($item) => (float) $item->unit_price * (int) ($item->quantity ?? 1));
+        $accessoryCogs = $this->saleItemsCostValue($soldItems->whereNotNull('product_id'));
+        $accessoryGrossProfit = $accessoryRevenue - $accessoryCogs;
 
         // ── Expenses ──────────────────────────────────────────────────────
         $expensesQuery = Expense::query()
@@ -391,6 +425,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         // ── Inventory ─────────────────────────────────────────────────────
         $availablePhones      = Phone::where('status', 'available')->count();
+        $availableAccessories = (int) AccessoryStock::where('status', 'available')->sum('quantity');
         $soldPhones           = Phone::whereIn('status', ['sold', 'under_installment'])->count();
         $inventoryValue       = $this->inventoryCostValue();
 
@@ -406,6 +441,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         // ── Installments ──────────────────────────────────────────────────
         $activePlans          = InstallmentPlan::where('status', 'active')
+            ->whereHas('sale', fn ($query) => $query->activeTransaction())
             ->with(['sale.saleReceipt', 'installmentPayments'])
             ->get();
 
@@ -421,7 +457,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $activeInstallmentCount = $activePlans->count();
 
         // ── Daily Sales Trend (for chart in blade view) ───────────────────
-        $dailySales = Sale::select(
+        $dailySales = Sale::activeTransaction()
+            ->select(
             DB::raw('DATE(sale_date) as date'),
             DB::raw('SUM(final_amount) as total'),
             DB::raw('COUNT(*) as count')
@@ -434,7 +471,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         // ── Top Selling Brands ────────────────────────────────────────────
         $topBrands = SaleItem::whereHas('sale', function ($q) use ($startDate, $endDate) {
-            $q->whereDate('sale_date', '>=', $startDate)
+            $q->activeTransaction()
+                ->whereDate('sale_date', '>=', $startDate)
                 ->whereDate('sale_date', '<=', $endDate);
         })
             ->leftJoin('phones', 'sale_items.phone_id', '=', 'phones.id')
@@ -450,7 +488,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             ->get();
 
         // ── Recent Sales ──────────────────────────────────────────────────
-        $recentSales = Sale::with('saleItems.phone.brand')
+        $recentSales = Sale::activeTransaction()
+            ->with('saleItems.phone.brand', 'saleItems.product')
             ->whereDate('sale_date', '>=', $startDate)
             ->whereDate('sale_date', '<=', $endDate)
             ->orderByDesc('sale_date')
@@ -461,8 +500,9 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             'startDate', 'endDate',
             'totalRevenue', 'totalDiscounts', 'totalSalesCount', 'installmentSales', 'fullPaymentSales',
             'totalCogs', 'totalExpenses', 'expensesByCategory',
+            'accessoryRevenue', 'accessoryCogs', 'accessoryGrossProfit',
             'grossProfit', 'netProfit', 'profitMargin',
-            'availablePhones', 'soldPhones', 'inventoryValue', 'stockByBrand', 'lowStockItems',
+            'availablePhones', 'availableAccessories', 'soldPhones', 'inventoryValue', 'stockByBrand', 'lowStockItems',
             'pendingInstallments', 'activeInstallmentCount',
             'dailySales', 'topBrands', 'recentSales'
         );
@@ -471,33 +511,26 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
     private function inventoryCostValue(): float
     {
         $phoneValue = (float) Phone::where('status', 'available')->sum('purchase_price');
-        if ($phoneValue > 0 || ! Schema::hasTable('cashews')) {
-            return $phoneValue;
-        }
-
-        return (float) DB::table('cashews')
+        $accessoryValue = Schema::hasTable('cashews')
+            ? (float) DB::table('cashews')
             ->where('status', 'available')
             ->selectRaw('COALESCE(SUM(CAST(quantity AS DECIMAL(15, 2)) * CAST(unit_price AS DECIMAL(15, 2))), 0) as total')
-            ->value('total');
+            ->value('total')
+            : 0;
+
+        return $phoneValue + $accessoryValue;
     }
 
     private function saleItemsCostValue($saleItems): float
     {
-        $productCosts = Schema::hasTable('cashews')
-            ? DB::table('cashews')
-                ->select('product_id', DB::raw('MAX(CAST(unit_price AS DECIMAL(15, 2))) as unit_cost'))
-                ->groupBy('product_id')
-                ->pluck('unit_cost', 'product_id')
-            : collect();
-
-        return (float) $saleItems->sum(function ($item) use ($productCosts) {
+        return (float) $saleItems->sum(function ($item) {
             $quantity = (float) ($item->quantity ?? 1);
 
             if ($item->phone) {
                 return (float) $item->phone->purchase_price * $quantity;
             }
 
-            $unitCost = $productCosts[$item->product_id] ?? $item->unit_cost ?? 0;
+            $unitCost = $item->unit_cost ?? 0;
             return (float) $unitCost * $quantity;
         });
     }
@@ -585,7 +618,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             \Log::info('Query with dates:', ['start' => $startDate, 'end' => $endDate]);
 
             // Build the query with proper date handling
-            $sales = Sale::with(['saleItems.phone.brand'])
+            $sales = Sale::activeTransaction()
+                ->with(['saleItems.phone.brand'])
                 ->where('sale_date', '>=', $startDate . ' 00:00:00')
                 ->where('sale_date', '<=', $endDate . ' 23:59:59')
                 ->orderBy('sale_date', 'desc');
@@ -685,20 +719,24 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             $endDate = $request->get('end_date', Carbon::now()->format('Y-m-d'));
 
             // Use separate queries to avoid ambiguity
-            $totalSalesAmount = Sale::whereDate('sale_date', '>=', $startDate)
+            $totalSalesAmount = Sale::activeTransaction()
+                ->whereDate('sale_date', '>=', $startDate)
                 ->whereDate('sale_date', '<=', $endDate)
                 ->sum('final_amount');
 
-            $totalDiscountAmount = Sale::whereDate('sale_date', '>=', $startDate)
+            $totalDiscountAmount = Sale::activeTransaction()
+                ->whereDate('sale_date', '>=', $startDate)
                 ->whereDate('sale_date', '<=', $endDate)
                 ->sum('discount_amount');
 
-            $totalInstallmentSales = Sale::whereDate('sale_date', '>=', $startDate)
+            $totalInstallmentSales = Sale::activeTransaction()
+                ->whereDate('sale_date', '>=', $startDate)
                 ->whereDate('sale_date', '<=', $endDate)
                 ->where('is_installment', true)
                 ->count();
 
-            $totalFullPaymentSales = Sale::whereDate('sale_date', '>=', $startDate)
+            $totalFullPaymentSales = Sale::activeTransaction()
+                ->whereDate('sale_date', '>=', $startDate)
                 ->whereDate('sale_date', '<=', $endDate)
                 ->where('is_installment', false)
                 ->count();

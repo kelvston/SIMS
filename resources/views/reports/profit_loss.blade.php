@@ -71,6 +71,26 @@
             <span class="report-label">Gross Profit Margin:</span>
             <span class="report-value">{{ number_format($grossProfitMarginPercentage, 2) }}%</span>
         </div>
+        <div class="report-summary-item">
+            <span class="report-label">Accessory Revenue:</span>
+            <span class="report-value">${{ number_format($accessoryRevenue, 2) }}</span>
+        </div>
+        <div class="report-summary-item">
+            <span class="report-label">Accessory COGS:</span>
+            <span class="report-value">${{ number_format($accessoryCostOfGoodsSold, 2) }}</span>
+        </div>
+        <div class="report-summary-item {{ $accessoryGrossProfit >= 0 ? 'positive' : 'negative' }}">
+            <span class="report-label">Accessory Profit/Loss:</span>
+            <span class="report-value">${{ number_format($accessoryGrossProfit, 2) }}</span>
+        </div>
+        <div class="report-summary-item">
+            <span class="report-label">Total Expenses:</span>
+            <span class="report-value">${{ number_format($totalExpenses, 2) }}</span>
+        </div>
+        <div class="report-summary-item text-lg {{ $netProfit >= 0 ? 'positive' : 'negative' }}">
+            <span class="report-label">Net Profit/Loss:</span>
+            <span class="report-value">${{ number_format($netProfit, 2) }}</span>
+        </div>
     </div>
 
     <div class="flex justify-end mt-8">

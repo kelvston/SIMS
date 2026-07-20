@@ -62,6 +62,44 @@
             {{ $stockLevels->links('pagination::tailwind') }}
         </div>
     @endif
+
+    <h2 class="text-2xl font-semibold text-gray-700 mt-10 mb-4">Accessory Stock</h2>
+    @if ($accessoryStocks->isEmpty())
+        <p class="text-center text-gray-600">No accessory stock recorded.</p>
+    @else
+        <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Accessory</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Low Stock Threshold</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selling Price</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                @foreach ($accessoryStocks as $stock)
+                    @php
+                        $currentStock = (int) $stock->current_stock;
+                        $threshold = (int) ($stock->low_stock_threshold ?? 5);
+                    @endphp
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $currentStock }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $threshold }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ number_format($stock->selling_price ?? 0, 2) }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $currentStock <= $threshold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800' }}">
+                                {{ $currentStock <= $threshold ? 'Low Stock' : 'Sufficient' }}
+                            </span>
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
     <div class="flex justify-end mt-8">
         <a href="{{ url('/') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-full transition duration-300 ease-in-out shadow-md">
             Back to Dashboard
