@@ -1,3 +1,169 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    html,
+    body {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+        max-width: 100%;
+    }
+}
+
+@layer components {
+    main .container {
+        width: 100%;
+        max-width: 80rem;
+        padding: 1rem !important;
+        margin-top: 1rem !important;
+    }
+
+    @media (min-width: 640px) {
+        main .container {
+            padding: 1.5rem !important;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        main .container {
+            padding: 2rem !important;
+            margin-top: 2.5rem !important;
+        }
+    }
+
+    main .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    main table {
+        min-width: max-content;
+        width: 100%;
+    }
+
+    main table:not(.responsive-table) {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    main .responsive-table {
+        display: table;
+        min-width: 100%;
+    }
+
+    main th,
+    main td {
+        vertical-align: middle;
+    }
+
+    main td {
+        overflow-wrap: anywhere;
+    }
+
+    main .table-scroll {
+        position: relative;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    main img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    main h1 {
+        overflow-wrap: anywhere;
+    }
+
+    main .pagination,
+    main nav[role="navigation"] {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    @media (max-width: 639px) {
+        main .responsive-table {
+            min-width: 0;
+        }
+
+        main .responsive-table thead {
+            display: none;
+        }
+
+        main .responsive-table,
+        main .responsive-table tbody,
+        main .responsive-table tr,
+        main .responsive-table td {
+            display: block;
+            width: 100%;
+        }
+
+        main .responsive-table tbody {
+            background: transparent;
+        }
+
+        main .responsive-table tr {
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+            border: 1px solid rgb(229 231 235);
+            border-radius: 0.5rem;
+            background: white;
+            box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+        }
+
+        main .responsive-table tr:last-child {
+            margin-bottom: 0;
+        }
+
+        main .responsive-table td {
+            display: grid !important;
+            grid-template-columns: minmax(7.5rem, 42%) minmax(0, 1fr);
+            gap: 0.75rem;
+            align-items: start;
+            padding: 0.75rem 1rem !important;
+            border-bottom: 1px solid rgb(243 244 246);
+            white-space: normal !important;
+        }
+
+        main .responsive-table td:last-child {
+            border-bottom: 0;
+        }
+
+        main .responsive-table td::before {
+            content: attr(data-label);
+            color: rgb(75 85 99);
+            font-size: 0.75rem;
+            font-weight: 700;
+            line-height: 1.25rem;
+            text-transform: uppercase;
+        }
+
+        main .responsive-table td > * {
+            min-width: 0;
+        }
+
+        main .flex.items-center.justify-between {
+            align-items: stretch;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        main .flex.items-center.justify-between > * {
+            min-width: 0;
+        }
+
+        main .flex.items-center.justify-between a,
+        main .flex.items-center.justify-between button {
+            text-align: center;
+        }
+    }
+}

@@ -40,6 +40,41 @@
             color: #6b7280;
             font-size: 0.875rem;
         }
+        .imei-input-group {
+            gap: 0.5rem;
+        }
+        .imei-input-group button {
+            margin-left: 0;
+            flex-shrink: 0;
+        }
+        #imei-camera-panel {
+            border: 1px solid #d1d5db;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background: #111827;
+        }
+        #imei-camera-reader {
+            width: 100%;
+            min-height: 260px;
+            background: #111827;
+        }
+        #imei-camera-reader video {
+            width: 100% !important;
+            max-height: 360px;
+            object-fit: cover;
+        }
+        @media (max-width: 639px) {
+            .imei-input-group {
+                align-items: stretch;
+                flex-wrap: wrap;
+            }
+            .imei-input-group input {
+                flex-basis: 100%;
+            }
+            .imei-input-group button {
+                flex: 1 1 0;
+            }
+        }
     </style>
 <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10">
     <img src="{{ asset('images/watermark.png') }}"
@@ -159,6 +194,7 @@
                 <!-- Initial IMEI input field -->
                 <div class="imei-input-group">
                     <input type="text" name="imeis[]" class="imei-input shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Enter IMEI or scan barcode" autocomplete="off" autofocus>
+                    <button type="button" onclick="startImeiCameraScan(this)" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">Scan</button>
                     <button type="button" onclick="addImeiInput()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">Add</button>
                 </div>
                 @error('imeis')
@@ -167,6 +203,15 @@
                 @error('imeis.*')
                 <p class="text-red-500 text-xs italic">{{ $message }}</p>
                 @enderror
+            </div>
+            <div id="imei-camera-panel" class="hidden mt-4">
+                <div id="imei-camera-reader"></div>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gray-900 p-3">
+                    <p id="imei-camera-status" class="text-sm text-white">Point the camera at the IMEI barcode.</p>
+                    <button type="button" onclick="stopImeiCameraScan()" class="bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                        Stop Scanner
+                    </button>
+                </div>
             </div>
         </div>
         </div>
@@ -241,6 +286,9 @@
     let currentSuggestions = [];
     let currentSuggestionInput = null;
     let dependentModelValue = oldValues.model || '';
+    let imeiHtml5Scanner = null;
+    let imeiScannerRunning = false;
+    let activeImeiScanInput = null;
 
     function optionMatchesSearch(optionValue, searchValue) {
         return String(optionValue || '').toLowerCase().includes(String(searchValue || '').toLowerCase());
@@ -495,6 +543,7 @@
         div.className = 'imei-input-group';
         div.innerHTML = `
                 <input type="text" name="imeis[]" class="imei-input shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Enter IMEI or scan barcode" autocomplete="off">
+                <button type="button" onclick="startImeiCameraScan(this)" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">Scan</button>
                 <button type="button" onclick="removeImeiInput(this)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">Remove</button>
             `;
         container.appendChild(div);
@@ -538,6 +587,132 @@
         }
 
         allInputs[currentIndex + 1]?.focus();
+    }
+
+    function setImeiCameraStatus(message, isError = false) {
+        const statusElement = document.getElementById('imei-camera-status');
+        statusElement.textContent = message;
+        statusElement.className = `text-sm ${isError ? 'text-red-200' : 'text-white'}`;
+    }
+
+    function activeImeiInputFromButton(button) {
+        return button.closest('.imei-input-group')?.querySelector('input[name="imeis[]"]') || null;
+    }
+
+    async function startImeiCameraScan(button) {
+        activeImeiScanInput = activeImeiInputFromButton(button);
+
+        if (!activeImeiScanInput) {
+            setImeiScanMessage('Choose an IMEI input before scanning.', true);
+            return;
+        }
+
+        if (!window.Html5Qrcode || !window.Html5QrcodeSupportedFormats) {
+            setImeiScanMessage('Camera scanner is still loading. Refresh the page and try again.', true);
+            return;
+        }
+
+        if (!('mediaDevices' in navigator) || !navigator.mediaDevices.getUserMedia) {
+            setImeiScanMessage('Camera access is not supported in this browser.', true);
+            return;
+        }
+
+        try {
+            await stopImeiCameraScan(false);
+
+            const panel = document.getElementById('imei-camera-panel');
+            panel.classList.remove('hidden');
+            setImeiCameraStatus('Starting camera...');
+
+            imeiHtml5Scanner = new Html5Qrcode('imei-camera-reader', {
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.EAN_8,
+                    Html5QrcodeSupportedFormats.UPC_A,
+                    Html5QrcodeSupportedFormats.UPC_E,
+                    Html5QrcodeSupportedFormats.QR_CODE,
+                ],
+            });
+
+            await imeiHtml5Scanner.start(
+                { facingMode: 'environment' },
+                {
+                    fps: 10,
+                    qrbox: function(viewfinderWidth, viewfinderHeight) {
+                        return {
+                            width: Math.min(320, Math.floor(viewfinderWidth * 0.85)),
+                            height: Math.min(160, Math.floor(viewfinderHeight * 0.45)),
+                        };
+                    },
+                    aspectRatio: 1.777778,
+                },
+                function(decodedText) {
+                    handleCameraImei(decodedText);
+                },
+                function() {
+                    // Decode misses are normal while the camera is moving.
+                }
+            );
+
+            imeiScannerRunning = true;
+            setImeiCameraStatus('Point the camera at the IMEI barcode.');
+        } catch (error) {
+            await stopImeiCameraScan(false);
+            setImeiScanMessage('Could not start camera. Check browser permission and make sure the site uses HTTPS in production.', true);
+        }
+    }
+
+    async function stopImeiCameraScan(clearInput = true) {
+        if (imeiHtml5Scanner) {
+            try {
+                if (imeiScannerRunning) {
+                    await imeiHtml5Scanner.stop();
+                }
+                await imeiHtml5Scanner.clear();
+            } catch (error) {
+                // The scanner can throw if it is stopped while still starting.
+            }
+        }
+
+        const panel = document.getElementById('imei-camera-panel');
+
+        imeiHtml5Scanner = null;
+        imeiScannerRunning = false;
+
+        if (panel) {
+            panel.classList.add('hidden');
+        }
+
+        if (clearInput) {
+            activeImeiScanInput = null;
+        }
+    }
+
+    function handleCameraImei(value) {
+        const normalizedImei = normalizeImei(value);
+
+        if (!normalizedImei || !activeImeiScanInput || !imeiScannerRunning) {
+            return;
+        }
+
+        imeiScannerRunning = false;
+        activeImeiScanInput.value = normalizedImei;
+
+        const duplicateCount = enteredImeis().filter(imei => imei === normalizedImei).length;
+        if (duplicateCount > 1) {
+            setImeiScanMessage(`IMEI ${normalizedImei} is already scanned.`, true);
+            activeImeiScanInput.value = '';
+            activeImeiScanInput.focus();
+            void stopImeiCameraScan();
+            return;
+        }
+
+        setImeiScanMessage(`Scanned IMEI ${normalizedImei}.`);
+        const completedInput = activeImeiScanInput;
+        void stopImeiCameraScan();
+        focusNextImeiInput(completedInput);
     }
 
     // Optional: Handle barcode scanner input (simulates pressing Enter after scan)

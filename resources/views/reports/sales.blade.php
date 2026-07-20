@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10">
+<div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative">
     <img src="{{ asset('images/watermark.png') }}"
          alt="Watermark"
          class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
@@ -9,19 +9,19 @@
     <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Sales Report</h1>
 
     <!-- Date Filter Form -->
-    <form action="{{ route('reports.sales') }}" method="GET" class="mb-6 p-4 bg-gray-50 rounded-lg shadow-sm flex flex-wrap items-center justify-center gap-4">
-        <div class="flex items-center gap-2">
+    <form action="{{ route('reports.sales') }}" method="GET" class="mb-6 p-4 bg-gray-50 rounded-lg shadow-sm flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center sm:justify-center gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <label for="start_date" class="text-gray-700 text-sm font-bold">Start Date:</label>
-            <input type="date" name="start_date" id="start_date" class="shadow-sm border rounded py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ $startDate }}">
+            <input type="date" name="start_date" id="start_date" class="w-full sm:w-auto shadow-sm border rounded py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ $startDate }}">
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <label for="end_date" class="text-gray-700 text-sm font-bold">End Date:</label>
-            <input type="date" name="end_date" id="end_date" class="shadow-sm border rounded py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ $endDate }}">
+            <input type="date" name="end_date" id="end_date" class="w-full sm:w-auto shadow-sm border rounded py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ $endDate }}">
         </div>
-        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
+        <button type="submit" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
             Apply Filter
         </button>
-        <a href="{{ route('reports.sales') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
+        <a href="{{ route('reports.sales') }}" class="w-full sm:w-auto text-center bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
             Clear Filter
         </a>
     </form>
@@ -49,8 +49,8 @@
     @if ($sales->isEmpty())
         <p class="text-center text-gray-600">No sales found for the selected period.</p>
     @else
-        <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-            <table class="min-w-full divide-y divide-gray-200">
+        <div class="table-scroll sm:rounded-lg sm:border sm:border-gray-200 sm:shadow-sm">
+            <table class="responsive-table min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale ID</th>
@@ -64,9 +64,9 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                 @foreach ($sales as $sale)
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->id }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->customer_name }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">
+                        <td data-label="Sale ID" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->id }}</td>
+                        <td data-label="Customer Name" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->customer_name }}</td>
+                        <td data-label="Items Sold" class="px-6 py-4 text-sm text-gray-900">
                             <ul class="list-disc list-inside">
                                 @foreach ($sale->saleItems as $item)
                                     <li>
@@ -81,9 +81,9 @@
                                 @endforeach
                             </ul>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ number_format($sale->final_amount, 2) }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->sale_date->format('Y-m-d H:i') }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td data-label="Final Amount" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ number_format($sale->final_amount, 2) }}</td>
+                        <td data-label="Sale Date" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->sale_date->format('Y-m-d H:i') }}</td>
+                        <td data-label="Type" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                         @if($sale->is_installment) bg-yellow-100 text-yellow-800
                                         @else bg-blue-100 text-blue-800 @endif">

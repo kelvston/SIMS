@@ -4,7 +4,7 @@
 @section('subtitle', 'View, create, edit, and delete phone brands.')
 
 @section('content')
-    <div class="container mx-auto bg-white p-8 rounded-lg shadow-md">
+    <div class="container mx-auto bg-white p-8 rounded-lg shadow-md relative">
         <img src="{{ asset('images/watermark.png') }}"
              alt="Watermark"
              class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
@@ -34,8 +34,8 @@
         @if ($brands->isEmpty())
             <p class="text-center text-gray-600">No brands found. Start by creating a new brand!</p>
         @else
-            <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-                <table class="min-w-full divide-y divide-gray-200">
+            <div class="table-scroll sm:rounded-lg sm:border sm:border-gray-200 sm:shadow-sm">
+                <table class="responsive-table min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
@@ -47,16 +47,18 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                     @foreach ($brands as $brand)
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $brand->id }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $brand->name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $brand->created_at->format('Y-m-d H:i') }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <a href="{{ route('brands.edit', $brand->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                                <form action="{{ route('brands.destroy', $brand->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this brand? This will also delete all associated phones due to cascade delete in migrations.');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
-                                </form>
+                            <td data-label="ID" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $brand->id }}</td>
+                            <td data-label="Brand Name" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $brand->name }}</td>
+                            <td data-label="Created At" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $brand->created_at->format('Y-m-d H:i') }}</td>
+                            <td data-label="Actions" class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex flex-wrap gap-3">
+                                    <a href="{{ route('brands.edit', $brand->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                    <form action="{{ route('brands.destroy', $brand->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this brand? This will also delete all associated phones due to cascade delete in migrations.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @endforeach

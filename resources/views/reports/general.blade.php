@@ -24,13 +24,14 @@
         body { font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif; background: var(--surface); color: var(--text); }
 
         /* ── Page Shell ─────────────────────────────────────────── */
-        .rpt-wrapper { max-width: 1400px; margin: 0 auto; padding: 28px 24px 60px; }
+        .rpt-wrapper { max-width: 1400px; margin: 0 auto; padding: 16px 0 40px; }
+        @media(min-width:640px){ .rpt-wrapper { padding: 28px 24px 60px; } }
 
         /* ── Hero Header ────────────────────────────────────────── */
         .rpt-hero {
             background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 60%, #e67e00 100%);
             border-radius: 20px;
-            padding: 36px 40px;
+            padding: 24px 18px;
             margin-bottom: 28px;
             position: relative;
             overflow: hidden;
@@ -42,7 +43,8 @@
             background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
         .rpt-hero-content { position: relative; z-index: 1; }
-        .rpt-hero h1 { font-size: 28px; font-weight: 700; margin: 0 0 6px; letter-spacing: -0.5px; }
+        @media(min-width:640px){ .rpt-hero { padding: 36px 40px; } }
+        .rpt-hero h1 { font-size: clamp(22px, 5vw, 28px); font-weight: 700; margin: 0 0 6px; letter-spacing: -0.5px; }
         .rpt-hero p  { font-size: 14px; opacity: 0.7; margin: 0; }
         .rpt-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 0; }
 
@@ -97,7 +99,7 @@
         /* ── KPI Grid ───────────────────────────────────────────── */
         .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
         @media(max-width:900px){ .kpi-grid{ grid-template-columns: repeat(2,1fr); } }
-        @media(max-width:500px){ .kpi-grid{ grid-template-columns: 1fr 1fr; } }
+        @media(max-width:500px){ .kpi-grid{ grid-template-columns: 1fr; } }
 
         .kpi-card {
             background: var(--white); border: 1px solid var(--border);
@@ -149,8 +151,9 @@
         /* ── Report Panel ───────────────────────────────────────── */
         .rpt-panel {
             background: var(--white); border: 1px solid var(--border);
-            border-radius: 16px; overflow: hidden;
+            border-radius: 16px; overflow-x: auto;
             box-shadow: 0 1px 4px rgba(0,0,0,.04);
+            -webkit-overflow-scrolling: touch;
         }
         .rpt-panel-header {
             padding: 16px 22px; border-bottom: 1px solid var(--border);
@@ -163,7 +166,7 @@
         }
 
         /* ── Data Tables ────────────────────────────────────────── */
-        .rpt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .rpt-table { width: 100%; min-width: max-content; border-collapse: collapse; font-size: 13px; }
         .rpt-table thead th {
             padding: 10px 16px; text-align: left;
             font-size: 11px; font-weight: 700; letter-spacing: .8px;

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10">
+<div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative">
     <img src="{{ asset('images/watermark.png') }}"
          alt="Watermark"
          class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
@@ -31,8 +31,8 @@
     @if ($users->isEmpty())
         <p class="text-center text-gray-600">No users found.</p>
     @else
-        <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-            <table class="min-w-full divide-y divide-gray-200">
+        <div class="table-scroll sm:rounded-lg sm:border sm:border-gray-200 sm:shadow-sm">
+            <table class="responsive-table min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
@@ -45,10 +45,10 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                 @foreach ($users as $user)
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->name }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->email }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->phone_number ?? 'N/A' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td data-label="Name" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->name }}</td>
+                        <td data-label="Email" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->email }}</td>
+                        <td data-label="Phone Number" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->phone_number ?? 'N/A' }}</td>
+                        <td data-label="Roles" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             @forelse ($user->getRoleNames() as $role)
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                                             {{ $role }}
@@ -57,13 +57,15 @@
                                 <span class="text-gray-500">No Roles</span>
                             @endforelse
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="{{ route('users.edit', $user->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                            <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this user?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
-                            </form>
+                        <td data-label="Actions" class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex flex-wrap gap-3">
+                                <a href="{{ route('users.edit', $user->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 @endforeach
@@ -80,4 +82,5 @@
             Back to Dashboard
         </a>
     </div>
+</div>
 @endsection

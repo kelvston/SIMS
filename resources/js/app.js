@@ -5,8 +5,11 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import Chart from 'chart.js/auto';
 import jQuery from 'jquery';
 import Swal from 'sweetalert2';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 window.$ = window.jQuery = jQuery;
 window.Swal = Swal;
+window.Html5Qrcode = Html5Qrcode;
+window.Html5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 
 // Import DataTables
 import 'datatables.net-bs5';

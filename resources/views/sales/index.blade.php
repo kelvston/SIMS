@@ -44,8 +44,8 @@
         @if ($sales->isEmpty())
             <p class="text-center text-gray-600">No sales recorded yet. Start by creating a new sale!</p>
         @else
-            <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-                <table class="min-w-full divide-y divide-gray-200 table-auto"> <!-- Added table-auto -->
+            <div class="table-scroll sm:rounded-lg sm:border sm:border-gray-200 sm:shadow-sm">
+                <table class="responsive-table min-w-full divide-y divide-gray-200 table-auto"> <!-- Added table-auto -->
                     <thead class="bg-gray-50">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale ID</th>
@@ -61,9 +61,9 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                     @foreach ($sales as $sale)
                         <tr class="{{ $sale->is_voided ? 'bg-red-50' : '' }}">
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $sale->id }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $sale->customer_name }}</td>
-                            <td class="px-4 py-3 text-sm text-gray-900">
+                            <td data-label="Sale ID" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $sale->id }}</td>
+                            <td data-label="Customer Name" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $sale->customer_name }}</td>
+                            <td data-label="Items Sold" class="px-4 py-3 text-sm text-gray-900">
                                 <ul class="list-disc list-inside">
                                     @foreach ($sale->saleItems as $item)
                                         @if($item->phone)
@@ -76,16 +76,16 @@
                                     @endforeach
                                 </ul>
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${{ number_format($sale->final_amount, 2) }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $sale->sale_date->format('Y-m-d H:i') }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td data-label="Final Amount" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${{ number_format($sale->final_amount, 2) }}</td>
+                            <td data-label="Sale Date" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $sale->sale_date->format('Y-m-d H:i') }}</td>
+                            <td data-label="Type" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                     @if($sale->is_installment) bg-yellow-100 text-yellow-800
                                     @else bg-blue-100 text-blue-800 @endif">
                                     {{ $sale->is_installment ? 'Installment' : 'Full Payment' }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td data-label="Status" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                 @if($sale->is_voided)
                                     <div class="space-y-1">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Voided</span>
@@ -100,7 +100,7 @@
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                            <td data-label="Actions" class="px-4 py-3 whitespace-nowrap text-sm font-medium">
                                 <a href="{{ route('sales.show', $sale->id) }}" class="text-indigo-600 hover:text-indigo-900">View Details</a>
                             </td>
                         </tr>

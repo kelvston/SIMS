@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10">
+<div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative">
     <img src="{{ asset('images/watermark.png') }}"
          alt="Watermark"
          class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
@@ -23,8 +23,8 @@
     @if ($stockLevels->isEmpty())
         <p class="text-center text-gray-600">No stock levels recorded.</p>
     @else
-        <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-            <table class="min-w-full divide-y divide-gray-200">
+        <div class="table-scroll sm:rounded-lg sm:border sm:border-gray-200 sm:shadow-sm">
+            <table class="responsive-table min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
@@ -39,19 +39,19 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                 @foreach ($stockLevels as $stock)
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->brand->name ?? 'N/A' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->model }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->color }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->current_stock }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->low_stock_threshold }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td data-label="Brand" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->brand->name ?? 'N/A' }}</td>
+                        <td data-label="Model" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->model }}</td>
+                        <td data-label="Color" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->color }}</td>
+                        <td data-label="Current Stock" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->current_stock }}</td>
+                        <td data-label="Low Stock Threshold" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->low_stock_threshold }}</td>
+                        <td data-label="Status" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                         @if($stock->current_stock <= $stock->low_stock_threshold) bg-red-100 text-red-800
                                         @else bg-green-100 text-green-800 @endif">
                                         {{ $stock->current_stock <= $stock->low_stock_threshold ? 'Low Stock' : 'Sufficient' }}
                                     </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->last_updated_at->format('Y-m-d H:i') }}</td>
+                        <td data-label="Last Updated" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->last_updated_at->format('Y-m-d H:i') }}</td>
                     </tr>
                 @endforeach
                 </tbody>
@@ -67,8 +67,8 @@
     @if ($accessoryStocks->isEmpty())
         <p class="text-center text-gray-600">No accessory stock recorded.</p>
     @else
-        <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-            <table class="min-w-full divide-y divide-gray-200">
+        <div class="table-scroll sm:rounded-lg sm:border sm:border-gray-200 sm:shadow-sm">
+            <table class="responsive-table min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Accessory</th>
@@ -85,11 +85,11 @@
                         $threshold = (int) ($stock->low_stock_threshold ?? 5);
                     @endphp
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->name }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $currentStock }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $threshold }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ number_format($stock->selling_price ?? 0, 2) }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td data-label="Accessory" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->name }}</td>
+                        <td data-label="Current Stock" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $currentStock }}</td>
+                        <td data-label="Low Stock Threshold" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $threshold }}</td>
+                        <td data-label="Selling Price" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ number_format($stock->selling_price ?? 0, 2) }}</td>
+                        <td data-label="Status" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $currentStock <= $threshold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800' }}">
                                 {{ $currentStock <= $threshold ? 'Low Stock' : 'Sufficient' }}
                             </span>
@@ -105,4 +105,5 @@
             Back to Dashboard
         </a>
     </div>
+</div>
 @endsection

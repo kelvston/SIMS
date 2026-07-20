@@ -34,8 +34,8 @@
         @if ($phones->isEmpty())
             <p class="text-center text-gray-600">No phones found in inventory. Start by receiving new phones!</p>
         @else
-            <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-                <table class="min-w-full divide-y divide-gray-200 table-auto"> <!-- Added table-auto for better layout -->
+            <div class="table-scroll sm:rounded-lg sm:border sm:border-gray-200 sm:shadow-sm">
+                <table class="responsive-table min-w-full divide-y divide-gray-200 table-auto"> <!-- Added table-auto for better layout -->
                     <thead class="bg-gray-50">
                     <tr>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IMEI</th> <!-- reduced px to 4 -->
@@ -63,21 +63,21 @@
                             };
                         @endphp
                         <tr>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->imei }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->brand->name ?? 'N/A' }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->model }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->color }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->storage_capacity }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ number_format($phone->purchase_price, 2) }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ number_format($phone->selling_price, 2) }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td data-label="IMEI" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->imei }}</td>
+                            <td data-label="Brand" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->brand->name ?? 'N/A' }}</td>
+                            <td data-label="Model" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->model }}</td>
+                            <td data-label="Color" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->color }}</td>
+                            <td data-label="Storage" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->storage_capacity }}</td>
+                            <td data-label="Buying Price (TZS)" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ number_format($phone->purchase_price, 2) }}</td>
+                            <td data-label="Selling Price (TZS)" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ number_format($phone->selling_price, 2) }}</td>
+                            <td data-label="Status" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusClasses }}">
                                 {{ ucfirst(str_replace('_', ' ', $phone->status)) }}
                             </span>
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ optional($phone->received_at)->format('Y-m-d H:i') ?? 'N/A' }}</td>
+                            <td data-label="Received At" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ optional($phone->received_at)->format('Y-m-d H:i') ?? 'N/A' }}</td>
                             @if(auth()->check() && auth()->user()->hasAnyPermission(['edit phones', 'delete phones']))
-                                <td class="px-4 py-2 flex gap-2">
+                                <td data-label="Actions" class="px-4 py-2 text-sm text-gray-900">
                                     @php
                                         $isReadOnly = in_array($phone->status, ['sold', 'under_installment'], true) || $phone->saleItem;
                                     @endphp
@@ -85,23 +85,25 @@
                                     @if($isReadOnly)
                                         <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">View only</span>
                                     @else
-                                        @can('edit phones')
-                                            <a href="{{ route('phones.edit', $phone->id) }}"
-                                               class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
-                                                Edit
-                                            </a>
-                                        @endcan
+                                        <div class="flex flex-wrap gap-2">
+                                            @can('edit phones')
+                                                <a href="{{ route('phones.edit', $phone->id) }}"
+                                                   class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                                                    Edit
+                                                </a>
+                                            @endcan
 
-                                        @can('delete phones')
-                                            <button type="button" onclick="confirmDelete({{ $phone->id }})" class="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700">
-                                                Delete
-                                            </button>
+                                            @can('delete phones')
+                                                <button type="button" onclick="confirmDelete({{ $phone->id }})" class="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700">
+                                                    Delete
+                                                </button>
 
-                                            <form id="delete-form-{{ $phone->id }}" action="{{ route('phones.destroy', $phone->id) }}" method="POST" style="display:none;">
-                                                @csrf
-                                                @method('DELETE')
-                                            </form>
-                                        @endcan
+                                                <form id="delete-form-{{ $phone->id }}" action="{{ route('phones.destroy', $phone->id) }}" method="POST" style="display:none;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                </form>
+                                            @endcan
+                                        </div>
                                     @endif
                                 </td>
                             @endif
@@ -120,8 +122,8 @@
         @if ($accessories->isEmpty())
             <p class="text-center text-gray-600">No accessories found in inventory. Receive accessories from the inventory receiving page.</p>
         @else
-            <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-                <table class="min-w-full divide-y divide-gray-200 table-auto">
+            <div class="table-scroll sm:rounded-lg sm:border sm:border-gray-200 sm:shadow-sm">
+                <table class="responsive-table min-w-full divide-y divide-gray-200 table-auto">
                     <thead class="bg-gray-50">
                     <tr>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Accessory</th>
@@ -143,18 +145,18 @@
                             $threshold = (int) ($accessory->low_stock_threshold ?? 5);
                         @endphp
                         <tr>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $accessory->name }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $currentStock }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ number_format($accessory->unit_price ?? 0, 2) }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ number_format($accessory->selling_price ?? 0, 2) }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $threshold }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td data-label="Accessory" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $accessory->name }}</td>
+                            <td data-label="Current Stock" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $currentStock }}</td>
+                            <td data-label="Buying Price (TZS)" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ number_format($accessory->unit_price ?? 0, 2) }}</td>
+                            <td data-label="Selling Price (TZS)" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ number_format($accessory->selling_price ?? 0, 2) }}</td>
+                            <td data-label="Low Stock Threshold" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $threshold }}</td>
+                            <td data-label="Status" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $currentStock <= $threshold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800' }}">
                                     {{ $currentStock <= $threshold ? 'Low Stock' : 'Available' }}
                                 </span>
                             </td>
                             @can('edit phones')
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                <td data-label="Actions" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                     <a href="{{ route('accessories.edit', $accessory->id) }}"
                                        class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
                                         Edit
