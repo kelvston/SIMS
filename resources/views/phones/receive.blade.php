@@ -60,7 +60,7 @@
         }
         #imei-camera-reader video {
             width: 100% !important;
-            max-height: 360px;
+            min-height: 320px;
             object-fit: cover;
         }
         @media (max-width: 639px) {
@@ -642,16 +642,17 @@
             });
 
             await imeiHtml5Scanner.start(
-                { facingMode: 'environment' },
                 {
-                    fps: 10,
-                    qrbox: function(viewfinderWidth, viewfinderHeight) {
-                        return {
-                            width: Math.min(320, Math.floor(viewfinderWidth * 0.85)),
-                            height: Math.min(160, Math.floor(viewfinderHeight * 0.45)),
-                        };
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                },
+                {
+                    fps: 15,
+                    disableFlip: true,
+                    experimentalFeatures: {
+                        useBarCodeDetectorIfSupported: true,
                     },
-                    aspectRatio: 1.777778,
                 },
                 function(decodedText, decodedResult) {
                     handleCameraImei(decodedText, decodedResult);
