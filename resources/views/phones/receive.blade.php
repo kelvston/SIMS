@@ -625,6 +625,9 @@
             setImeiCameraStatus('Starting camera...');
 
             imeiHtml5Scanner = new Html5Qrcode('imei-camera-reader', {
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true,
+                },
                 formatsToSupport: [
                     Html5QrcodeSupportedFormats.CODE_128,
                     Html5QrcodeSupportedFormats.CODE_39,
@@ -641,26 +644,39 @@
                 ],
             });
 
-            await imeiHtml5Scanner.start(
-                {
-                    facingMode: { ideal: 'environment' },
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
-                },
-                {
-                    fps: 15,
-                    disableFlip: true,
-                    experimentalFeatures: {
-                        useBarCodeDetectorIfSupported: true,
+            const onScanSuccess = function(decodedText, decodedResult) {
+                handleCameraImei(decodedText, decodedResult);
+            };
+            const onScanMiss = function() {
+                // Decode misses are normal while the camera is moving.
+            };
+
+            try {
+                await imeiHtml5Scanner.start(
+                    { facingMode: 'environment' },
+                    {
+                        fps: 15,
+                        disableFlip: true,
+                        videoConstraints: {
+                            facingMode: 'environment',
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 },
+                        },
                     },
-                },
-                function(decodedText, decodedResult) {
-                    handleCameraImei(decodedText, decodedResult);
-                },
-                function() {
-                    // Decode misses are normal while the camera is moving.
-                }
-            );
+                    onScanSuccess,
+                    onScanMiss
+                );
+            } catch (cameraError) {
+                await imeiHtml5Scanner.start(
+                    { facingMode: 'environment' },
+                    {
+                        fps: 10,
+                        disableFlip: true,
+                    },
+                    onScanSuccess,
+                    onScanMiss
+                );
+            }
 
             imeiScannerRunning = true;
             setImeiCameraStatus('Point the camera at the IMEI barcode.');
