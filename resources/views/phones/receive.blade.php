@@ -57,11 +57,34 @@
             width: 100%;
             min-height: 260px;
             background: #111827;
+            position: relative;
         }
         #imei-camera-reader video {
             width: 100% !important;
             min-height: 320px;
             object-fit: cover;
+        }
+        .imei-camera-guide {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: min(88%, 520px);
+            height: 118px;
+            transform: translate(-50%, -50%);
+            border: 3px solid rgba(34, 197, 94, 0.95);
+            border-radius: 0.75rem;
+            box-shadow: 0 0 0 9999px rgba(17, 24, 39, 0.28);
+            pointer-events: none;
+            z-index: 20;
+        }
+        .imei-camera-guide::before {
+            content: "";
+            position: absolute;
+            left: 10%;
+            right: 10%;
+            top: 50%;
+            border-top: 2px solid rgba(239, 68, 68, 0.95);
+            transform: translateY(-50%);
         }
         @media (max-width: 639px) {
             .imei-input-group {
@@ -205,7 +228,9 @@
                 @enderror
             </div>
             <div id="imei-camera-panel" class="hidden mt-4">
-                <div id="imei-camera-reader"></div>
+                <div id="imei-camera-reader">
+                    <div class="imei-camera-guide"></div>
+                </div>
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gray-900 p-3">
                     <p id="imei-camera-status" class="text-sm text-white">Point the camera at the IMEI barcode.</p>
                     <button type="button" onclick="stopImeiCameraScan()" class="bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
@@ -657,6 +682,12 @@
                     {
                         fps: 15,
                         disableFlip: true,
+                        qrbox: function(viewfinderWidth, viewfinderHeight) {
+                            return {
+                                width: Math.min(520, Math.floor(viewfinderWidth * 0.88)),
+                                height: Math.min(140, Math.floor(viewfinderHeight * 0.34)),
+                            };
+                        },
                         videoConstraints: {
                             facingMode: 'environment',
                             width: { ideal: 1280 },
@@ -672,6 +703,12 @@
                     {
                         fps: 10,
                         disableFlip: true,
+                        qrbox: function(viewfinderWidth, viewfinderHeight) {
+                            return {
+                                width: Math.min(520, Math.floor(viewfinderWidth * 0.88)),
+                                height: Math.min(140, Math.floor(viewfinderHeight * 0.34)),
+                            };
+                        },
                     },
                     onScanSuccess,
                     onScanMiss
