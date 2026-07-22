@@ -18,6 +18,7 @@ use Spatie\Permission\Exceptions\UnauthorizedException; // Import for better err
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Mail\SaleReceiptMail;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 
 class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\Http\Controllers\Controller
 {
@@ -37,12 +38,21 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             ->orderBy('sale_date', 'desc')
             ->paginate(5);
 
+        $creditReminderSales = Sale::activeTransaction()
+            ->where('payment_option', 'credit')
+            ->where('amount_due', '>', 0)
+            ->whereNotNull('credit_due_date')
+            ->whereDate('credit_due_date', '<=', now()->addDays(30)->toDateString())
+            ->orderBy('credit_due_date')
+            ->get()
+            ->filter(fn (Sale $sale) => $sale->credit_reminder_status !== null);
+
 
         \Artisan::call('stock:check-low'); // Run the command
 
         $lowStockAlerts = Cache::pull('low_stock_alerts', []);
 
-        return view('sales.index', compact('sales','lowStockAlerts'));
+        return view('sales.index', compact('sales', 'lowStockAlerts', 'creditReminderSales'));
 
 
 
@@ -98,6 +108,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 ->values()
                 ->all(),
             'discount_amount' => $request->filled('discount_amount') ? $request->input('discount_amount') : 0,
+            'payment_option' => $request->input('payment_option', $request->boolean('is_installment') ? 'installment' : 'cash'),
         ]);
 
         // Validate the request data
@@ -111,10 +122,14 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             'accessories.*.product_id' => 'required|exists:products,id',
             'accessories.*.quantity' => 'required|integer|min:1',
             'discount_amount' => 'nullable|numeric|min:0',
+            'payment_option' => ['required', Rule::in(['cash', 'installment', 'credit'])],
             'is_installment' => 'boolean',
-            'total_installments' => 'required_if:is_installment,1|nullable|integer|min:1',
-            'installment_amount' => 'required_if:is_installment,1|nullable|numeric|min:0.01',
-            'start_date' => 'required_if:is_installment,1|nullable|date',
+            'total_installments' => 'required_if:payment_option,installment|nullable|integer|min:1',
+            'installment_amount' => 'required_if:payment_option,installment|nullable|numeric|min:0.01',
+            'start_date' => 'required_if:payment_option,installment|nullable|date',
+            'credit_due_date' => 'required_if:payment_option,credit|nullable|date|after_or_equal:today',
+            'credit_paid_amount' => 'nullable|numeric|min:0',
+            'credit_reminder_days' => 'nullable|integer|min:0|max:30',
         ]);
 
         try {
@@ -220,10 +235,22 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 ]);
             }
 
-            $isInstallment = $request->boolean('is_installment');
-            $paidAmountCents = $isInstallment
-                ? $this->moneyToCents($request->installment_amount)
-                : $finalAmountCents;
+            $paymentOption = $request->input('payment_option');
+            $isInstallment = $paymentOption === 'installment';
+            $isCredit = $paymentOption === 'credit';
+            $paidAmountCents = match ($paymentOption) {
+                'installment' => $this->moneyToCents($request->installment_amount),
+                'credit' => $this->moneyToCents($request->input('credit_paid_amount', 0)),
+                default => $finalAmountCents,
+            };
+
+            if ($paidAmountCents > $finalAmountCents) {
+                $paidField = $isInstallment ? 'installment_amount' : 'credit_paid_amount';
+
+                throw ValidationException::withMessages([
+                    $paidField => ['Paid amount cannot exceed the final sale amount.'],
+                ]);
+            }
 
             if ($isInstallment) {
                 $installmentTotalCents = $this->moneyToCents($request->installment_amount) * (int) $request->total_installments;
@@ -253,7 +280,9 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 'is_installment' => $isInstallment,
                 'amount_paid' => $paidAmount,
                 'amount_due' => $amountDue,
-                'payment_option' => $isInstallment ? 'installment' : 'cash',
+                'payment_option' => $paymentOption,
+                'credit_due_date' => $isCredit ? $request->credit_due_date : null,
+                'credit_reminder_days' => $isCredit ? (int) $request->input('credit_reminder_days', 3) : 3,
                 'status' => 'completed',
             ]);
 
@@ -311,7 +340,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 'total' => $finalAmount,
                 'is_installment' => $isInstallment,
                 'paid_amount' => $paidAmount,
-                'payment_method' => 'cash',
+                'payment_method' => $isCredit ? 'credit' : 'cash',
                 'status' => $paidAmountCents <= 0 ? 'unpaid' : ($paidAmountCents < $finalAmountCents ? 'partial' : 'paid'),
                 'notes' => null,
             ]);

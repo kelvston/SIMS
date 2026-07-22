@@ -41,6 +41,21 @@
             </div>
         @endif
 
+        @if ($creditReminderSales->isNotEmpty())
+            <div class="bg-amber-50 border border-amber-300 text-amber-900 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">Credit sale reminders:</strong>
+                <ul class="mt-2 list-disc list-inside text-sm">
+                    @foreach ($creditReminderSales as $creditSale)
+                        <li>
+                            Sale #{{ $creditSale->id }} for {{ $creditSale->customer_name }}
+                            has ${{ number_format($creditSale->amount_due, 2) }} due on {{ $creditSale->credit_due_date->format('Y-m-d') }}.
+                            <a href="{{ route('sales.show', $creditSale->id) }}" class="font-semibold underline">View</a>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         @if ($sales->isEmpty())
             <p class="text-center text-gray-600">No sales recorded yet. Start by creating a new sale!</p>
         @else
@@ -80,10 +95,22 @@
                             <td data-label="Sale Date" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $sale->sale_date->format('Y-m-d H:i') }}</td>
                             <td data-label="Type" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                    @if($sale->is_installment) bg-yellow-100 text-yellow-800
+                                    @if($sale->is_credit) bg-purple-100 text-purple-800
+                                    @elseif($sale->is_installment) bg-yellow-100 text-yellow-800
                                     @else bg-blue-100 text-blue-800 @endif">
-                                    {{ $sale->is_installment ? 'Installment' : 'Full Payment' }}
+                                    {{ $sale->sale_type_label }}
                                 </span>
+                                @if($sale->is_credit && $sale->credit_due_date)
+                                    <div class="text-xs mt-1
+                                        @if($sale->credit_reminder_status === 'overdue') text-red-700
+                                        @elseif($sale->credit_reminder_status === 'due_soon') text-amber-700
+                                        @else text-gray-500 @endif">
+                                        Due {{ $sale->credit_due_date->format('Y-m-d') }}
+                                        @if((float) $sale->amount_due > 0)
+                                            - ${{ number_format($sale->amount_due, 2) }}
+                                        @endif
+                                    </div>
+                                @endif
                             </td>
                             <td data-label="Status" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                 @if($sale->is_voided)

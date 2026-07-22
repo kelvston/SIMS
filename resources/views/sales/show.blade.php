@@ -62,9 +62,10 @@
             <div class="detail-item"><span class="detail-label">Sale Type:</span>
                 <span class="detail-value">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                    @if($sale->is_installment) bg-yellow-100 text-yellow-800
+                    @if($sale->is_credit) bg-purple-100 text-purple-800
+                    @elseif($sale->is_installment) bg-yellow-100 text-yellow-800
                     @else bg-blue-100 text-blue-800 @endif">
-                    {{ $sale->is_installment ? 'Installment' : 'Full Payment' }}
+                    {{ $sale->sale_type_label }}
                 </span>
             </span>
             </div>
@@ -76,6 +77,18 @@
             <div class="detail-item"><span class="detail-label">Total Amount (Before Discount):</span> <span class="detail-value">${{ number_format($sale->total_amount, 2) }}</span></div>
             <div class="detail-item"><span class="detail-label">Discount Applied:</span> <span class="detail-value">${{ number_format($sale->discount_amount, 2) }}</span></div>
             <div class="detail-item font-bold text-lg"><span class="detail-label">Final Amount:</span> <span class="detail-value">${{ number_format($sale->final_amount, 2) }}</span></div>
+            <div class="detail-item"><span class="detail-label">Amount Paid:</span> <span class="detail-value">${{ number_format($sale->amount_paid, 2) }}</span></div>
+            <div class="detail-item"><span class="detail-label">Amount Due:</span> <span class="detail-value">${{ number_format($sale->amount_due, 2) }}</span></div>
+            @if($sale->is_credit)
+                <div class="detail-item"><span class="detail-label">Credit Due Date:</span> <span class="detail-value">{{ optional($sale->credit_due_date)->format('Y-m-d') ?? 'N/A' }}</span></div>
+                @if($sale->credit_reminder_status)
+                    <div class="mt-4 p-4 rounded border
+                        @if($sale->credit_reminder_status === 'overdue') bg-red-50 border-red-200 text-red-800
+                        @else bg-amber-50 border-amber-200 text-amber-800 @endif">
+                        {{ $sale->credit_reminder_status === 'overdue' ? 'This credit sale is overdue.' : 'This credit sale is nearing its due date.' }}
+                    </div>
+                @endif
+            @endif
         </div>
 
         {{-- Items Sold --}}

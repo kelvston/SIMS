@@ -33,14 +33,50 @@
             color: #6b7280;
             font-size: 0.875rem;
         }
+        @media (max-width: 639px) {
+            .sale-form-shell {
+                padding: 1rem !important;
+                border-radius: 0.5rem;
+            }
+            .sale-form-title {
+                font-size: 1.5rem;
+                line-height: 2rem;
+            }
+            .sale-search-option {
+                display: block;
+            }
+            .sale-search-option > span:last-child {
+                display: block;
+                margin-top: 0.25rem;
+            }
+            .sale-summary-row {
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+            .sale-submit-actions {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            .sale-submit-actions > * {
+                width: 100%;
+                text-align: center;
+            }
+            .sale-empty-row td {
+                display: block !important;
+            }
+            .sale-empty-row td::before {
+                content: none !important;
+            }
+        }
     </style>
 
-    <div class="container mx-auto bg-white p-8 rounded-lg shadow-md">
+    <div class="sale-form-shell container mx-auto bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-md relative overflow-hidden">
         <img src="{{ asset('images/watermark.png') }}"
              alt="Watermark"
-             class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
+             class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-64 sm:w-96 z-0"
              style="transform: translate(-50%, -60%);" />
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Create New Sale</h1>
+        <h1 class="sale-form-title text-2xl sm:text-3xl font-bold text-gray-800 mb-6 text-center relative z-10">Create New Sale</h1>
 
         @if (session('success'))
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -67,7 +103,7 @@
             </div>
         @endif
 
-        <form action="{{ route('sales.store') }}" method="POST" id="sale-form">
+        <form action="{{ route('sales.store') }}" method="POST" id="sale-form" class="relative z-10">
             @csrf
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -128,12 +164,12 @@
             </div>
 
             <div class="mb-6 border rounded-lg overflow-hidden">
-                <div class="bg-gray-100 px-4 py-3 flex items-center justify-between">
+                <div class="bg-gray-100 px-4 py-3 flex items-center justify-between gap-3">
                     <h2 class="font-semibold text-gray-800">Selected Items</h2>
-                    <span id="selected-count" class="text-sm text-gray-600">0 items</span>
+                    <span id="selected-count" class="text-sm text-gray-600 whitespace-nowrap">0 items</span>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
+                <div class="table-scroll">
+                    <table class="responsive-table min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
@@ -145,7 +181,7 @@
                         </tr>
                         </thead>
                         <tbody id="selected-items-body" class="bg-white divide-y divide-gray-200">
-                        <tr id="selected-empty-row">
+                        <tr id="selected-empty-row" class="sale-empty-row">
                             <td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">No item selected yet.</td>
                         </tr>
                         </tbody>
@@ -156,17 +192,17 @@
             <div id="sale-hidden-inputs"></div>
 
             <div class="bg-gray-50 border rounded-lg p-4 mb-6">
-                <div class="flex justify-between mb-2">
+                <div class="sale-summary-row flex justify-between mb-2">
                     <span class="font-semibold text-gray-700">Subtotal</span>
-                    <span id="sale-subtotal">$0.00</span>
+                    <span id="sale-subtotal" class="whitespace-nowrap">$0.00</span>
                 </div>
-                <div class="flex justify-between mb-2">
+                <div class="sale-summary-row flex justify-between mb-2">
                     <span class="font-semibold text-gray-700">Discount</span>
-                    <span id="sale-discount">$0.00</span>
+                    <span id="sale-discount" class="whitespace-nowrap">$0.00</span>
                 </div>
-                <div class="flex justify-between text-lg font-bold text-gray-900">
+                <div class="sale-summary-row flex justify-between text-lg font-bold text-gray-900">
                     <span>Final Total</span>
-                    <span id="sale-final-total">$0.00</span>
+                    <span id="sale-final-total" class="whitespace-nowrap">$0.00</span>
                 </div>
                 <p id="sale-total-warning" class="text-sm text-red-600 mt-2 hidden">Discount cannot exceed subtotal.</p>
                 @error('phone_imeis')
@@ -187,15 +223,22 @@
                 </div>
             </div>
 
+            @php($selectedPaymentOption = old('payment_option', old('is_installment') ? 'installment' : 'cash'))
             <div class="mb-6">
-                <input type="hidden" name="is_installment" value="0">
-                <label class="inline-flex items-center">
-                    <input type="checkbox" name="is_installment" id="is_installment" class="form-checkbox h-5 w-5 text-blue-600" value="1" {{ old('is_installment') ? 'checked' : '' }}>
-                    <span class="ml-2 text-gray-700">Is Installment Sale?</span>
-                </label>
+                <input type="hidden" name="is_installment" id="is_installment" value="{{ $selectedPaymentOption === 'installment' ? 1 : 0 }}">
+                <label for="payment_option" class="block text-gray-700 text-sm font-bold mb-2">Payment Type:</label>
+                <select name="payment_option" id="payment_option"
+                        class="shadow appearance-none border rounded w-full lg:w-1/2 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('payment_option') border-red-500 @enderror">
+                    <option value="cash" {{ $selectedPaymentOption === 'cash' ? 'selected' : '' }}>Normal Sale / Cash</option>
+                    <option value="installment" {{ $selectedPaymentOption === 'installment' ? 'selected' : '' }}>Sale by Installment</option>
+                    <option value="credit" {{ $selectedPaymentOption === 'credit' ? 'selected' : '' }}>Credit Sale</option>
+                </select>
+                @error('payment_option')
+                <p class="text-red-500 text-xs italic">{{ $message }}</p>
+                @enderror
             </div>
 
-            <div id="installment-details" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 {{ old('is_installment') ? '' : 'hidden' }}">
+            <div id="installment-details" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 {{ $selectedPaymentOption === 'installment' ? '' : 'hidden' }}">
                 <div>
                     <label for="total_installments" class="block text-gray-700 text-sm font-bold mb-2">Total Installments:</label>
                     <input type="number" name="total_installments" id="total_installments" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('total_installments') border-red-500 @enderror" value="{{ old('total_installments') }}" min="1">
@@ -219,11 +262,41 @@
                 </div>
             </div>
 
-            <div class="flex items-center justify-between">
+            <div id="credit-details" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 {{ $selectedPaymentOption === 'credit' ? '' : 'hidden' }}">
+                <div>
+                    <label for="credit_due_date" class="block text-gray-700 text-sm font-bold mb-2">Credit Due Date:</label>
+                    <input type="date" name="credit_due_date" id="credit_due_date"
+                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('credit_due_date') border-red-500 @enderror"
+                           value="{{ old('credit_due_date') }}">
+                    @error('credit_due_date')
+                    <p class="text-red-500 text-xs italic">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="credit_paid_amount" class="block text-gray-700 text-sm font-bold mb-2">Paid Now ($):</label>
+                    <input type="number" step="0.01" name="credit_paid_amount" id="credit_paid_amount"
+                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('credit_paid_amount') border-red-500 @enderror"
+                           value="{{ old('credit_paid_amount', 0) }}" min="0">
+                    @error('credit_paid_amount')
+                    <p class="text-red-500 text-xs italic">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="credit_reminder_days" class="block text-gray-700 text-sm font-bold mb-2">Remind Days Before:</label>
+                    <input type="number" name="credit_reminder_days" id="credit_reminder_days"
+                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('credit_reminder_days') border-red-500 @enderror"
+                           value="{{ old('credit_reminder_days', 3) }}" min="0" max="30">
+                    @error('credit_reminder_days')
+                    <p class="text-red-500 text-xs italic">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="sale-submit-actions flex items-center justify-between">
                 <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full focus:outline-none focus:shadow-outline transition duration-300 ease-in-out shadow-lg">
                     Record Sale
                 </button>
-                <a href="{{ route('sales.index') }}" class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
+                <a href="{{ route('sales.index') }}" class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800 py-2">
                     View All Sales
                 </a>
             </div>
@@ -433,12 +506,12 @@
                 hiddenInputs.insertAdjacentHTML('beforeend', `<input type="hidden" name="phone_imeis[]" value="${phone.imei}">`);
                 body.insertAdjacentHTML('beforeend', `
                     <tr>
-                        <td class="px-4 py-3 text-sm text-gray-900">${escapeHtml(phoneLabel(phone))}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700">Phone</td>
-                        <td class="px-4 py-3 text-sm text-gray-900 text-right">1</td>
-                        <td class="px-4 py-3 text-sm text-gray-900 text-right">${formatMoney(priceCents)}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900 text-right">${formatMoney(priceCents)}</td>
-                        <td class="px-4 py-3 text-sm text-right">
+                        <td data-label="Item" class="px-4 py-3 text-sm text-gray-900">${escapeHtml(phoneLabel(phone))}</td>
+                        <td data-label="Type" class="px-4 py-3 text-sm text-gray-700">Phone</td>
+                        <td data-label="Qty" class="px-4 py-3 text-sm text-gray-900 text-right">1</td>
+                        <td data-label="Unit Price" class="px-4 py-3 text-sm text-gray-900 text-right">${formatMoney(priceCents)}</td>
+                        <td data-label="Total" class="px-4 py-3 text-sm text-gray-900 text-right">${formatMoney(priceCents)}</td>
+                        <td data-label="Action" class="px-4 py-3 text-sm text-right">
                             <button type="button" onclick="removePhone('${imei}')" class="text-red-600 hover:text-red-800 font-semibold">Remove</button>
                         </td>
                     </tr>
@@ -456,14 +529,14 @@
                 accessoryIndex += 1;
                 body.insertAdjacentHTML('beforeend', `
                     <tr>
-                        <td class="px-4 py-3 text-sm text-gray-900">${escapeHtml(line.item.name)}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700">Accessory</td>
-                        <td class="px-4 py-3 text-sm text-gray-900 text-right">
+                        <td data-label="Item" class="px-4 py-3 text-sm text-gray-900">${escapeHtml(line.item.name)}</td>
+                        <td data-label="Type" class="px-4 py-3 text-sm text-gray-700">Accessory</td>
+                        <td data-label="Qty" class="px-4 py-3 text-sm text-gray-900 text-right">
                             <input type="number" min="1" max="${Math.floor(Number(line.item.available_quantity || 0))}" value="${line.quantity}" onchange="updateAccessoryQuantity('${productId}', this.value)" class="w-20 text-right border rounded py-1 px-2">
                         </td>
-                        <td class="px-4 py-3 text-sm text-gray-900 text-right">${formatMoney(unitPriceCents)}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900 text-right">${formatMoney(lineTotalCents)}</td>
-                        <td class="px-4 py-3 text-sm text-right">
+                        <td data-label="Unit Price" class="px-4 py-3 text-sm text-gray-900 text-right">${formatMoney(unitPriceCents)}</td>
+                        <td data-label="Total" class="px-4 py-3 text-sm text-gray-900 text-right">${formatMoney(lineTotalCents)}</td>
+                        <td data-label="Action" class="px-4 py-3 text-sm text-right">
                             <button type="button" onclick="removeAccessory('${productId}')" class="text-red-600 hover:text-red-800 font-semibold">Remove</button>
                         </td>
                     </tr>
@@ -471,7 +544,7 @@
             });
 
             if (!selectedPhones.size && !selectedAccessories.size) {
-                body.innerHTML = '<tr id="selected-empty-row"><td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">No item selected yet.</td></tr>';
+                body.innerHTML = '<tr id="selected-empty-row" class="sale-empty-row"><td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">No item selected yet.</td></tr>';
             }
 
             const discountCents = moneyToCents(document.getElementById('discount_amount').value);
@@ -519,8 +592,12 @@
 
         document.getElementById('discount_amount').addEventListener('input', renderSelectedItems);
 
-        document.getElementById('is_installment').addEventListener('change', function() {
-            document.getElementById('installment-details').classList.toggle('hidden', !this.checked);
+        document.getElementById('payment_option').addEventListener('change', function() {
+            const isInstallment = this.value === 'installment';
+            const isCredit = this.value === 'credit';
+            document.getElementById('is_installment').value = isInstallment ? '1' : '0';
+            document.getElementById('installment-details').classList.toggle('hidden', !isInstallment);
+            document.getElementById('credit-details').classList.toggle('hidden', !isCredit);
         });
 
         document.getElementById('sale-form').addEventListener('submit', function(event) {

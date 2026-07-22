@@ -179,6 +179,26 @@
         <p><strong>Status:</strong> {{ ucfirst($receipt->status) }}</p>
     </section>
 
+    @if($sale->is_credit)
+        <section class="installment-info" style="margin-top: 30px;">
+            <h2>Credit Sale Details</h2>
+            <table>
+                <tr>
+                    <td><strong>Amount Paid</strong></td>
+                    <td>{{ number_format($sale->amount_paid, 2) }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Amount Due</strong></td>
+                    <td>{{ number_format($sale->amount_due, 2) }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Due Date</strong></td>
+                    <td>{{ optional($sale->credit_due_date)->format('Y-m-d') ?? 'N/A' }}</td>
+                </tr>
+            </table>
+        </section>
+    @endif
+
     @if($sale->is_installment && $sale->installmentPlan)
         <section class="installment-info" style="margin-top: 30px;">
             <h2>Installment Plan Details</h2>

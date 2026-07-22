@@ -22,6 +22,8 @@ class Sale extends Model
         'amount_paid',
         'amount_due',
         'payment_option',
+        'credit_due_date',
+        'credit_reminder_days',
         'status',
         'voided_at',
         'voided_by',
@@ -38,6 +40,8 @@ class Sale extends Model
         'final_amount' => 'decimal:2',
         'amount_paid' => 'decimal:2',
         'amount_due' => 'decimal:2',
+        'credit_due_date' => 'date',
+        'credit_reminder_days' => 'integer',
         'voided_at' => 'datetime',
         'original_final_amount' => 'decimal:2',
     ];
@@ -71,6 +75,37 @@ class Sale extends Model
     public function getIsVoidedAttribute(): bool
     {
         return $this->status === 'voided' || $this->voided_at !== null;
+    }
+
+    public function getIsCreditAttribute(): bool
+    {
+        return $this->payment_option === 'credit';
+    }
+
+    public function getCreditReminderStatusAttribute(): ?string
+    {
+        if (! $this->is_credit || $this->is_voided || (float) $this->amount_due <= 0 || ! $this->credit_due_date) {
+            return null;
+        }
+
+        if ($this->credit_due_date->isPast() && ! $this->credit_due_date->isToday()) {
+            return 'overdue';
+        }
+
+        if ($this->credit_due_date->lte(now()->addDays($this->credit_reminder_days ?? 3)->startOfDay())) {
+            return 'due_soon';
+        }
+
+        return null;
+    }
+
+    public function getSaleTypeLabelAttribute(): string
+    {
+        return match ($this->payment_option) {
+            'credit' => 'Credit',
+            'installment' => 'Installment',
+            default => $this->is_installment ? 'Installment' : 'Full Payment',
+        };
     }
 
     public function scopeActiveTransaction($query)
