@@ -10,7 +10,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\SettingsController;
-use App\Http\Controllers\CategoryController ;
+use App\Http\Controllers\categoryController;
 use App\Http\Controllers\ManageController;
 use App\Http\Controllers\BarcodeController;
 
@@ -122,12 +122,15 @@ Route::get('/dashboard', function () {
     $averageSellingPrice = Medicine::avg('selling_price');
 
     // New: Recent Activities (combining sales, received, payments)
-    $recentSales = Sale::with('saleItems.medicine.products')
+    $recentSales = Sale::with('saleItems.medicine.product')
         ->latest('sale_date')
         ->take(5)
         ->get()
         ->map(function($sale) {
-            $medicineNames = $sale->saleItems->map(fn($item) => $item->medicine->products->name)->implode(', ');
+            $medicineNames = $sale->saleItems
+                ->map(fn($item) => $item->medicine?->product?->name)
+                ->filter()
+                ->implode(', ');
             return [
                 'type' => 'sale',
                 'description' => "✔️ {$medicineNames} sold to {$sale->customer_name} - $" . number_format($sale->final_amount, 2),
@@ -136,14 +139,14 @@ Route::get('/dashboard', function () {
             ];
         });
 
-    $recentReceivedMedicines = Medicine::with('products')
+    $recentReceivedMedicines = Medicine::with('product')
         ->latest('received_at')
         ->take(5)
         ->get()
         ->map(function($medicine) {
             return [
                 'type' => 'received',
-                'description' => "📦 1 {$medicine->products->name} ) received into inventory (IMEI: {$medicine->imei})",
+                'description' => "1 {$medicine->product->name} received into inventory" . ($medicine->barcode ? " (Barcode: {$medicine->barcode})" : ''),
                 'date' => $medicine->received_at,
                 'link' => route('medicines.index') // Link to general medicine inventory
             ];
@@ -157,7 +160,7 @@ Route::get('/dashboard', function () {
             $medicineName = 'N/A';
             if ($payment->installmentPlan && $payment->installmentPlan->sale && $payment->installmentPlan->sale->saleItems->isNotEmpty()) {
                 $firstMedicine = $payment->installmentPlan->sale->saleItems->first()->medicine;
-                $medicineName = $firstMedicine->products->name . ' ' . $firstMedicine->model;
+                $medicineName = $firstMedicine?->product?->name ?? 'Medicine';
             }
             return [
                 'type' => 'payment',
@@ -278,7 +281,7 @@ Route::post('/reports/stock/remove-medicine/{id}', [ReportController::class, 're
 Route::get('/dashboard', [ReportController::class, 'home'])->name('dashboard');
 
 // To view all installment plans
-Route::get('/barcodes/generate/form', [BarcodeController::class, 'generateForm'])->name('barcodes.generate.form');
+Route::get('/barcodes/generate', [BarcodeController::class, 'generateForm'])->name('barcodes.generate.form');
 Route::post('/barcodes/generate', [BarcodeController::class, 'generate'])->name('barcodes.generate');
 Route::post('/barcodes/download', [BarcodeController::class, 'download'])->name('barcodes.download');
 

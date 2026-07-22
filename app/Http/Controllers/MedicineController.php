@@ -9,6 +9,7 @@ use App\Models\Cosmetic;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Exceptions\UnauthorizedException; // Import for better error handling
 
@@ -33,8 +34,9 @@ class MedicineController extends Controller // <<< IMPORTANT: Ensure it extends 
         // This method is now protected by 'permission:view medicines' middleware
         $products = Product::all();
         $cosmetic_categories = DB::table('cosmetic_categories')->get();
+        $medicine_categories = Schema::hasTable('medicine_categories') ? DB::table('medicine_categories')->get() : collect();
         $cosmetics = DB::table('cosmetics')->get();
-        return view('medicines.receive', compact('products', 'cosmetic_categories','cosmetics'));
+        return view('medicines.receive', compact('products', 'cosmetic_categories', 'medicine_categories', 'cosmetics'));
     }
 
     /**
@@ -53,21 +55,24 @@ class MedicineController extends Controller // <<< IMPORTANT: Ensure it extends 
             'medicines.*.product_id' => 'required|exists:products,id',
             'medicines.*.description' => 'required|string|max:255',
             'medicines.*.stock_origin' => 'required|string|max:255',
-            'medicines.*.storage_capacity' => 'required|string|max:255',
+            'medicines.*.storage_capacity' => 'nullable|string|max:255',
             'medicines.*.purchase_price' => 'required|numeric|min:0',
             'medicines.*.selling_price' => 'required|numeric|min:0|gte:medicines.*.purchase_price',
-            'medicines.*.imeis' => 'required|array|min:1',
+            'medicines.*.quantity' => 'nullable|integer|min:1',
+            'medicines.*.barcode' => 'nullable|string|max:255',
+            'medicines.*.condition' => 'nullable|string|in:New,Used,new,used',
+            'medicines.*.imeis' => 'nullable|array|min:1',
 
-            // --- NEW VALIDATION RULES FOR NESTED IMEI AND CONDITION ---
-            'medicines.*.imeis.*.imei' => 'required|string|distinct|unique:medicines,imei|max:255',
-            'medicines.*.imeis.*.condition' => 'required|string|in:New,Used',
+            // --- Validation rules for individually tracked medicine units ---
+            'medicines.*.imeis.*.imei' => 'nullable|string|distinct|max:255',
+            'medicines.*.imeis.*.condition' => 'nullable|string|in:New,Used,new,used',
             // --- END NEW VALIDATION RULES ---
 
             // Validation rules for each medicine item
             'cosmetics.*.name' => 'required|string|max:255',
             'cosmetics.*.product_id' => 'nullable|exists:products,id',
-            'cosmetics.*.category_id' => 'nullable|exists:cosmetic_categories,id',
-            'cosmetics.*.barcode' => 'nullable|string|unique:cosmetics,barcode|max:255',
+            'cosmetics.*.category_id' => 'required|exists:cosmetic_categories,id',
+            'cosmetics.*.barcode' => 'nullable|integer|unique:cosmetics,barcode',
             'cosmetics.*.unit' => 'required|string|max:255',
             'cosmetics.*.description' => 'required|string|max:255',
             'cosmetics.*.stock_origin' => 'required|string|max:255',
@@ -86,20 +91,39 @@ class MedicineController extends Controller // <<< IMPORTANT: Ensure it extends 
             if ($request->has('medicines')) {
                 foreach ($request->medicines as $medicineData) {
                     $newMedicinesInGroup = 0;
+                    $medicineUnits = !empty($medicineData['imeis'])
+                        ? $medicineData['imeis']
+                        : array_fill(0, (int) ($medicineData['quantity'] ?? 1), [
+                            'imei' => $medicineData['barcode'] ?? null,
+                            'condition' => $medicineData['condition'] ?? 'New',
+                        ]);
 
-                    // Create Medicine records for each IMEI
-                    foreach ($medicineData['imeis'] as $imeiData) {
-                        Medicine::create([
+                    // Create Medicine records for each received unit.
+                    foreach ($medicineUnits as $imeiData) {
+                        $attributes = [
                             'product_id' => $medicineData['product_id'],
-                            'storage_capacity' => $medicineData['storage_capacity'],
                             'purchase_price' => $medicineData['purchase_price'],
                             'selling_price' => $medicineData['selling_price'],
                             'description' => $medicineData['description'],
                             'stock_origin' => $medicineData['stock_origin'],
-                            'condition' => $imeiData['condition'],
+                            'condition' => $imeiData['condition'] ?? $medicineData['condition'] ?? 'New',
                             'status' => 'available',
                             'received_at' => now(),
-                        ]);
+                        ];
+
+                        if (Schema::hasColumn('medicines', 'storage_capacity')) {
+                            $attributes['storage_capacity'] = $medicineData['storage_capacity'] ?? null;
+                        }
+
+                        if (Schema::hasColumn('medicines', 'imei') && !empty($imeiData['imei'])) {
+                            $attributes['imei'] = $imeiData['imei'];
+                        }
+
+                        if (Schema::hasColumn('medicines', 'barcode') && !empty($medicineData['barcode'])) {
+                            $attributes['barcode'] = $medicineData['barcode'];
+                        }
+
+                        Medicine::create($attributes);
 
                         $newMedicinesInGroup++;
                         $newMedicinesCount++;
@@ -136,6 +160,7 @@ class MedicineController extends Controller // <<< IMPORTANT: Ensure it extends 
                     ]);
 
                     $medicine->save();
+                    $updatedAccessoriesCount += (int) $medicineData['quantity'];
                 }
             }
 

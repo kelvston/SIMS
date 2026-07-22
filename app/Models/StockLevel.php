@@ -24,15 +24,15 @@ class StockLevel extends Model
     ];
 
     /**
-     * Get the brand that owns the stock level.
+     * Get the product that owns the stock level.
      */
-    public function brand()
+    public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
     /**
-     * Get the phone that owns the stock level.
+     * Get the medicine that owns the stock level.
      *
      * @return BelongsTo
      */
@@ -42,7 +42,7 @@ class StockLevel extends Model
     }
 
     /**
-     * Get the accessory that owns the stock level.
+     * Get the cosmetic that owns the stock level.
      *
      * @return BelongsTo
      */

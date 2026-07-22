@@ -130,12 +130,12 @@
                             <span class="ml-2 text-gray-700">Bank</span>
                         </label>
 
-                        <!-- Phone -->
+                        <!-- Mobile Money -->
                         <label class="inline-flex items-center cursor-pointer">
                             <input type="radio" name="payment_option" value="3"
                                    class="form-radio h-5 w-5 text-blue-600"
                                 {{ old('payment_option') == 3 ? 'checked' : '' }}>
-                            <span class="ml-2 text-gray-700">Phone</span>
+                            <span class="ml-2 text-gray-700">Mobile Money</span>
                         </label>
                     </div>
 
@@ -233,7 +233,7 @@
         function processScannedBarcode(code) {
             // Check if we're focused on cosmetic search
             const isCosmeticFocused = document.activeElement === cosmeticSearchInput;
-            const isPhoneFocused = document.activeElement === medicineSearchInput;
+            const isMedicineFocused = document.activeElement === medicineSearchInput;
 
             // If focused on cosmetic search, only look for cosmetics
             if (isCosmeticFocused) {
@@ -250,10 +250,10 @@
             }
 
             // If focused on medicine search, only look for Medicines
-            if (isPhoneFocused) {
+            if (isMedicineFocused) {
                 const medicine = availableMedicines.find(p => p.barcode === code);
                 if (medicine) {
-                    addPhoneInput(medicine);
+                    addMedicineInput(medicine);
                     showToast(`Added medicine: (${medicine.barcode})`, 'success');
                     return;
                 }
@@ -265,7 +265,7 @@
             // First try Medicines
             const medicine = availableMedicines.find(p => p.barcode === code);
             if (medicine) {
-                addPhoneInput(medicine);
+                addMedicineInput(medicine);
                 showToast(`Added medicine: (${medicine.barcode})`, 'success');
                 return;
             }
@@ -293,7 +293,7 @@
                     return medicine.barcode.toLowerCase().includes(searchTerm) ||
                         productName.includes(searchTerm);
                 });
-                renderPhoneResults(filteredMedicines);
+                renderMedicineResults(filteredMedicines);
             } else {
                 medicineSearchResults.classList.add('hidden');
             }
@@ -316,7 +316,7 @@
             }
         });
 
-        function renderPhoneResults(results) {
+        function renderMedicineResults(results) {
             medicineSearchResults.innerHTML = '';
             if (results.length > 0) {
                 results.forEach(medicine => {
@@ -351,7 +351,7 @@
         }
 
         // --- ADD ITEM FUNCTIONS ---
-        function addPhoneInput(medicine) {
+        function addMedicineInput(medicine) {
             // Check if already added
             if (document.querySelector(`input[name="medicine_barcodes[]"][value="${medicine.barcode}"]`)) {
                 showToast('This medicine is already in the list', 'warning');

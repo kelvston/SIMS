@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - PhoneStore Pro</title>
+    <title>Login - {{ config('app.name', 'Pharmacy') }}</title>
 {{--    <script src="https://cdn.tailwindcss.com"></script>--}}
 {{--    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">--}}
     <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}">
@@ -56,7 +56,7 @@
         <h1 class="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-br from-yellow-200 via-orange-500 to-yellow-800">
             Enrich Your Digital Transformation
         </h1>
-        <p class="text-white/80 mt-1 text-sm">Powered by PhoneStore Pro</p>
+        <p class="text-white/80 mt-1 text-sm">Powered by {{ config('app.name', 'Pharmacy') }}</p>
     </div>
 
     <div class="flex flex-col md:flex-row items-center justify-center gap-6 w-full">
@@ -97,7 +97,7 @@
 
         <!-- Dashboard Image Preview -->
         <div class="w-full max-w-md">
-            <img src="images/phonepro1.png" alt="PhoneStore Dashboard Preview"
+            <img src="images/watermark.png" alt="{{ config('app.name', 'Pharmacy') }} Dashboard Preview"
                  class="rounded-2xl shadow-lg w-full object-cover border-2 border-white/30">
         </div>
     </div>

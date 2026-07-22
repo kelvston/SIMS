@@ -140,7 +140,7 @@
 
         <!-- Dashboard Image Preview -->
         <div class="w-full max-w-md">
-            <img src="images/phonepro1.png" alt="PhoneStore Dashboard Preview"
+            <img src="images/watermark.png" alt="{{ config('app.name', 'Pharmacy') }} Dashboard Preview"
                  class="rounded-2xl shadow-lg w-full object-cover border-2 border-white/30">
         </div>
     </div>

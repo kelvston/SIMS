@@ -18,7 +18,9 @@ class Medicine extends Model
         'received_at',
         'condition',
         'stock_origin',
-        'description'
+        'description',
+        'imei',
+        'barcode',
     ];
 
     // Define the casts for attributes
@@ -27,7 +29,7 @@ class Medicine extends Model
     ];
 
     /**
-     * Get the product that owns the phone.
+     * Get the product record for this medicine.
      */
     public function product()
     {
@@ -35,7 +37,7 @@ class Medicine extends Model
     }
 
     /**
-     * Get the sale item associated with the phone.
+     * Get the sale item associated with this medicine.
      */
     public function saleItem()
     {
@@ -43,8 +45,7 @@ class Medicine extends Model
     }
     public function stockLevel()
     {
-        return $this->hasOne(StockLevel::class, 'model', 'model')
-            ->whereColumn('stock_levels.product_id', 'phones.product_id');
+        return $this->hasOne(StockLevel::class, 'product_id', 'product_id');
     }
 
     public function MedicineCategory()

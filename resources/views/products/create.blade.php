@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Create New Product')
-@section('subtitle', 'Add a new phone brand to the system.')
+@section('subtitle', 'Add a new pharmacy product to the system.')
 
 @section('content')
     <div class="container mx-auto bg-white p-8 rounded-lg shadow-md">

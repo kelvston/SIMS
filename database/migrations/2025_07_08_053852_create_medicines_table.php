@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('medicines', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade'); // Foreign key to brands table
-            $table->decimal('purchase_price', 10, 2); // Price at which the phone was bought
-            $table->decimal('selling_price', 10, 2); // Price at which the phone will be sold
-            $table->enum('status', ['available', 'sold', 'under_installment', 'damaged'])->default('available'); // Current status of the phone
-            $table->timestamp('received_at')->useCurrent(); // Timestamp when the phone was received
+            $table->foreignId('product_id')->constrained('products')->onDelete('cascade'); // Foreign key to products table
+            $table->decimal('purchase_price', 10, 2); // Price at which the medicine was bought
+            $table->decimal('selling_price', 10, 2); // Price at which the medicine will be sold
+            $table->enum('status', ['available', 'sold', 'under_installment', 'damaged'])->default('available'); // Current status of the medicine
+            $table->timestamp('received_at')->useCurrent(); // Timestamp when the medicine was received
             $table->timestamps(); // created_at and updated_at
         });
     }

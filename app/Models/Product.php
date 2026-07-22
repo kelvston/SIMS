@@ -13,7 +13,7 @@ class Product extends Model
     protected $fillable = ['name'];
 
     /**
-     * Get the phones for the brand.
+     * Get the medicines for the product.
      */
     public function medicines()
     {
@@ -21,7 +21,7 @@ class Product extends Model
     }
 
     /**
-     * Get the stock levels for the brand.
+     * Get the stock levels for the product.
      */
     public function stockLevels()
     {

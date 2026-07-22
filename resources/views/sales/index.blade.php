@@ -124,10 +124,10 @@
                             <td class="px-4 py-3 text-sm text-gray-900">
                                 <ul class="list-disc list-inside">
                                     @foreach ($sale->saleItems as $item)
-                                        @if ($item->phone)
-                                            <li>{{ $item->phone->brand->name }} {{ $item->phone->model }} (IMEI: {{ $item->phone->imei }})</li>
-                                        @elseif ($item->accessory)
-                                            <li>{{ $item->accessory->name }} (Qty: {{ $item->quantity }})</li>
+                                        @if ($item->medicine)
+                                            <li>{{ $item->medicine->product->name ?? 'Medicine' }} @if($item->medicine->barcode) (Barcode: {{ $item->medicine->barcode }}) @endif</li>
+                                        @elseif ($item->cosmetic)
+                                            <li>{{ $item->cosmetic->name }} (Qty: {{ $item->quantity }})</li>
                                         @endif
                                     @endforeach
                                 </ul>

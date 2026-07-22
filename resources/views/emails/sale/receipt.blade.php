@@ -57,7 +57,7 @@
     <p><strong>Payment Method:</strong> {{ ucfirst($receipt->payment_method) }}</p>
     <p><strong>Status:</strong> {{ ucfirst($receipt->status) }}</p>
 
-    <a href="{{ url('/') }}" class="button">Visit PhoneStore</a>
+    <a href="{{ url('/') }}" class="button">Visit {{ config('app.name', 'Pharmacy') }}</a>
 
     <p class="footer">Thanks,<br>{{ config('app.name') }}</p>
 </div>

@@ -33,10 +33,10 @@
         @endcan
 
 {{--        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">--}}
-            <!-- Phones Section -->
+            <!-- Medicines Section -->
             <div>
                 <h2 class="text-2xl font-bold text-gray-700 mb-4">Products</h2>
-                <!-- Controls for Phones Table -->
+                <!-- Controls for Medicines Table -->
                 <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                     <div class="relative w-full sm:w-1/2">
                         <input type="text" id="medicine-search-input" placeholder="Search medicines..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300">
@@ -89,7 +89,7 @@
                         <table id="medicines-table" class="min-w-full divide-y divide-gray-200 table-auto">
                             <thead class="bg-gray-50">
                             <tr>
-{{--                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="imei">IMEI</th>--}}
+{{--                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="barcode">Barcode</th>--}}
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="product">Product</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="price">Selling Price</th>
                                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-column="status">Status</th>

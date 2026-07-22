@@ -262,7 +262,7 @@ class ReportController extends Controller
             ->map(function ($medicine) {
                 return [
                     'type' => 'received',
-                    'description' => "📦 1 {$medicine->product->name} {$medicine->model} ({$medicine->color}) received into inventory (IMEI: {$medicine->imei})",
+                    'description' => "1 {$medicine->product->name} received into inventory" . ($medicine->barcode ? " (Barcode: {$medicine->barcode})" : ''),
                     'date' => $medicine->received_at,
                     'link' => route('medicines.index')
                 ];
@@ -836,7 +836,7 @@ class ReportController extends Controller
             ->map(function ($medicine) {
                 return [
                     'type' => 'received',
-                    'description' => "📦 Received 1 {$medicine->product->name} {$medicine->model} (IMEI: {$medicine->imei})",
+                    'description' => "Received 1 {$medicine->product->name}" . ($medicine->barcode ? " (Barcode: {$medicine->barcode})" : ''),
                     'date' => $medicine->received_at,
                     // The cosmetics.index route was not defined, so we'll link to the reports.users page as a fallback.
                     'link' => route('reports.users')
@@ -1414,7 +1414,7 @@ class ReportController extends Controller
         // $medicine = Medicine::findOrFail($id);
         // $medicine->imei = $request->new_imei;
         // $medicine->save();
-        // return response()->json(['message' => 'Medicine IMEI updated successfully!']);
+        // return response()->json(['message' => 'Medicine barcode updated successfully!']);
         return response()->json(['message' => 'This feature is not yet implemented.'], 400);
     }
 
@@ -1460,5 +1460,3 @@ class ReportController extends Controller
     }
 
 }
-
-

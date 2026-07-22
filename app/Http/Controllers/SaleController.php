@@ -233,7 +233,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                         $payment_option = 'Bank';
                         break;
                     case 3:
-                        $payment_option = 'Phone';
+                        $payment_option = 'Mobile Money';
                         break;
                     default:
                         $payment_option = 'Cash';

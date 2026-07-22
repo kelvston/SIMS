@@ -50,7 +50,7 @@
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Generate Barcodes</h1>
 
         <!-- The form will submit to the 'barcodes.generate' route -->
-        <form action="{{ route('barcodes.generate') }}" method="POST">-
+        <form action="{{ route('barcodes.generate') }}" method="POST">
             @csrf
 
             <!-- Starting Number Input -->

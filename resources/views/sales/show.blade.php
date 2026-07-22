@@ -45,20 +45,21 @@
         <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Items Sold</h2>
 
-            {{-- Phones Sold --}}
+            {{-- Medicines Sold --}}
             @php
-                $phonesSold = $sale->saleItems->filter(fn($item) => $item->phone !== null);
+                $medicinesSold = $sale->saleItems->filter(fn($item) => $item->medicine !== null);
             @endphp
-            <h3 class="text-xl font-semibold text-gray-600 mb-2">Phones Sold</h3>
-            @if ($phonesSold->isEmpty())
-                <p class="text-gray-600 mb-4">No phones associated with this sale.</p>
+            <h3 class="text-xl font-semibold text-gray-600 mb-2">Medicines Sold</h3>
+            @if ($medicinesSold->isEmpty())
+                <p class="text-gray-600 mb-4">No medicines associated with this sale.</p>
             @else
                 <ul class="list-disc list-inside space-y-2 mb-4">
-                    @foreach ($phonesSold as $item)
+                    @foreach ($medicinesSold as $item)
                         <li class="text-gray-700">
-                            <strong>{{ $item->phone->brand->name }} {{ $item->phone->model }}</strong>
-                            ({{ $item->phone->color }}, {{ $item->phone->storage_capacity }}) -
-                            IMEI: {{ $item->phone->imei }} -
+                            <strong>{{ $item->medicine->product->name ?? 'Medicine' }}</strong>
+                            @if($item->medicine->barcode)
+                                - Barcode: {{ $item->medicine->barcode }}
+                            @endif
                             Sold Price: {{ number_format($item->unit_price, 2) }}
                         </li>
                     @endforeach
@@ -67,16 +68,16 @@
 
             {{-- Accessories Sold --}}
             @php
-                $cosmeticsSold = $sale->saleItems->filter(fn($item) => $item->accessory !== null);
+                $cosmeticsSold = $sale->saleItems->filter(fn($item) => $item->cosmetic !== null);
             @endphp
-            <h3 class="text-xl font-semibold text-gray-600 mb-2">Accessories Sold</h3>
+            <h3 class="text-xl font-semibold text-gray-600 mb-2">Cosmetics Sold</h3>
             @if ($cosmeticsSold->isEmpty())
                 <p class="text-gray-600">No cosmetics associated with this sale.</p>
             @else
                 <ul class="list-disc list-inside space-y-2">
                     @foreach ($cosmeticsSold as $item)
                         <li class="text-gray-700">
-                            <strong>{{ $item->accessory->name }}</strong>
+                            <strong>{{ $item->cosmetic->name }}</strong>
                             (Quantity: {{ $item->quantity }}) -
                             Sold Price: {{ number_format($item->unit_price, 2) }} each
                         </li>

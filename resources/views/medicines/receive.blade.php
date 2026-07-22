@@ -85,6 +85,45 @@
                 </div>
             </div>
 
+            <div class="p-6 border rounded-lg bg-white shadow-sm mb-6">
+                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+                    <div>
+                        <h2 class="text-2xl font-semibold text-gray-700">Bulk Upload</h2>
+                        <p class="text-sm text-gray-500 mt-1">Paste CSV rows or choose a CSV file to add many medicines and cosmetics at once.</p>
+                    </div>
+                    <button type="button" id="load-sample-bulk-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                        Load Sample
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="lg:col-span-2">
+                        <label for="bulk-csv-input" class="block text-sm font-medium text-gray-700 mb-1">CSV Data</label>
+                        <textarea id="bulk-csv-input" rows="8" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline font-mono text-sm" placeholder="type,name,category,barcode,unit,purchase_price,selling_price,description,stock_origin,quantity,condition"></textarea>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <label for="bulk-csv-file" class="block text-sm font-medium text-gray-700 mb-1">CSV File</label>
+                            <input type="file" id="bulk-csv-file" accept=".csv,text/csv" class="block w-full text-sm text-gray-700 border rounded py-2 px-3">
+                        </div>
+                        <div class="bg-gray-50 border rounded p-3 text-xs text-gray-600 leading-5">
+                            <p class="font-semibold text-gray-700 mb-1">Required columns</p>
+                            <p><strong>Medicine:</strong> type, name, purchase_price, selling_price, description, stock_origin, quantity</p>
+                            <p><strong>Cosmetic:</strong> type, name, category, purchase_price, selling_price, description, stock_origin, quantity</p>
+                            <p class="mt-2">Use <strong>medicine</strong> or <strong>cosmetic</strong> in the type column.</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <button type="button" id="import-bulk-btn" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                                Import Rows
+                            </button>
+                            <button type="button" id="clear-bulk-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="flex items-center justify-between mt-6">
                 <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full focus:outline-none focus:shadow-outline transition duration-300 ease-in-out shadow-lg">
                     Receive Inventory
@@ -94,7 +133,7 @@
                 </a>
             </div>
 
-{{--            <div id="medicine-hidden-inputs"></div>--}}
+            <div id="medicine-hidden-inputs"></div>
         </form>
     </div>
 
@@ -243,6 +282,7 @@
             // --- Shared Data and Functions ---
             const medicines = @json($products);
             const cosmeticCategories = @json($cosmetic_categories);
+            const medicineCategories = @json($medicine_categories);
             const cosmetics = @json($cosmetics);
 
             let cosmeticsData = [];
@@ -292,6 +332,11 @@
             const descriptionInput = document.getElementById('description');
             const stockOriginInput = document.getElementById('stock_origin');
             const submitButton = mainForm.querySelector('button[type="submit"]');
+            const bulkCsvInput = document.getElementById('bulk-csv-input');
+            const bulkCsvFile = document.getElementById('bulk-csv-file');
+            const importBulkBtn = document.getElementById('import-bulk-btn');
+            const clearBulkBtn = document.getElementById('clear-bulk-btn');
+            const loadSampleBulkBtn = document.getElementById('load-sample-bulk-btn');
 
             // let medicinesData = [];
 
@@ -320,6 +365,178 @@
                 setTimeout(() => toast.remove(), 5000);
             }
 
+            function normalizeLookup(value) {
+                return String(value || '').trim().toLowerCase();
+            }
+
+            function parseCsv(text) {
+                const rows = [];
+                let row = [];
+                let value = '';
+                let insideQuotes = false;
+
+                for (let index = 0; index < text.length; index++) {
+                    const char = text[index];
+                    const nextChar = text[index + 1];
+
+                    if (char === '"' && insideQuotes && nextChar === '"') {
+                        value += '"';
+                        index++;
+                    } else if (char === '"') {
+                        insideQuotes = !insideQuotes;
+                    } else if (char === ',' && !insideQuotes) {
+                        row.push(value.trim());
+                        value = '';
+                    } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+                        if (char === '\r' && nextChar === '\n') {
+                            index++;
+                        }
+                        row.push(value.trim());
+                        if (row.some(cell => cell !== '')) {
+                            rows.push(row);
+                        }
+                        row = [];
+                        value = '';
+                    } else {
+                        value += char;
+                    }
+                }
+
+                row.push(value.trim());
+                if (row.some(cell => cell !== '')) {
+                    rows.push(row);
+                }
+
+                return rows;
+            }
+
+            function rowValue(row, headers, key) {
+                const index = headers.indexOf(key);
+                return index >= 0 ? String(row[index] || '').trim() : '';
+            }
+
+            function findProductByName(name) {
+                return medicines.find(product => normalizeLookup(product.name) === normalizeLookup(name));
+            }
+
+            function findCosmeticCategoryByName(name) {
+                return cosmeticCategories.find(category => normalizeLookup(category.name) === normalizeLookup(name));
+            }
+
+            function importBulkRows(text) {
+                const rows = parseCsv(text);
+                if (rows.length < 2) {
+                    showToast('Add a CSV header and at least one data row.', 'error');
+                    return;
+                }
+
+                const headers = rows[0].map(header => normalizeLookup(header));
+                const requiredHeaders = ['type', 'name', 'purchase_price', 'selling_price', 'description', 'stock_origin', 'quantity'];
+                const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+
+                if (missingHeaders.length > 0) {
+                    showToast(`Missing column(s): ${missingHeaders.join(', ')}`, 'error');
+                    return;
+                }
+
+                let importedMedicines = 0;
+                let importedCosmetics = 0;
+                const errors = [];
+
+                rows.slice(1).forEach((row, rowIndex) => {
+                    const displayRow = rowIndex + 2;
+                    const type = normalizeLookup(rowValue(row, headers, 'type'));
+                    const name = rowValue(row, headers, 'name');
+                    const categoryName = rowValue(row, headers, 'category');
+                    const barcode = rowValue(row, headers, 'barcode');
+                    const unit = rowValue(row, headers, 'unit') || 'piece';
+                    const purchasePrice = rowValue(row, headers, 'purchase_price');
+                    const sellingPrice = rowValue(row, headers, 'selling_price');
+                    const description = rowValue(row, headers, 'description');
+                    const stockOrigin = rowValue(row, headers, 'stock_origin');
+                    const quantity = parseInt(rowValue(row, headers, 'quantity'), 10);
+                    const condition = rowValue(row, headers, 'condition') || 'New';
+
+                    if (!['medicine', 'cosmetic'].includes(type)) {
+                        errors.push(`Row ${displayRow}: type must be medicine or cosmetic.`);
+                        return;
+                    }
+
+                    if (!name || !purchasePrice || !sellingPrice || !description || !stockOrigin || !quantity || quantity < 1) {
+                        errors.push(`Row ${displayRow}: name, prices, description, stock_origin, and quantity are required.`);
+                        return;
+                    }
+
+                    if (type === 'medicine') {
+                        const product = findProductByName(name);
+                        if (!product) {
+                            errors.push(`Row ${displayRow}: medicine "${name}" does not match an existing product/medicine name.`);
+                            return;
+                        }
+
+                        if (barcode && medicinesData.some(item => item.barcode && normalizeLookup(item.barcode) === normalizeLookup(barcode))) {
+                            errors.push(`Row ${displayRow}: medicine barcode ${barcode} is already in the list.`);
+                            return;
+                        }
+
+                        medicinesData.push({
+                            id: medicineCounter++,
+                            product_id: product.id,
+                            name: product.name,
+                            category_id: '',
+                            category_name: '',
+                            barcode,
+                            unit,
+                            purchase_price: purchasePrice,
+                            selling_price: sellingPrice,
+                            description,
+                            stock_origin: stockOrigin,
+                            quantity,
+                            condition
+                        });
+                        importedMedicines++;
+                        return;
+                    }
+
+                    const category = findCosmeticCategoryByName(categoryName);
+                    if (!category) {
+                        errors.push(`Row ${displayRow}: cosmetic category "${categoryName}" does not match an existing category.`);
+                        return;
+                    }
+
+                    if (barcode && cosmeticsData.some(item => item.barcode && normalizeLookup(item.barcode) === normalizeLookup(barcode))) {
+                        errors.push(`Row ${displayRow}: cosmetic barcode ${barcode} is already in the list.`);
+                        return;
+                    }
+
+                    cosmeticsData.push({
+                        id: cosmeticCounter++,
+                        name,
+                        category_id: category.id,
+                        category_name: category.name,
+                        barcode,
+                        unit,
+                        purchase_price: purchasePrice,
+                        selling_price: sellingPrice,
+                        description,
+                        stock_origin: stockOrigin,
+                        quantity
+                    });
+                    importedCosmetics++;
+                });
+
+                renderMedicineList();
+                renderCosmeticList();
+
+                if (importedMedicines || importedCosmetics) {
+                    showToast(`Imported ${importedMedicines} medicine row(s) and ${importedCosmetics} cosmetic row(s).`, 'success');
+                }
+
+                if (errors.length > 0) {
+                    showToast(errors.slice(0, 3).join(' '), 'error');
+                }
+            }
+
             const confirmationModal = document.getElementById('confirmation-modal');
             const confirmationMessage = document.getElementById('confirmation-message');
             const cancelConfirmBtn = document.getElementById('cancel-confirm-btn');
@@ -342,6 +559,40 @@
             confirmActionBtn.addEventListener('click', () => {
                 confirmationModal.classList.add('hidden');
                 confirmationPromiseResolver(true);
+            });
+
+            loadSampleBulkBtn.addEventListener('click', () => {
+                const sampleMedicine = medicines[0]?.name || 'Existing Medicine Name';
+                const sampleCategory = cosmeticCategories[0]?.name || 'Existing Cosmetic Category';
+                bulkCsvInput.value = [
+                    'type,name,category,barcode,unit,purchase_price,selling_price,description,stock_origin,quantity,condition',
+                    `medicine,${sampleMedicine},,100001,pack,1000,1500,500mg tablets,Main supplier,20,New`,
+                    `cosmetic,Body Lotion,${sampleCategory},200001,piece,5000,7500,Moisturizing lotion,Main supplier,12,`
+                ].join('\n');
+            });
+
+            clearBulkBtn.addEventListener('click', () => {
+                bulkCsvInput.value = '';
+                bulkCsvFile.value = '';
+            });
+
+            importBulkBtn.addEventListener('click', () => {
+                importBulkRows(bulkCsvInput.value);
+            });
+
+            bulkCsvFile.addEventListener('change', () => {
+                const file = bulkCsvFile.files[0];
+                if (!file) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = event => {
+                    bulkCsvInput.value = event.target.result;
+                    importBulkRows(bulkCsvInput.value);
+                };
+                reader.onerror = () => showToast('Could not read the selected CSV file.', 'error');
+                reader.readAsText(file);
             });
 
             // --- BARCODEs Section (Main Logic) ---
@@ -596,7 +847,7 @@
                     data.forEach(item => {
                         const listItem = document.createElement('li');
                         listItem.className = 'cursor-pointer px-3 py-2 hover:bg-gray-100';
-                        listItem.textContent = `${item.name} ($${parseFloat(item.selling_price).toFixed(2)})`;
+                        listItem.textContent = item.name;
                         listItem.addEventListener('click', () => {
                             cosmeticNameInput.value = item.name;
                             selectedCosmeticIdInput.value = item.id;
@@ -669,8 +920,8 @@
                 const description = document.getElementById('modal-description').value;
                 const quantity = document.getElementById('modal-quantity').value;
 
-                if (!name || !quantity) {
-                    showToast('Name and Quantity are required.', 'error');
+                if (!name || !existingMedicineId || !quantity) {
+                    showToast('Choose an existing medicine and enter Quantity.', 'error');
                     return;
                 }
 
@@ -717,7 +968,8 @@
                 }
 
                 const medicine = {
-                    id: existingMedicineId || (indexMedicine ? medicinesData[indexMedicine].id : medicineCounter++),
+                    id: indexMedicine ? medicinesData[indexMedicine].id : medicineCounter++,
+                    product_id: existingMedicineId,
                     name,
                     category_id: categoryId,
                     category_name: categoryName,
@@ -798,8 +1050,8 @@
                     </div>
                 </div>
                 <div class="flex justify-end mt-2 space-x-2">
-                    <button type="button" class="edit-cosmetic-btn text-blue-500 hover:text-blue-700 font-bold text-sm" data-index="${indexMedicine}">Edit</button>
-                    <button type="button" class="remove-cosmetic-btn text-red-500 hover:text-red-700 font-bold text-sm" data-index="${indexMedicine}">Remove</button>
+                    <button type="button" class="edit-medicine-btn text-blue-500 hover:text-blue-700 font-bold text-sm" data-index-medicine="${indexMedicine}">Edit</button>
+                    <button type="button" class="remove-medicine-btn text-red-500 hover:text-red-700 font-bold text-sm" data-index-medicine="${indexMedicine}">Remove</button>
                 </div>
             `;
                     medicineList.appendChild(card);
@@ -849,7 +1101,7 @@
                     const indexMedicine = e.target.dataset.indexMedicine;
                     const medicine = medicinesData[indexMedicine];
                     document.getElementById('medicine-index').value = indexMedicine;
-                    document.getElementById('modal-name').value = medicine.name;
+                    document.getElementById('modal-medicine_name').value = medicine.name;
                     document.getElementById('selected-medicine-id').value = medicine.id;
                     document.getElementById('medicine-category-input').value = medicine.category_name;
                     document.getElementById('medicine-category-id').value = medicine.category_id;

@@ -130,7 +130,9 @@
             // CORRECTED: Use 'sale_items' instead of 'items' to match the JSON response.
             if (sale.sale_items && sale.sale_items.length > 0) {
                 sale.sale_items.forEach(item => {
-                    const itemName = item.phone ? `${item.phone.model} (IMEI: ${item.phone.imei})` : item.accessory.name;
+                    const itemName = item.medicine
+                        ? `${item.medicine.product?.name ?? 'Medicine'}${item.medicine.barcode ? ` (Barcode: ${item.medicine.barcode})` : ''}`
+                        : item.cosmetic.name;
                     const quantity = item.quantity ? `Quantity: ${item.quantity}` : '';
 
                     itemsGrid.innerHTML += `

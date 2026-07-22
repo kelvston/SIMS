@@ -328,7 +328,7 @@
                 `;
             } else if (tableId === 'medicineTable') {
                 modalTitle.textContent = 'Action Not Applicable';
-                modalMessage.textContent = 'Quantity editing is not applicable to medicines. Use the IMEI column to manage individual items.';
+                modalMessage.textContent = 'Quantity editing is not applicable to individually tracked medicines. Use the detailed stock page to manage individual items.';
                 stockAdjustmentForm.classList.add('hidden');
 
                 // Set buttons for a simple message

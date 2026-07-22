@@ -41,8 +41,8 @@ class LowStockNotification extends Notification
      */
     public function toVonage(object $notifiable): VonageMessage
     {
-        $brandName = $this->stockLevel->Product->name ?? 'Unknown Brand';
-        $message = "Low Stock Alert! Medicine: {$brandName} {$this->stockLevel->model} ({$this->stockLevel->color}). Current stock: {$this->stockLevel->current_stock}. Threshold: {$this->stockLevel->low_stock_threshold}.";
+        $productName = $this->stockLevel->product->name ?? 'Unknown Product';
+        $message = "Low Stock Alert! Medicine: {$productName}. Current stock: {$this->stockLevel->current_stock}. Threshold: {$this->stockLevel->low_stock_threshold}.";
 
         return (new VonageMessage())
             ->content($message);
@@ -52,8 +52,8 @@ class LowStockNotification extends Notification
     // Example if you're using the Twilio notification channel package:
     public function toTwilio(object $notifiable): TwilioSmsMessage
     {
-        $brandName = $this->stockLevel->brand->name ?? 'Unknown Brand';
-        $message = "Low Stock Alert! Phone: {$brandName} {$this->stockLevel->model} ({$this->stockLevel->color}). Current stock: {$this->stockLevel->current_stock}. Threshold: {$this->stockLevel->low_stock_threshold}.";
+        $productName = $this->stockLevel->product->name ?? 'Unknown Product';
+        $message = "Low Stock Alert! Medicine: {$productName}. Current stock: {$this->stockLevel->current_stock}. Threshold: {$this->stockLevel->low_stock_threshold}.";
 
         return (new TwilioSmsMessage())
                     ->content($message);
@@ -72,7 +72,7 @@ class LowStockNotification extends Notification
             'product' => $this->stockLevel->product->name ?? 'N/A',
             'current_stock' => $this->stockLevel->current_stock,
             'threshold' => $this->stockLevel->low_stock_threshold,
-            'message' => "Low Stock Alert for {$this->stockLevel->brand->name} {$this->stockLevel->model} ({$this->stockLevel->color})",
+            'message' => "Low Stock Alert for " . ($this->stockLevel->product->name ?? 'Unknown Product'),
         ];
     }
 }

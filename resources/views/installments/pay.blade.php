@@ -79,10 +79,14 @@
                     </span>
                 </div>
                 <div class="detail-item">
-                    <span class="detail-label">Phone(s) Sold:</span>
+                    <span class="detail-label">Items Sold:</span>
                     <span class="detail-value">
                         @foreach ($installmentPlan->sale->saleItems as $item)
-                            {{ $item->phone->brand->name }} {{ $item->phone->model }} (IMEI: {{ $item->phone->imei }})<br>
+                            @if($item->medicine)
+                                {{ $item->medicine->product->name ?? 'Medicine' }} @if($item->medicine->barcode) (Barcode: {{ $item->medicine->barcode }}) @endif<br>
+                            @elseif($item->cosmetic)
+                                {{ $item->cosmetic->name }} (Qty: {{ $item->quantity }})<br>
+                            @endif
                         @endforeach
                     </span>
                 </div>

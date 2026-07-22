@@ -105,7 +105,7 @@
     <header>
         {{-- Replace with your actual logo path or remove if none --}}
         <img src="{{ public_path('images/logo.png') }}" alt="Logo" class="logo" />
-        <h1>PhoneStore Pro</h1>
+        <h1>{{ config('app.name', 'Pharmacy') }}</h1>
         <p>Sales Receipt</p>
 
         {{-- QR Code --}}
@@ -129,22 +129,18 @@
         <table>
             <thead>
             <tr>
-                <th>IMEI</th>
-                <th>Brand</th>
-                <th>Model</th>
-                <th>Color</th>
-                <th>Storage</th>
+                <th>Item</th>
+                <th>Identifier</th>
+                <th>Quantity</th>
                 <th class="right">Unit Price (TZS)</th>
             </tr>
             </thead>
             <tbody>
             @foreach ($sale->saleItems as $item)
                 <tr>
-                    <td>{{ $item->phone->imei }}</td>
-                    <td>{{ $item->phone->brand->name ?? 'N/A' }}</td>
-                    <td>{{ $item->phone->model }}</td>
-                    <td>{{ $item->phone->color }}</td>
-                    <td>{{ $item->phone->storage_capacity }}</td>
+                    <td>{{ $item->medicine?->product?->name ?? $item->cosmetic?->name ?? 'Item' }}</td>
+                    <td>{{ $item->medicine?->barcode ?? $item->cosmetic?->barcode ?? 'N/A' }}</td>
+                    <td>{{ $item->quantity ?? 1 }}</td>
                     <td class="right">{{ number_format($item->unit_price, 2) }}</td>
                 </tr>
             @endforeach
@@ -196,7 +192,7 @@
 
     <footer class="footer">
         <p>Thank you for your purchase!</p>
-        <p>PhoneStore Pro &mdash; Your trusted phone seller</p>
+        <p>{{ config('app.name', 'Pharmacy') }}</p>
     </footer>
 </div>
 </body>

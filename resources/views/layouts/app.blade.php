@@ -139,19 +139,21 @@
                     <span class="mr-2">🚪</span> Log Out
                 </button>
             </form>
-                <div class="mt-auto flex items-center gap-3 px-3 py-2 border-t border-white/30">
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=AD5D29&color=fff&size=40" alt="Avatar" class="w-10 h-10 rounded-full" />
-                    <div>
-                        <div class="font-semibold text-sm leading-none">{{ Auth::user()->name }}</div>
-                        <div class="text-xs text-white/70">{{ Auth::user()->email }}</div>
+                @auth
+                    <div class="mt-auto flex items-center gap-3 px-3 py-2 border-t border-white/30">
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=AD5D29&color=fff&size=40" alt="Avatar" class="w-10 h-10 rounded-full" />
+                        <div>
+                            <div class="font-semibold text-sm leading-none">{{ Auth::user()->name }}</div>
+                            <div class="text-xs text-white/70">{{ Auth::user()->email }}</div>
+                        </div>
                     </div>
-                </div>
+                @endauth
         </nav>
     </aside>
 
     <!-- Sidebar for mobile -->
 {{--    <aside id="mobileSidebar" class="sidebar-mobile text-white p-4 lg:hidden overflow-hidden">--}}
-{{--        <h2 class="text-xl font-bold mb-6">PhoneStore Pro</h2>--}}
+{{--        <h2 class="text-xl font-bold mb-6">{{ config('app.name', 'Pharmacy') }}</h2>--}}
 {{--        <nav class="space-y-2 overflow-hidden">--}}
 {{--            @can('view dashboard')--}}
 {{--                <a href="{{ route('dashboard') }}" class="block py-2 px-3 rounded hover:bg-gray-700">Dashboard</a>--}}

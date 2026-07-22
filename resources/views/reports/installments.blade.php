@@ -95,10 +95,10 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $plan->sale->customer_name ?? 'N/A' }}</td>
                             <td class="px-6 py-4 text-sm text-gray-900">
                                 @foreach($plan->sale->saleItems as $item)
-                                    @if($item->phone)
-                                        {{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }}<br>
-                                    @elseif($item->accessory)
-                                        {{ $item->accessory->name }}<br>
+                                    @if($item->medicine)
+                                        {{ $item->medicine->product->name ?? 'Medicine' }}<br>
+                                    @elseif($item->cosmetic)
+                                        {{ $item->cosmetic->name }}<br>
                                     @endif
                                 @endforeach
                             </td>

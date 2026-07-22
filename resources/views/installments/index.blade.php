@@ -17,7 +17,7 @@
                     <thead class="bg-gray-50">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phones</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final Amount</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Installment Amount</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Installments</th>
@@ -33,7 +33,11 @@
                             <td class="px-4 py-3 text-sm text-gray-900">
                                 <ul class="list-disc list-inside space-y-1">
                                     @foreach ($plan->sale->saleItems as $item)
-                                        <li>{{ $item->phone->brand->name }} {{ $item->phone->model }}</li>
+                                        @if($item->medicine)
+                                            <li>{{ $item->medicine->product->name ?? 'Medicine' }}</li>
+                                        @elseif($item->cosmetic)
+                                            <li>{{ $item->cosmetic->name }} (Qty: {{ $item->quantity }})</li>
+                                        @endif
                                     @endforeach
                                 </ul>
                             </td>

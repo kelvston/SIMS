@@ -35,7 +35,7 @@
                         <th class="px-4 py-3 w-32 text-left text-xs font-medium text-gray-500 uppercase">Adjusted By</th>
                         <th class="px-4 py-3 w-48 text-left text-xs font-medium text-gray-500 uppercase break-words">Email</th>
                         <th class="px-4 py-3 w-32 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Phone Number</th>
-                        <th class="px-4 py-3 w-48 text-left text-xs font-medium text-gray-500 uppercase">Accessory / Phone</th>
+                        <th class="px-4 py-3 w-48 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
                         <th class="px-4 py-3 w-28 text-left text-xs font-medium text-gray-500 uppercase">Old Quantity</th>
                         <th class="px-4 py-3 w-28 text-left text-xs font-medium text-gray-500 uppercase">New Quantity</th>
                         <th class="px-4 py-3 w-40 text-left text-xs font-medium text-gray-500 uppercase">Comment</th>
@@ -76,7 +76,7 @@
                                 @if($adjustment->accessory)
                                     {{ $adjustment->accessory }}
                                 @elseif($adjustment->model)
-                                    {{ $adjustment->model }} (IMEI: {{ $adjustment->imei ?? '-' }})
+                                    {{ $adjustment->model }} (Barcode: {{ $adjustment->barcode ?? $adjustment->imei ?? '-' }})
                                 @else
                                     N/A
                                 @endif

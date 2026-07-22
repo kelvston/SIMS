@@ -71,7 +71,7 @@
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase Price</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selling Price</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IMEI</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barcode</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                     </thead>
@@ -82,9 +82,9 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $medicine->brand_name }} {{ $medicine->model }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($medicine->purchase_price, 2) }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($medicine->selling_price, 2) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" id="imei-medicine-{{ $medicine->id }}">{{ $medicine->imei }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" id="imei-medicine-{{ $medicine->id }}">{{ $medicine->barcode ?? $medicine->imei }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2">
-                                <button onclick="showItemAdjustmentModal({{ $medicine->id }}, '{{ $medicine->brand_name }} {{ $medicine->model }}', '{{ $medicine->imei }}', 'medicine')" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200">
+                                <button onclick="showItemAdjustmentModal({{ $medicine->id }}, '{{ $medicine->brand_name }} {{ $medicine->model }}', '{{ $medicine->barcode ?? $medicine->imei }}', 'medicine')" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200">
                                     <i class="fas fa-edit mr-1"></i> Edit BARCODE
                                 </button>
                                 <button onclick="removeMedicineFromStock({{ $medicine->id }})" class="text-red-600 hover:text-red-900 transition-colors duration-200">
@@ -121,7 +121,7 @@
                 </div>
                 <div class="mb-4">
                     <label for="comment" class="block text-sm font-medium text-gray-700">Reason for Adjustment</label>
-                    <textarea id="comment" name="comment" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., changed IMEI due to typo, removed because of damage"></textarea>
+                    <textarea id="comment" name="comment" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., changed barcode due to typo, removed because of damage"></textarea>
                 </div>
                 <div class="flex justify-end space-x-4">
                     <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none transition-colors duration-200">
@@ -158,7 +158,7 @@
                 newValueInput.value = currentValue;
                 adjustmentForm.action = `/reports/stock/update-cosmetic/${id}`;
             } else if (itemType === 'medicine') {
-                newValueLabel.innerText = 'New IMEI';
+                newValueLabel.innerText = 'New Barcode';
                 newValueInput.type = 'text';
                 newValueInput.value = currentValue;
                 adjustmentForm.action = `/reports/stock/update-medicine-imei/${id}`;

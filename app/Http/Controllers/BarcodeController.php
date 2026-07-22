@@ -23,31 +23,27 @@ class BarcodeController extends Controller
      */
     public function generate(Request $request): View
     {
-        // Validate the incoming request data for start and end numbers
         $validated = $request->validate([
             'start_number' => 'required|integer|min:1',
-            'end_number' => 'required|integer|min:1|gte:start_number',
+            'end_number' => 'required|integer|min:1|gte:start_number|max:999999',
         ]);
 
         $barcodes = [];
         $generator = new BarcodeGeneratorSVG();
+        $organizationName = Setting::where('key', 'organization_name')->value('value')
+            ?? config('app.name', 'Pharmacy');
 
-        // Loop from the start number to the end number
         for ($i = $validated['start_number']; $i <= $validated['end_number']; $i++) {
-            // Pad the number with leading zeros to ensure a consistent length
             $barcode_number = str_pad($i, 4, '0', STR_PAD_LEFT);
-            // Generate the SVG barcode using the number
             $barcode_svg = $generator->getBarcode($barcode_number, $generator::TYPE_CODE_128);
-           $org = Setting::first()->v;
-            dd($org);
+
             $barcodes[] = [
-                'name' => $org,
+                'name' => $organizationName,
                 'number' => $barcode_number,
                 'svg' => $barcode_svg,
             ];
         }
 
-        // Return the view to display the generated barcodes
         return view('barcodes.display', ['barcodes' => $barcodes]);
     }
 
