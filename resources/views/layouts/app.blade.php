@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@yield('title', 'PhoneStore Pro')</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         body {
@@ -98,7 +101,10 @@
 <div class="flex min-h-screen overflow-hidden">
     <!-- Sidebar for desktop -->
     <aside class="fixed inset-y-0 left-0 w-60 bg-[#AD5D29] text-white p-4 hidden lg:flex flex-col z-40" x-data="{ reportsOpen: false, manageOpen: false }">
-        <h2 class="text-xl font-bold mb-6 shrink-0">PhoneStore Pro</h2>
+        <a href="{{ route('dashboard') }}" class="mb-6 shrink-0 flex items-center gap-3 rounded px-1 py-1 hover:bg-[#C87137] transition">
+            {{-- <img src="{{ asset('images/logo.png') }}" alt="PhoneStore Pro logo" class="h-11 w-11 rounded bg-white object-contain p-1"> --}}
+            <span class="text-xl font-bold leading-tight">PhoneStore Pro</span>
+        </a>
         <nav class="space-y-2 overflow-y-auto pr-1">
             @can('view dashboard')
                 <a href="{{ route('dashboard') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
@@ -212,7 +218,10 @@
     <div id="mobileSidebarOverlay" class="fixed inset-0 z-40 hidden bg-black/40 lg:hidden"></div>
 
     <aside id="mobileSidebar" class="sidebar-mobile text-white p-4 lg:hidden" x-data="{ reportsOpen: false, manageOpen: false }">
-        <h2 class="text-xl font-bold mb-6">PhoneStore Pro</h2>
+        <a href="{{ route('dashboard') }}" class="mb-6 flex items-center gap-3 rounded px-1 py-1 hover:bg-[#C87137] transition">
+            <img src="{{ asset('images/logo.png') }}" alt="PhoneStore Pro logo" class="h-11 w-11 rounded bg-white object-contain p-1">
+            <span class="text-xl font-bold leading-tight">PhoneStore Pro</span>
+        </a>
         <nav class="space-y-2">
             @can('view dashboard')
                 <a href="{{ route('dashboard') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Dashboard</a>
@@ -279,7 +288,10 @@
             <button id="menuToggle" type="button" class="text-gray-600 p-2 -ml-2 rounded hover:bg-gray-100" aria-label="Open navigation" aria-controls="mobileSidebar" aria-expanded="false">
                 <i class="fas fa-bars text-2xl"></i>
             </button>
-            <h1 class="text-base sm:text-xl font-bold text-gray-800 truncate px-2">@yield('title', 'Dashboard')</h1>
+            <div class="min-w-0 flex items-center gap-2 px-2">
+                <img src="{{ asset('images/logo.png') }}" alt="" class="h-8 w-8 shrink-0 object-contain">
+                <h1 class="text-base sm:text-xl font-bold text-gray-800 truncate">@yield('title', 'Dashboard')</h1>
+            </div>
             <div class="relative">
                 <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-full">
                     <i class="fas fa-bell fa-lg"></i>
