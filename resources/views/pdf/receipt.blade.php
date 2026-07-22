@@ -134,8 +134,8 @@
                 <th>Identifier</th>
                 <th>Details</th>
                 <th class="right">Qty</th>
-                <th class="right">Unit Price (TZS)</th>
-                <th class="right">Line Total (TZS)</th>
+                <th class="right">Unit Price (Tsh)</th>
+                <th class="right">Line Total (Tsh)</th>
             </tr>
             </thead>
             <tbody>
@@ -159,8 +159,8 @@
                         @endif
                     </td>
                     <td class="right">{{ $item->quantity ?? 1 }}</td>
-                    <td class="right">{{ number_format($item->unit_price, 2) }}</td>
-                    <td class="right">{{ number_format($item->unit_price * ($item->quantity ?? 1), 2) }}</td>
+                    <td class="right">Tsh {{ number_format($item->unit_price, 2) }}</td>
+                    <td class="right">Tsh {{ number_format($item->unit_price * ($item->quantity ?? 1), 2) }}</td>
                 </tr>
             @endforeach
             </tbody>
@@ -169,12 +169,12 @@
 
     <section class="summary">
         <h2>Summary</h2>
-        <p><strong>Subtotal:</strong> {{ number_format($receipt->subtotal, 2) }} TZS</p>
-        <p><strong>Tax:</strong> {{ number_format($receipt->tax, 2) }} TZS</p>
-        <p><strong>Discount:</strong> {{ number_format($receipt->discount, 2) }} TZS</p>
-        <p><strong>Total:</strong> {{ number_format($receipt->total, 2) }} TZS</p>
-        <p><strong>Paid Amount:</strong> {{ number_format($receipt->paid_amount, 2) }} TZS</p>
-        <p><strong>Remaining Balance:</strong> {{ number_format($receipt->balance, 2) }} TZS</p>
+        <p><strong>Subtotal:</strong> Tsh {{ number_format($receipt->subtotal, 2) }}</p>
+        <p><strong>Tax:</strong> Tsh {{ number_format($receipt->tax, 2) }}</p>
+        <p><strong>Discount:</strong> Tsh {{ number_format($receipt->discount, 2) }}</p>
+        <p><strong>Total:</strong> Tsh {{ number_format($receipt->total, 2) }}</p>
+        <p><strong>Paid Amount:</strong> Tsh {{ number_format($receipt->paid_amount, 2) }}</p>
+        <p><strong>Remaining Balance:</strong> Tsh {{ number_format($receipt->balance, 2) }}</p>
         <p><strong>Payment Method:</strong> {{ ucfirst($receipt->payment_method) }}</p>
         <p><strong>Status:</strong> {{ ucfirst($receipt->status) }}</p>
     </section>
@@ -185,11 +185,11 @@
             <table>
                 <tr>
                     <td><strong>Amount Paid</strong></td>
-                    <td>{{ number_format($sale->amount_paid, 2) }}</td>
+                    <td>Tsh {{ number_format($sale->amount_paid, 2) }}</td>
                 </tr>
                 <tr>
                     <td><strong>Amount Due</strong></td>
-                    <td>{{ number_format($sale->amount_due, 2) }}</td>
+                    <td>Tsh {{ number_format($sale->amount_due, 2) }}</td>
                 </tr>
                 <tr>
                     <td><strong>Due Date</strong></td>
@@ -209,8 +209,8 @@
                     <td>{{ $sale->installmentPlan->total_installments }}</td>
                 </tr>
                 <tr>
-                    <td><strong>Installment Amount (TZS)</strong></td>
-                    <td>{{ number_format($sale->installmentPlan->installment_amount, 2) }}</td>
+                    <td><strong>Installment Amount (Tsh)</strong></td>
+                    <td>Tsh {{ number_format($sale->installmentPlan->installment_amount, 2) }}</td>
                 </tr>
                 <tr>
                     <td><strong>Start Date</strong></td>

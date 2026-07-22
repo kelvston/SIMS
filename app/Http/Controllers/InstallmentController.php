@@ -88,7 +88,7 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
             // Prevent overpayment beyond the remaining amount
             if ($amountToPay > $remainingAmount + 0.01) { // Add a small tolerance for floating point issues
                 throw ValidationException::withMessages([
-                    'amount_paid' => ['The payment amount cannot exceed the remaining balance of $' . number_format($remainingAmount, 2) . '.'],
+                    'amount_paid' => ['The payment amount cannot exceed the remaining balance of Tsh ' . number_format($remainingAmount, 2) . '.'],
                 ]);
             }
 

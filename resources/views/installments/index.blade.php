@@ -50,8 +50,8 @@
                                     @endforeach
                                 </ul>
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${{ number_format($plan->sale->final_amount, 2) }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${{ number_format($plan->installment_amount, 2) }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">Tsh {{ number_format($plan->sale->final_amount, 2) }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">Tsh {{ number_format($plan->installment_amount, 2) }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $plan->total_installments }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $plan->next_payment_date ? $plan->next_payment_date->format('Y-m-d') : 'N/A' }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">

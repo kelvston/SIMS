@@ -40,7 +40,7 @@
                 <div class="detail-item"><span class="detail-label">Voided By:</span> <span class="detail-value">{{ $sale->voidedBy->name ?? 'Unknown user' }}</span></div>
                 <div class="detail-item"><span class="detail-label">Voided At:</span> <span class="detail-value">{{ optional($sale->voided_at)->format('Y-m-d H:i') ?? 'N/A' }}</span></div>
                 <div class="detail-item"><span class="detail-label">Reason:</span> <span class="detail-value">{{ $sale->void_reason ?? 'N/A' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Original Final Amount:</span> <span class="detail-value">${{ number_format($sale->original_final_amount ?? $sale->final_amount, 2) }}</span></div>
+                <div class="detail-item"><span class="detail-label">Original Final Amount:</span> <span class="detail-value">Tsh {{ number_format($sale->original_final_amount ?? $sale->final_amount, 2) }}</span></div>
             </div>
         @endif
 
@@ -74,11 +74,11 @@
         {{-- Financial Summary --}}
         <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Financial Summary</h2>
-            <div class="detail-item"><span class="detail-label">Total Amount (Before Discount):</span> <span class="detail-value">${{ number_format($sale->total_amount, 2) }}</span></div>
-            <div class="detail-item"><span class="detail-label">Discount Applied:</span> <span class="detail-value">${{ number_format($sale->discount_amount, 2) }}</span></div>
-            <div class="detail-item font-bold text-lg"><span class="detail-label">Final Amount:</span> <span class="detail-value">${{ number_format($sale->final_amount, 2) }}</span></div>
-            <div class="detail-item"><span class="detail-label">Amount Paid:</span> <span class="detail-value">${{ number_format($sale->amount_paid, 2) }}</span></div>
-            <div class="detail-item"><span class="detail-label">Amount Due:</span> <span class="detail-value">${{ number_format($sale->amount_due, 2) }}</span></div>
+            <div class="detail-item"><span class="detail-label">Total Amount (Before Discount):</span> <span class="detail-value">Tsh {{ number_format($sale->total_amount, 2) }}</span></div>
+            <div class="detail-item"><span class="detail-label">Discount Applied:</span> <span class="detail-value">Tsh {{ number_format($sale->discount_amount, 2) }}</span></div>
+            <div class="detail-item font-bold text-lg"><span class="detail-label">Final Amount:</span> <span class="detail-value">Tsh {{ number_format($sale->final_amount, 2) }}</span></div>
+            <div class="detail-item"><span class="detail-label">Amount Paid:</span> <span class="detail-value">Tsh {{ number_format($sale->amount_paid, 2) }}</span></div>
+            <div class="detail-item"><span class="detail-label">Amount Due:</span> <span class="detail-value">Tsh {{ number_format($sale->amount_due, 2) }}</span></div>
             @if($sale->is_credit)
                 <div class="detail-item"><span class="detail-label">Credit Due Date:</span> <span class="detail-value">{{ optional($sale->credit_due_date)->format('Y-m-d') ?? 'N/A' }}</span></div>
                 @if($sale->credit_reminder_status)
@@ -104,15 +104,15 @@
                                 <strong>{{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }}</strong>
                                 ({{ $item->phone->color }}, {{ $item->phone->storage_capacity }}) -
                                 IMEI: {{ $item->phone->imei }} -
-                                Sold Price: ${{ number_format($item->unit_price, 2) }}
+                                Sold Price: Tsh {{ number_format($item->unit_price, 2) }}
                             @elseif($item->product)
                                 <strong>{{ $item->product->name }}</strong>
                                 Qty: {{ $item->quantity }} -
-                                Unit Price: ${{ number_format($item->unit_price, 2) }} -
-                                Line Total: ${{ number_format($item->unit_price * $item->quantity, 2) }}
+                                Unit Price: Tsh {{ number_format($item->unit_price, 2) }} -
+                                Line Total: Tsh {{ number_format($item->unit_price * $item->quantity, 2) }}
                             @else
                                 <strong>Item removed</strong> -
-                                Sold Price: ${{ number_format($item->unit_price, 2) }}
+                                Sold Price: Tsh {{ number_format($item->unit_price, 2) }}
                             @endif
                         </li>
                     @endforeach
@@ -125,7 +125,7 @@
             <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Installment Plan Details</h2>
                 <div class="detail-item"><span class="detail-label">Total Installments:</span> <span class="detail-value">{{ $sale->installmentPlan->total_installments }}</span></div>
-                <div class="detail-item"><span class="detail-label">Amount Per Installment:</span> <span class="detail-value">${{ number_format($sale->installmentPlan->installment_amount, 2) }}</span></div>
+                <div class="detail-item"><span class="detail-label">Amount Per Installment:</span> <span class="detail-value">Tsh {{ number_format($sale->installmentPlan->installment_amount, 2) }}</span></div>
                 <div class="detail-item"><span class="detail-label">Installment Start Date:</span> <span class="detail-value">{{ $sale->installmentPlan->start_date->format('Y-m-d') }}</span></div>
                 <div class="detail-item"><span class="detail-label">Next Payment Date:</span> <span class="detail-value">{{ $sale->installmentPlan->next_payment_date ? $sale->installmentPlan->next_payment_date->format('Y-m-d') : 'N/A' }}</span></div>
                 <div class="detail-item"><span class="detail-label">Plan Status:</span>
@@ -157,7 +157,7 @@
                             @foreach ($sale->installmentPlan->installmentPayments->sortBy('payment_date') as $payment)
                                 <tr>
                                     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $payment->payment_date->format('Y-m-d H:i') }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${{ number_format($payment->amount_paid, 2) }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">Tsh {{ number_format($payment->amount_paid, 2) }}</td>
                                 </tr>
                             @endforeach
                             </tbody>

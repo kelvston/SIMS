@@ -92,19 +92,19 @@
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Total Sale Amount:</span>
-                    <span class="detail-value">${{ number_format($installmentPlan->sale->final_amount, 2) }}</span>
+                    <span class="detail-value">Tsh {{ number_format($installmentPlan->sale->final_amount, 2) }}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Total Paid So Far:</span>
-                    <span class="detail-value text-green-600">${{ number_format($totalPaid, 2) }}</span>
+                    <span class="detail-value text-green-600">Tsh {{ number_format($totalPaid, 2) }}</span>
                 </div>
                 <div class="detail-item font-bold text-lg">
                     <span class="detail-label">Remaining Balance:</span>
-                    <span class="detail-value text-red-600">${{ number_format($remainingAmount, 2) }}</span>
+                    <span class="detail-value text-red-600">Tsh {{ number_format($remainingAmount, 2) }}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Amount Per Installment:</span>
-                    <span class="detail-value">${{ number_format($installmentPlan->installment_amount, 2) }}</span>
+                    <span class="detail-value">Tsh {{ number_format($installmentPlan->installment_amount, 2) }}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Next Payment Due:</span>
@@ -133,7 +133,7 @@
                         @csrf
 
                         <div class="mb-4">
-                            <label for="amount_paid" class="block text-gray-700 text-sm font-bold mb-2">Amount to Pay ($):</label>
+                            <label for="amount_paid" class="block text-gray-700 text-sm font-bold mb-2">Amount to Pay (Tsh):</label>
                             <input type="number" step="0.01" name="amount_paid" id="amount_paid"
                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('amount_paid') border-red-500 @enderror"
                                    value="{{ old('amount_paid', min($installmentPlan->installment_amount, $remainingAmount)) }}"

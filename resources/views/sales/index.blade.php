@@ -48,7 +48,7 @@
                     @foreach ($creditReminderSales as $creditSale)
                         <li>
                             Sale #{{ $creditSale->id }} for {{ $creditSale->customer_name }}
-                            has ${{ number_format($creditSale->amount_due, 2) }} due on {{ $creditSale->credit_due_date->format('Y-m-d') }}.
+                            has Tsh {{ number_format($creditSale->amount_due, 2) }} due on {{ $creditSale->credit_due_date->format('Y-m-d') }}.
                             <a href="{{ route('sales.show', $creditSale->id) }}" class="font-semibold underline">View</a>
                         </li>
                     @endforeach
@@ -91,7 +91,7 @@
                                     @endforeach
                                 </ul>
                             </td>
-                            <td data-label="Final Amount" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${{ number_format($sale->final_amount, 2) }}</td>
+                            <td data-label="Final Amount" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">Tsh {{ number_format($sale->final_amount, 2) }}</td>
                             <td data-label="Sale Date" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $sale->sale_date->format('Y-m-d H:i') }}</td>
                             <td data-label="Type" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
@@ -107,7 +107,7 @@
                                         @else text-gray-500 @endif">
                                         Due {{ $sale->credit_due_date->format('Y-m-d') }}
                                         @if((float) $sale->amount_due > 0)
-                                            - ${{ number_format($sale->amount_due, 2) }}
+                                            - Tsh {{ number_format($sale->amount_due, 2) }}
                                         @endif
                                     </div>
                                 @endif

@@ -88,7 +88,7 @@
                         <td data-label="Accessory" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->name }}</td>
                         <td data-label="Current Stock" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $currentStock }}</td>
                         <td data-label="Low Stock Threshold" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $threshold }}</td>
-                        <td data-label="Selling Price" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ number_format($stock->selling_price ?? 0, 2) }}</td>
+                        <td data-label="Selling Price" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Tsh {{ number_format($stock->selling_price ?? 0, 2) }}</td>
                         <td data-label="Status" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $currentStock <= $threshold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800' }}">
                                 {{ $currentStock <= $threshold ? 'Low Stock' : 'Sufficient' }}

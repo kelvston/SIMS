@@ -68,16 +68,16 @@
 <div class="section-title">Key Performance Indicators</div>
 <table class="kpi-grid">
     <tr>
-        <td><div class="kpi-box"><div class="kpi-value c-green">${{ number_format($totalRevenue, 2) }}</div><div class="kpi-label">Total Revenue</div></div></td>
-        <td><div class="kpi-box"><div class="kpi-value {{ $netProfit >= 0 ? 'c-blue' : 'c-red' }}">${{ number_format($netProfit, 2) }}</div><div class="kpi-label">Net Profit</div></div></td>
+        <td><div class="kpi-box"><div class="kpi-value c-green">Tsh {{ number_format($totalRevenue, 2) }}</div><div class="kpi-label">Total Revenue</div></div></td>
+        <td><div class="kpi-box"><div class="kpi-value {{ $netProfit >= 0 ? 'c-blue' : 'c-red' }}">Tsh {{ number_format($netProfit, 2) }}</div><div class="kpi-label">Net Profit</div></div></td>
         <td><div class="kpi-box"><div class="kpi-value c-amber">{{ $profitMargin }}%</div><div class="kpi-label">Profit Margin</div></div></td>
         <td><div class="kpi-box"><div class="kpi-value c-teal">{{ $totalSalesCount }}</div><div class="kpi-label">Total Sales</div></div></td>
     </tr>
     <tr>
-        <td><div class="kpi-box"><div class="kpi-value c-red">${{ number_format($totalExpenses, 2) }}</div><div class="kpi-label">Total Expenses</div></div></td>
+        <td><div class="kpi-box"><div class="kpi-value c-red">Tsh {{ number_format($totalExpenses, 2) }}</div><div class="kpi-label">Total Expenses</div></div></td>
         <td><div class="kpi-box"><div class="kpi-value c-gray">{{ $availablePhones }}</div><div class="kpi-label">Phones in Stock</div></div></td>
-        <td><div class="kpi-box"><div class="kpi-value c-blue">${{ number_format($inventoryValue, 2) }}</div><div class="kpi-label">Inventory Value</div></div></td>
-        <td><div class="kpi-box"><div class="kpi-value c-amber">${{ number_format($pendingInstallments, 2) }}</div><div class="kpi-label">Pending Installments</div></div></td>
+        <td><div class="kpi-box"><div class="kpi-value c-blue">Tsh {{ number_format($inventoryValue, 2) }}</div><div class="kpi-label">Inventory Value</div></div></td>
+        <td><div class="kpi-box"><div class="kpi-value c-amber">Tsh {{ number_format($pendingInstallments, 2) }}</div><div class="kpi-label">Pending Installments</div></div></td>
     </tr>
 </table>
 
@@ -87,14 +87,14 @@
     <tr>
         <td>
             <table class="pl">
-                <tr><td>Total Revenue</td><td class="r c-green">${{ number_format($totalRevenue, 2) }}</td></tr>
-                <tr><td>Cost of Goods Sold</td><td class="r c-red">– ${{ number_format($totalCogs, 2) }}</td></tr>
-                <tr class="highlight"><td>Gross Profit</td><td class="r">${{ number_format($grossProfit, 2) }}</td></tr>
-                <tr><td>Accessory Revenue</td><td class="r">${{ number_format($accessoryRevenue, 2) }}</td></tr>
-                <tr><td>Accessory Profit/Loss</td><td class="r">${{ number_format($accessoryGrossProfit, 2) }}</td></tr>
-                <tr><td>Total Operating Expenses</td><td class="r c-red">– ${{ number_format($totalExpenses, 2) }}</td></tr>
-                <tr class="total"><td>Net Profit</td><td class="r">${{ number_format($netProfit, 2) }}</td></tr>
-                <tr><td>Discounts Given</td><td class="r">– ${{ number_format($totalDiscounts, 2) }}</td></tr>
+                <tr><td>Total Revenue</td><td class="r c-green">Tsh {{ number_format($totalRevenue, 2) }}</td></tr>
+                <tr><td>Cost of Goods Sold</td><td class="r c-red">– Tsh {{ number_format($totalCogs, 2) }}</td></tr>
+                <tr class="highlight"><td>Gross Profit</td><td class="r">Tsh {{ number_format($grossProfit, 2) }}</td></tr>
+                <tr><td>Accessory Revenue</td><td class="r">Tsh {{ number_format($accessoryRevenue, 2) }}</td></tr>
+                <tr><td>Accessory Profit/Loss</td><td class="r">Tsh {{ number_format($accessoryGrossProfit, 2) }}</td></tr>
+                <tr><td>Total Operating Expenses</td><td class="r c-red">– Tsh {{ number_format($totalExpenses, 2) }}</td></tr>
+                <tr class="total"><td>Net Profit</td><td class="r">Tsh {{ number_format($netProfit, 2) }}</td></tr>
+                <tr><td>Discounts Given</td><td class="r">– Tsh {{ number_format($totalDiscounts, 2) }}</td></tr>
                 <tr><td>Profit Margin</td><td class="r">{{ $profitMargin }}%</td></tr>
             </table>
         </td>
@@ -105,14 +105,14 @@
                 @forelse($expensesByCategory as $exp)
                     <tr>
                         <td>{{ $exp->category }}</td>
-                        <td class="r">${{ number_format($exp->total, 2) }}</td>
+                        <td class="r">Tsh {{ number_format($exp->total, 2) }}</td>
                         <td class="r">{{ $totalExpenses > 0 ? round(($exp->total / $totalExpenses) * 100, 1) : 0 }}%</td>
                     </tr>
                 @empty
                     <tr><td colspan="3" style="text-align:center;color:#999">No expenses.</td></tr>
                 @endforelse
                 </tbody>
-                <tfoot><tr><td>Total</td><td class="r">${{ number_format($totalExpenses, 2) }}</td><td class="r">100%</td></tr></tfoot>
+                <tfoot><tr><td>Total</td><td class="r">Tsh {{ number_format($totalExpenses, 2) }}</td><td class="r">100%</td></tr></tfoot>
             </table>
         </td>
     </tr>
@@ -130,7 +130,7 @@
                 <tr><td>Full Payment Sales</td><td class="r">{{ $fullPaymentSales }}</td></tr>
                 <tr><td>Installment Sales</td><td class="r">{{ $installmentSales }}</td></tr>
                 <tr><td>Active Installment Plans</td><td class="r">{{ $activeInstallmentCount }}</td></tr>
-                <tr><td>Receivable (Installments)</td><td class="r">${{ number_format($pendingInstallments, 2) }}</td></tr>
+                <tr><td>Receivable (Installments)</td><td class="r">Tsh {{ number_format($pendingInstallments, 2) }}</td></tr>
                 </tbody>
             </table>
         </td>
@@ -142,7 +142,7 @@
                     <tr>
                         <td>{{ $brand->brand_name }}</td>
                         <td class="r">{{ $brand->units_sold }}</td>
-                        <td class="r">${{ number_format($brand->revenue, 2) }}</td>
+                        <td class="r">Tsh {{ number_format($brand->revenue, 2) }}</td>
                     </tr>
                 @empty
                     <tr><td colspan="3" style="text-align:center;color:#999">No data.</td></tr>
@@ -162,13 +162,13 @@
         <tr>
             <td>{{ optional($stock->brand)->name ?? 'Unknown' }}</td>
             <td class="r">{{ $stock->count }}</td>
-            <td class="r">${{ number_format($stock->value, 2) }}</td>
+            <td class="r">Tsh {{ number_format($stock->value, 2) }}</td>
         </tr>
     @empty
         <tr><td colspan="3" style="text-align:center;color:#999">No inventory data.</td></tr>
     @endforelse
     </tbody>
-    <tfoot><tr><td>Total</td><td class="r">{{ $availablePhones }}</td><td class="r">${{ number_format($inventoryValue, 2) }}</td></tr></tfoot>
+    <tfoot><tr><td>Total</td><td class="r">{{ $availablePhones }}</td><td class="r">Tsh {{ number_format($inventoryValue, 2) }}</td></tr></tfoot>
 </table>
 
 @if($lowStockItems->isNotEmpty())
@@ -188,7 +188,7 @@
             <td>{{ \Carbon\Carbon::parse($sale->sale_date)->format('d M Y') }}</td>
             <td>{{ $sale->customer_name }}</td>
             <td>{{ $sale->saleItems->map(fn($i) => $i->phone ? optional($i->phone->brand)->name . ' ' . $i->phone->model : ($i->product ? $i->product->name . ' x ' . $i->quantity : 'Item removed'))->implode(', ') }}</td>
-            <td class="r">${{ number_format($sale->final_amount, 2) }}</td>
+            <td class="r">Tsh {{ number_format($sale->final_amount, 2) }}</td>
             <td class="r">{{ $sale->is_installment ? 'Installment' : 'Full' }}</td>
         </tr>
     @empty

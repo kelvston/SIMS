@@ -30,11 +30,11 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-blue-100 p-5 rounded-lg shadow-md text-center">
             <p class="text-blue-700 text-sm font-semibold">Total Sales Amount</p>
-            <p class="text-2xl font-bold text-blue-900">${{ number_format($totalSalesAmount, 2) }}</p>
+            <p class="text-2xl font-bold text-blue-900">Tsh {{ number_format($totalSalesAmount, 2) }}</p>
         </div>
         <div class="bg-yellow-100 p-5 rounded-lg shadow-md text-center">
             <p class="text-yellow-700 text-sm font-semibold">Total Discount Given</p>
-            <p class="text-2xl font-bold text-yellow-900">${{ number_format($totalDiscountAmount, 2) }}</p>
+            <p class="text-2xl font-bold text-yellow-900">Tsh {{ number_format($totalDiscountAmount, 2) }}</p>
         </div>
         <div class="bg-purple-100 p-5 rounded-lg shadow-md text-center">
             <p class="text-purple-700 text-sm font-semibold">Installment Sales</p>
@@ -81,7 +81,7 @@
                                 @endforeach
                             </ul>
                         </td>
-                        <td data-label="Final Amount" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ number_format($sale->final_amount, 2) }}</td>
+                        <td data-label="Final Amount" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Tsh {{ number_format($sale->final_amount, 2) }}</td>
                         <td data-label="Sale Date" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->sale_date->format('Y-m-d H:i') }}</td>
                         <td data-label="Type" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full

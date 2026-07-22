@@ -52,8 +52,8 @@
     <p>Thank you for your purchase. Please find your receipt details below:</p>
 
     <p><strong>Receipt Number:</strong> {{ $receipt->receipt_number }}</p>
-    <p><strong>Amount Paid:</strong> {{ number_format($receipt->paid_amount, 2) }} TZS</p>
-    <p><strong>Remaining Balance:</strong> {{ number_format($receipt->balance, 2) }} TZS</p>
+    <p><strong>Amount Paid:</strong> Tsh {{ number_format($receipt->paid_amount, 2) }}</p>
+    <p><strong>Remaining Balance:</strong> Tsh {{ number_format($receipt->balance, 2) }}</p>
     <p><strong>Payment Method:</strong> {{ ucfirst($receipt->payment_method) }}</p>
     <p><strong>Status:</strong> {{ ucfirst($receipt->status) }}</p>
 

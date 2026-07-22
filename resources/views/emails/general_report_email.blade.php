@@ -41,11 +41,11 @@
         <!-- KPI Row 1 -->
         <div class="kpi-row">
             <div class="kpi">
-                <div class="val">${{ number_format($totalRevenue, 2) }}</div>
+                <div class="val">Tsh {{ number_format($totalRevenue, 2) }}</div>
                 <div class="lbl">Total Revenue</div>
             </div>
             <div class="kpi">
-                <div class="val" style="color:{{ $netProfit >= 0 ? '#198754' : '#dc3545' }}">${{ number_format($netProfit, 2) }}</div>
+                <div class="val" style="color:{{ $netProfit >= 0 ? '#198754' : '#dc3545' }}">Tsh {{ number_format($netProfit, 2) }}</div>
                 <div class="lbl">Net Profit</div>
             </div>
             <div class="kpi">
@@ -61,7 +61,7 @@
                 <div class="lbl">Total Sales</div>
             </div>
             <div class="kpi">
-                <div class="val" style="color:#dc3545">${{ number_format($totalExpenses, 2) }}</div>
+                <div class="val" style="color:#dc3545">Tsh {{ number_format($totalExpenses, 2) }}</div>
                 <div class="lbl">Total Expenses</div>
             </div>
             <div class="kpi">
@@ -72,7 +72,7 @@
 
         @if($pendingInstallments > 0)
         <p style="background:#fff3cd;padding:10px 14px;border-radius:5px;border-left:4px solid #ffc107;">
-            ⚠️ <strong>${{ number_format($pendingInstallments, 2) }}</strong> in installment payments are still outstanding.
+            ⚠️ <strong>Tsh {{ number_format($pendingInstallments, 2) }}</strong> in installment payments are still outstanding.
         </p>
         @endif
 

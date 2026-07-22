@@ -94,8 +94,8 @@
         @php
             $cards = [
                 ['icon' => '📱', 'label' => 'Phones', 'value' => number_format($totalPhones), 'color' => 'indigo'],
-                ['icon' => '💰', 'label' => 'Sales (' . \Carbon\Carbon::now()->format('M') . ')', 'value' => '$' . number_format($monthlySales, 2), 'color' => 'green'],
-                ['icon' => '⏳', 'label' => 'Pending', 'value' => '$' . number_format($pendingInstallmentsAmount, 2), 'color' => 'yellow'],
+                ['icon' => '💰', 'label' => 'Sales (' . \Carbon\Carbon::now()->format('M') . ')', 'value' => 'Tsh ' . number_format($monthlySales, 2), 'color' => 'green'],
+                ['icon' => '⏳', 'label' => 'Pending', 'value' => 'Tsh ' . number_format($pendingInstallmentsAmount, 2), 'color' => 'yellow'],
                 ['icon' => '📈', 'label' => 'Net Margin', 'value' => number_format($profitMarginPercentage, 2) . '%', 'color' => $profitMarginPercentage >= 0 ? 'green' : 'red'],
             ];
         @endphp
@@ -241,7 +241,7 @@
             data: {
                 labels: salesChartLabels,
                 datasets: [{
-                    label: 'Sales ($)',
+                    label: 'Sales (Tsh)',
                     data: salesChartData,
                     borderColor: '#4f46e5',
                     backgroundColor: 'rgba(79, 70, 229, 0.1)',
@@ -257,7 +257,7 @@
                         beginAtZero: true,
                         title: {
                             display: true,
-                            text: 'Sales Amount ($)'
+                            text: 'Sales Amount (Tsh)'
                         }
                     },
                     x: {
@@ -271,7 +271,7 @@
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                                return context.dataset.label + ': Tsh ' + context.parsed.y.toFixed(2);
                             }
                         }
                     }

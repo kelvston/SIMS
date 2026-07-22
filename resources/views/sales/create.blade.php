@@ -215,7 +215,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                    <label for="discount_amount" class="block text-gray-700 text-sm font-bold mb-2">Discount Amount ($):</label>
+                    <label for="discount_amount" class="block text-gray-700 text-sm font-bold mb-2">Discount Amount (Tsh):</label>
                     <input type="number" step="0.01" name="discount_amount" id="discount_amount" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('discount_amount') border-red-500 @enderror" value="{{ old('discount_amount', 0) }}" min="0">
                     @error('discount_amount')
                     <p class="text-red-500 text-xs italic">{{ $message }}</p>
@@ -273,7 +273,7 @@
                     @enderror
                 </div>
                 <div>
-                    <label for="credit_paid_amount" class="block text-gray-700 text-sm font-bold mb-2">Paid Now ($):</label>
+                    <label for="credit_paid_amount" class="block text-gray-700 text-sm font-bold mb-2">Paid Now (Tsh):</label>
                     <input type="number" step="0.01" name="credit_paid_amount" id="credit_paid_amount"
                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('credit_paid_amount') border-red-500 @enderror"
                            value="{{ old('credit_paid_amount', 0) }}" min="0">
@@ -321,7 +321,7 @@
         }
 
         function formatMoney(cents) {
-            return `$${(cents / 100).toFixed(2)}`;
+            return `Tsh ${(cents / 100).toFixed(2)}`;
         }
 
         function escapeHtml(value) {

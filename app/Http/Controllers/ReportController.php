@@ -153,7 +153,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                     ->implode(', ');
                 return [
                     'type' => 'sale',
-                    'description' => "✔️ {$phoneNames} sold to {$sale->customer_name} - $" . number_format($sale->final_amount, 2),
+                    'description' => "✔️ {$phoneNames} sold to {$sale->customer_name} - Tsh " . number_format($sale->final_amount, 2),
                     'date' => $sale->sale_date,
                     'link' => route('sales.show', $sale->id)
                 ];
@@ -186,7 +186,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                 }
                 return [
                     'type' => 'payment',
-                    'description' => "💵 Installment payment received for {$phoneName} - $" . number_format($payment->amount_paid, 2),
+                    'description' => "💵 Installment payment received for {$phoneName} - Tsh " . number_format($payment->amount_paid, 2),
                     'date' => $payment->payment_date,
                     'link' => $payment->installmentPlan?->sale ? route('sales.show', $payment->installmentPlan->sale->id) : route('installments.index')
                 ];
@@ -199,7 +199,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             ->map(function($expense) {
                 return [
                     'type' => 'expense',
-                    'description' => "💸 Expense: {$expense->description} ({$expense->category}) - $" . number_format($expense->amount, 2),
+                    'description' => "💸 Expense: {$expense->description} ({$expense->category}) - Tsh " . number_format($expense->amount, 2),
                     'date' => $expense->expense_date,
                     'link' => route('expenses.index') // Link to expense list
                 ];
@@ -641,10 +641,10 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                         return implode('<br>', $phones);
                     })
                     ->addColumn('final_amount', function($sale) {
-                        return '$' . number_format($sale->final_amount, 2);
+                        return 'Tsh ' . number_format($sale->final_amount, 2);
                     })
                     ->addColumn('discount_amount', function($sale) {
-                        return '$' . number_format($sale->discount_amount, 2);
+                        return 'Tsh ' . number_format($sale->discount_amount, 2);
                     })
                     ->addColumn('sale_date', function($sale) {
                         return $sale->sale_date instanceof Carbon ? $sale->sale_date->format('Y-m-d H:i') : date('Y-m-d H:i', strtotime($sale->sale_date));
@@ -684,8 +684,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                         'phones_sold' => implode(', ', $sale->saleItems->map(function($item) {
                             return optional($item->phone)->brand->name . ' ' . optional($item->phone)->model;
                         })->toArray()),
-                        'final_amount' => '$' . number_format($sale->final_amount, 2),
-                        'discount_amount' => '$' . number_format($sale->discount_amount, 2),
+                        'final_amount' => 'Tsh ' . number_format($sale->final_amount, 2),
+                        'discount_amount' => 'Tsh ' . number_format($sale->discount_amount, 2),
                         'sale_date' => $sale->sale_date instanceof Carbon ? $sale->sale_date->format('Y-m-d H:i') : date('Y-m-d H:i', strtotime($sale->sale_date)),
                         'type' => $sale->is_installment ? 'Installment' : 'Full Payment'
                     ];

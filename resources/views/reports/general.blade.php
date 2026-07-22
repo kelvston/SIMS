@@ -406,7 +406,7 @@
                     <tr><td>Full Payment Sales</td><td class="r">{{ $fullPaymentSales }}</td></tr>
                     <tr><td>Installment Sales</td><td class="r">{{ $installmentSales }}</td></tr>
                     <tr><td>Active Installment Plans</td><td class="r">{{ $activeInstallmentCount }}</td></tr>
-                    <tr style="background:#fefce8"><td style="font-weight:600">Receivable (Installments)</td><td class="r" style="color:var(--amber);font-weight:700">${{ number_format($pendingInstallments, 2) }}</td></tr>
+                    <tr style="background:#fefce8"><td style="font-weight:600">Receivable (Installments)</td><td class="r" style="color:var(--amber);font-weight:700">Tsh {{ number_format($pendingInstallments, 2) }}</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -453,7 +453,7 @@
                         <tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">No inventory data.</td></tr>
                     @endforelse
                     </tbody>
-                    <tfoot><tr><td>Total</td><td class="r">{{ $availablePhones }}</td><td class="r">${{ number_format($inventoryValue, 2) }}</td></tr></tfoot>
+                    <tfoot><tr><td>Total</td><td class="r">{{ $availablePhones }}</td><td class="r">Tsh {{ number_format($inventoryValue, 2) }}</td></tr></tfoot>
                 </table>
             </div>
         </div>
@@ -488,7 +488,7 @@
                                 <td style="color:var(--text-muted);font-size:12px;max-width:200px">
                                     {{ $sale->saleItems->map(fn($i) => $i->phone ? optional($i->phone->brand)->name . ' ' . $i->phone->model : ($i->product ? $i->product->name . ' x ' . $i->quantity : 'Item removed'))->implode(', ') }}
                                 </td>
-                                <td class="r" style="color:var(--emerald);font-weight:600">${{ number_format($sale->final_amount, 2) }}</td>
+                                <td class="r" style="color:var(--emerald);font-weight:600">Tsh {{ number_format($sale->final_amount, 2) }}</td>
                                 <td class="r">
                                 <span class="badge-pill {{ $sale->is_installment ? 'badge-install' : 'badge-full' }}">
                                     {{ $sale->is_installment ? 'Installment' : 'Full' }}

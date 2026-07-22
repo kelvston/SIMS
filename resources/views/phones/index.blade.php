@@ -43,8 +43,8 @@
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Color</th>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Storage</th>
-                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"> Buying Price (TZS)</th>
-                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selling Price (TZS)</th>
+                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"> Buying Price (Tsh)</th>
+                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selling Price (Tsh)</th>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Received At</th>
                         @if(auth()->check() && auth()->user()->hasAnyPermission(['edit phones', 'delete phones']))
@@ -68,8 +68,8 @@
                             <td data-label="Model" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->model }}</td>
                             <td data-label="Color" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->color }}</td>
                             <td data-label="Storage" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $phone->storage_capacity }}</td>
-                            <td data-label="Buying Price (TZS)" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ number_format($phone->purchase_price, 2) }}</td>
-                            <td data-label="Selling Price (TZS)" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ number_format($phone->selling_price, 2) }}</td>
+                            <td data-label="Buying Price (Tsh)" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">Tsh {{ number_format($phone->purchase_price, 2) }}</td>
+                            <td data-label="Selling Price (Tsh)" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">Tsh {{ number_format($phone->selling_price, 2) }}</td>
                             <td data-label="Status" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusClasses }}">
                                 {{ ucfirst(str_replace('_', ' ', $phone->status)) }}
@@ -128,8 +128,8 @@
                     <tr>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Accessory</th>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
-                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buying Price (TZS)</th>
-                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selling Price (TZS)</th>
+                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buying Price (Tsh)</th>
+                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selling Price (Tsh)</th>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Low Stock Threshold</th>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         @can('edit phones')
@@ -147,8 +147,8 @@
                         <tr>
                             <td data-label="Accessory" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $accessory->name }}</td>
                             <td data-label="Current Stock" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $currentStock }}</td>
-                            <td data-label="Buying Price (TZS)" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ number_format($accessory->unit_price ?? 0, 2) }}</td>
-                            <td data-label="Selling Price (TZS)" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ number_format($accessory->selling_price ?? 0, 2) }}</td>
+                            <td data-label="Buying Price (Tsh)" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">Tsh {{ number_format($accessory->unit_price ?? 0, 2) }}</td>
+                            <td data-label="Selling Price (Tsh)" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">Tsh {{ number_format($accessory->selling_price ?? 0, 2) }}</td>
                             <td data-label="Low Stock Threshold" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $threshold }}</td>
                             <td data-label="Status" class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $currentStock <= $threshold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800' }}">

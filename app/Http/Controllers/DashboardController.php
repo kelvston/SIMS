@@ -113,7 +113,7 @@ class DashboardController extends Controller
                 ->implode(', ');
             return [
                 'type' => 'sale',
-                'description' => "✔️ {$itemNames} sold to {$sale->customer_name} - $" . number_format($sale->final_amount, 2),
+                'description' => "✔️ {$itemNames} sold to {$sale->customer_name} - Tsh " . number_format($sale->final_amount, 2),
                 'date' => $sale->sale_date,
                 'link' => route('sales.show', $sale->id)
             ];
@@ -135,7 +135,7 @@ class DashboardController extends Controller
                 $phoneModel = $firstPhone?->model ?? '';
                 return [
                     'type' => 'payment',
-                    'description' => "💵 Installment payment received for {$phoneName} {$phoneModel} - $" . number_format($payment->amount_paid, 2),
+                    'description' => "💵 Installment payment received for {$phoneName} {$phoneModel} - Tsh " . number_format($payment->amount_paid, 2),
                     'date' => $payment->payment_date,
                     'link' => $payment->installmentPlan?->sale ? route('sales.show', $payment->installmentPlan->sale->id) : route('installments.index')
                 ];
