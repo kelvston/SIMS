@@ -24,6 +24,8 @@ class DashboardController extends Controller
     {
         $totalPhones = Phone::where('status', 'available')->count();
         $totalInvested = $this->inventoryCostValue();
+        $totalAccessories = DB::table('cashews')
+            ->where('status', 'available')->count();
 
         $currentMonth = Carbon::now()->month;
         $currentYear = Carbon::now()->year;
@@ -160,6 +162,7 @@ class DashboardController extends Controller
 
         return view('dashboard', compact(
             'totalPhones',
+            'totalAccessories',
             'monthlySales',
             'pendingInstallmentsAmount',
             'profitMarginPercentage',
@@ -181,7 +184,9 @@ class DashboardController extends Controller
 
     private function inventoryCostValue(): float
     {
-        $phoneValue = (float) Phone::sum('purchase_price');
+//        $phoneValue = (float) Phone::sum('purchase_price');
+        $phoneValue = (float) Phone::where('status', '!=', 'sold')
+            ->sum('purchase_price');
         $accessoryValue = Schema::hasTable('cashews')
             ? (float) DB::table('cashews')
             ->where('status', 'available')

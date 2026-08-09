@@ -94,6 +94,7 @@
         @php
             $cards = [
                 ['icon' => '📱', 'label' => 'Phones', 'value' => number_format($totalPhones), 'color' => 'indigo'],
+                ['icon' => '📱', 'label' => 'accessories', 'value' => number_format($totalAccessories), 'color' => 'purple'],
                 ['icon' => '💰', 'label' => 'Sales (' . \Carbon\Carbon::now()->format('M') . ')', 'value' => 'Tsh ' . number_format($monthlySales, 2), 'color' => 'green'],
                 ['icon' => '⏳', 'label' => 'Pending', 'value' => 'Tsh ' . number_format($pendingInstallmentsAmount, 2), 'color' => 'yellow'],
                 ['icon' => '📈', 'label' => 'Net Margin', 'value' => number_format($profitMarginPercentage, 2) . '%', 'color' => $profitMarginPercentage >= 0 ? 'green' : 'red'],
