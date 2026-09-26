@@ -269,13 +269,19 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
             return response()->streamDownload(function () use ($salesForExport) {
                 $handle = fopen('php://output', 'w');
-                fputcsv($handle, ['Sale ID', 'Date', 'Customer', 'Item', 'Quantity', 'Cost', 'Selling Price', 'Profit', 'Payment Type', 'Payment Option']);
+                fputcsv($handle, ['Sale ID', 'Date', 'Customer', 'Item', 'Quantity', 'Cost', 'Net Sales', 'Profit', 'Payment Type', 'Payment Option']);
 
                 foreach ($salesForExport as $sale) {
+                    $revenueFactor = (float) $sale->total_amount > 0
+                        ? (float) $sale->final_amount / (float) $sale->total_amount
+                        : 1;
+
                     foreach ($sale->saleItems as $item) {
                         $quantity = (int) $item->quantity;
                         $unitCost = (float) ($item->unit_cost ?? $item->cashews?->unit_price ?? 0);
                         $unitPrice = (float) ($item->unit_price ?? $item->cashews?->selling_price ?? 0);
+                        $netSales = $unitPrice * $quantity * $revenueFactor;
+                        $cost = $unitCost * $quantity;
 
                         fputcsv($handle, [
                             $sale->id,
@@ -283,9 +289,9 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
                             $sale->customer_name,
                             $item->product->name ?? $item->cashews?->product?->name ?? 'N/A',
                             $quantity,
-                            number_format($unitCost * $quantity, 2, '.', ''),
-                            number_format($unitPrice * $quantity, 2, '.', ''),
-                            number_format(($unitPrice - $unitCost) * $quantity, 2, '.', ''),
+                            number_format($cost, 2, '.', ''),
+                            number_format($netSales, 2, '.', ''),
+                            number_format($netSales - $cost, 2, '.', ''),
                             $sale->is_installment ? 'Installment' : 'Full Payment',
                             $sale->payment_option,
                         ]);
@@ -438,12 +444,10 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
         foreach ($sales as $sale) {
             foreach ($sale->saleItems as $saleItem) {
-                if ($saleItem->cashews) {
-                    $unitCost = $saleItem->unit_cost !== null
-                        ? (float) $saleItem->unit_cost
-                        : (float) $saleItem->cashews->unit_price;
-                    $totalCostOfGoodsSold += $unitCost * $saleItem->quantity;
-                }
+                $unitCost = $saleItem->unit_cost !== null
+                    ? (float) $saleItem->unit_cost
+                    : (float) ($saleItem->cashews?->unit_price ?? 0);
+                $totalCostOfGoodsSold += $unitCost * (int) $saleItem->quantity;
             }
         }
 

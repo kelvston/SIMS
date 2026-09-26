@@ -65,11 +65,15 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
         try {
             DB::beginTransaction();
 
-            // Calculate current total paid and remaining balance
-            $totalPaid = $installmentPlan->installmentPayments->sum('amount_paid');
-            $remainingAmount = $installmentPlan->sale->final_amount - $totalPaid;
+            $installmentPlan = InstallmentPlan::query()
+                ->with('sale')
+                ->lockForUpdate()
+                ->findOrFail($installmentPlan->id);
 
-            $amountToPay = $request->amount_paid;
+            $totalPaid = (float) InstallmentPayment::where('installment_plan_id', $installmentPlan->id)->sum('amount_paid');
+            $remainingAmount = round((float) $installmentPlan->sale->final_amount - $totalPaid, 2);
+
+            $amountToPay = round((float) $request->amount_paid, 2);
 
             // Prevent overpayment beyond the remaining amount
             if ($amountToPay > $remainingAmount + 0.01) { // Add a small tolerance for floating point issues
@@ -86,7 +90,7 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
             ]);
 
             // Recalculate total paid after the new payment
-            $newTotalPaid = $totalPaid + $amountToPay;
+            $newTotalPaid = round($totalPaid + $amountToPay, 2);
 
             // Update installment plan status and next payment date
             if ($newTotalPaid >= $installmentPlan->sale->final_amount) {
@@ -98,6 +102,10 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
                 $installmentPlan->next_payment_date = now()->addMonth();
             }
             $installmentPlan->save();
+
+            $installmentPlan->sale->amount_paid = $newTotalPaid;
+            $installmentPlan->sale->amount_due = round((float) $installmentPlan->sale->final_amount - $newTotalPaid, 2);
+            $installmentPlan->sale->save();
 
             DB::commit();
 
@@ -122,17 +130,34 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
         ]);
 
         DB::transaction(function () use ($request) {
-            // Create payment
+            $plan = InstallmentPlan::query()
+                ->with('sale')
+                ->lockForUpdate()
+                ->findOrFail($request->installment_plan_id);
+            $totalPaid = (float) InstallmentPayment::where('installment_plan_id', $plan->id)->sum('amount_paid');
+            $amountToPay = round((float) $request->amount_paid, 2);
+            $remainingAmount = round((float) $plan->sale->final_amount - $totalPaid, 2);
+
+            if ($plan->status !== 'active' || $amountToPay > $remainingAmount) {
+                throw ValidationException::withMessages([
+                    'amount_paid' => 'Payment cannot exceed the outstanding installment balance.',
+                ]);
+            }
+
             InstallmentPayment::create([
-                'installment_plan_id' => $request->installment_plan_id,
+                'installment_plan_id' => $plan->id,
                 'payment_date' => $request->payment_date,
-                'amount_paid' => $request->amount_paid,
+                'amount_paid' => $amountToPay,
             ]);
 
-            // Update next payment date (simple monthly increment)
-            $plan = InstallmentPlan::find($request->installment_plan_id);
-            $plan->next_payment_date = now()->addMonth();
+            $newTotalPaid = round($totalPaid + $amountToPay, 2);
+            $plan->status = $newTotalPaid >= (float) $plan->sale->final_amount ? 'completed' : 'active';
+            $plan->next_payment_date = $plan->status === 'completed' ? null : now()->addMonth();
             $plan->save();
+
+            $plan->sale->amount_paid = $newTotalPaid;
+            $plan->sale->amount_due = round((float) $plan->sale->final_amount - $newTotalPaid, 2);
+            $plan->sale->save();
         });
 
         return response()->json(['message' => 'Payment recorded successfully!']);

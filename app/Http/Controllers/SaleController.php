@@ -97,7 +97,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             ->where('quantity', '>', 0)
             ->get()
             ->map(fn($c) => [
-                'id' => $c->product_id,
+                'id' => $c->id,
                 'barcode' => $c->barcode,
                 'product_name' => $c->product?->name ?? 'N/A',
                 'selling_price' => $c->selling_price,
@@ -140,10 +140,11 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             'customer_name' => 'nullable',
             'customer_email' => 'nullable',
             'payment_option' => 'nullable|numeric|min:0',
-            'quantities' => 'required|array',
-            'cashew_ids' => 'required|array',
-            'amount_paid' => 'required_without:credit_sale|nullable|numeric|min:0',
-            'credit_sale' => 'nullable|boolean', // New validation for the credit_sale flag
+            'quantities' => 'required|array|min:1',
+            'quantities.*' => 'required|integer|min:1',
+            'cashew_ids' => 'required|array|min:1',
+            'cashew_ids.*' => 'required|integer|distinct|exists:cashews,id',
+            'credit_sale' => 'nullable|boolean',
             'is_installment' => 'nullable|boolean',
             'total_installments' => 'required_if:is_installment,true|nullable|integer|min:1',
             'installment_amount' => 'required_if:is_installment,true|nullable|numeric|min:0.01',
@@ -152,78 +153,57 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
         ]);
 
 
-        // 2. Validate product stock before creating a sale
-        $totalAmount = 0;
-        $cashewsToSell = [];
-
-        // Validate and get cashew details
-        $totalAmount = 0;
-        $cashewIds = $request->input('cashew_ids', []);
-        $quantities = $request->input('quantities', []);
-        foreach ($cashewIds as $index => $productId) {
-            $qty = $quantities[$index] ?? 0;
-            $cashew = Cashew::where('product_id', $productId)->first();
-            if (!$cashew) {
-                throw ValidationException::withMessages([
-                    'items' => "Product not found for ID {$productId}"
-                ]);
-            }
-            if ($cashew->quantity < $qty) {
-                throw ValidationException::withMessages([
-                    'items' => "Not enough stock for the product "
-                ]);
-            }
-            $totalAmount += $cashew->selling_price * $qty;
-        }
-
-
-        // Calculate final amount after discount
-
-        $finalAmount = $totalAmount - $validated['discount_amount'];
-        if ($finalAmount < 0) {
-            throw ValidationException::withMessages(['discount_amount' => 'Discount cannot exceed the total amount.']);
-        }
-
-        // Determine the amount paid based on the credit_sale flag
-        $amountPaid = 0;
-        if (!($validated['credit_sale'] ?? false)) {
-            // If it's NOT a credit sale, use the amount_paid from the request
-            $amountPaid = $validated['amount_paid'] ?? 0;
-        }
-
-        // Validate that the amount paid does not exceed the final amount
-        if ($amountPaid > $finalAmount) {
-            throw ValidationException::withMessages(['amount_paid' => 'Amount paid cannot exceed the final sale amount.']);
-        }
-
-        // Calculate the remaining balance (the "credit" amount)
-        if($validated['credit_sale'] == 1){
-            $amountDue = $finalAmount - $amountPaid;
-        }else{
-            $amountDue =0;
-        }
-
-
         try {
             DB::beginTransaction();
 
-            // Re-validate and get products inside the transaction with a lock
-            $cashewIds = $request->cashew_ids;
-            $quantities = $request->quantities;
-            foreach ($cashewIds as $index => $productId) {
-                $qty = $quantities[$index];
-                $cashew = Cashew::where('product_id', $productId)->lockForUpdate()->first();
-                if (!$cashew) {
-                    throw ValidationException::withMessages([
-                        'items' => "Product not found for ID {$productId}"
-                    ]);
+            if (count($validated['cashew_ids']) !== count($validated['quantities'])) {
+                throw ValidationException::withMessages(['items' => 'Each selected product must have a quantity.']);
+            }
+
+            $cashews = Cashew::query()
+                ->whereIn('id', $validated['cashew_ids'])
+                ->where('status', 'available')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            $totalAmount = 0.0;
+            foreach ($validated['cashew_ids'] as $index => $cashewId) {
+                $qty = (int) $validated['quantities'][$index];
+                $cashew = $cashews->get($cashewId);
+
+                if (! $cashew) {
+                    throw ValidationException::withMessages(['items' => 'A selected product is no longer available.']);
                 }
+
                 if ($cashew->quantity < $qty) {
                     throw ValidationException::withMessages([
-                        'items' => "Not enough stock for the product"
+                        'items' => "Not enough stock for {$cashew->product?->name}."
                     ]);
                 }
+
+                $totalAmount += (float) $cashew->selling_price * $qty;
             }
+
+            $totalAmount = round($totalAmount, 2);
+            $discountAmount = round((float) ($validated['discount_amount'] ?? 0), 2);
+            $finalAmount = round($totalAmount - $discountAmount, 2);
+
+            if ($finalAmount < 0) {
+                throw ValidationException::withMessages(['discount_amount' => 'Discount cannot exceed the total amount.']);
+            }
+
+            $isInstallment = $request->boolean('is_installment');
+            $isCreditSale = $request->boolean('credit_sale') || $isInstallment;
+
+            if ($isInstallment && round((float) $validated['total_installments'] * (float) $validated['installment_amount'], 2) < $finalAmount) {
+                throw ValidationException::withMessages([
+                    'installment_amount' => 'Scheduled installments must cover the final sale amount.',
+                ]);
+            }
+
+            $amountPaid = $isCreditSale ? 0.0 : $finalAmount;
+            $amountDue = round($finalAmount - $amountPaid, 2);
             // 3. Create the Sale record with the calculated total amount and payment details
             $payment_option = null;
             if (isset($request['payment_option'])) {
@@ -247,20 +227,20 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 'customer_name' => $validated['customer_name'],
                 'customer_email' => $validated['customer_email'],
                 'total_amount' => $totalAmount,
-                'discount_amount' => $validated['discount_amount'],
+                'discount_amount' => $discountAmount,
                 'final_amount' => $finalAmount,
                 'amount_paid' => $amountPaid,
                 'amount_due' => $amountDue,
-                'is_installment' => $request->boolean('is_installment'),
+                'is_installment' => $isInstallment,
                 'sale_date' => now(),
                 'payment_option' => $payment_option,
                 'user_id' => auth()->id(),
             ]);
 
             // 4. Create sale items and update stock
-            foreach ($validated['cashew_ids'] as $index => $productId) {
-                $cashew = Cashew::where('product_id', $productId)->first();
-                 $qty = $validated['quantities'][$index];
+            foreach ($validated['cashew_ids'] as $index => $cashewId) {
+                $cashew = $cashews->get($cashewId);
+                $qty = (int) $validated['quantities'][$index];
                 $sale->saleItems()->create([
                     'product_id' => $cashew->product_id,
                     'cosmetic_id' => null,
@@ -342,29 +322,38 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
      */
     public function storePayment(Request $request, Sale $sale)
     {
-        // Validate the incoming request
         $request->validate([
-            'payment_amount' => 'required|numeric|min:0.01|max:' . $sale->amount_due,
+            'payment_amount' => 'required|numeric|min:0.01',
         ]);
 
-        DB::beginTransaction();
         try {
-            // Update the sale's financial details
-            $sale->amount_paid += $request->input('payment_amount');
-            $sale->amount_due -= $request->input('payment_amount');
+            DB::transaction(function () use ($request, $sale) {
+                $lockedSale = Sale::query()->lockForUpdate()->findOrFail($sale->id);
+                $paymentAmount = round((float) $request->input('payment_amount'), 2);
+                $amountDue = round((float) $lockedSale->amount_due, 2);
 
-            // Set to full payment if the amount due is 0
-            if ($sale->amount_due <= 0) {
-                $sale->is_installment = false;
-            }
+                if ($lockedSale->is_installment || $amountDue <= 0) {
+                    throw ValidationException::withMessages([
+                        'payment_amount' => 'This sale cannot receive a direct credit payment.',
+                    ]);
+                }
 
-            $sale->save();
+                if ($paymentAmount > $amountDue) {
+                    throw ValidationException::withMessages([
+                        'payment_amount' => 'Payment cannot exceed the outstanding balance.',
+                    ]);
+                }
 
-            DB::commit();
+                $lockedSale->amount_paid = round((float) $lockedSale->amount_paid + $paymentAmount, 2);
+                $lockedSale->amount_due = round($amountDue - $paymentAmount, 2);
+                $lockedSale->save();
+            });
+
             return redirect()->route('sales.show', $sale)->with('success', 'Payment of $' . number_format($request->input('payment_amount'), 2) . ' has been recorded successfully!');
 
+        } catch (ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()->with('error', 'Failed to record payment. Please try again.');
         }
     }
