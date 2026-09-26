@@ -17,11 +17,14 @@ Artisan::command('stock:check-low', function () {
 
 Schedule::command('stock:check-low')->everyMinute();
 
+Schedule::command('reports:send-inventory daily')->dailyAt('00:05')->withoutOverlapping();
+
+Schedule::command('reports:send-inventory weekly')->weeklyOn(1, '00:15')->withoutOverlapping();
+
 
 Schedule::command('backup:run --only-db')->dailyAt('02:00');
 
 Schedule::command('backup:clean')->dailyAt('03:00');
-
 
 
 

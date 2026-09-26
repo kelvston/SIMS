@@ -46,6 +46,7 @@ class CashewController extends Controller
                     'quantity' => $item['quantity'],
                     'low_stock_threshold' => $item['low_stock_threshold'] ?? 5,
                     'status' => 'available',
+                    'received_at' => now(),
                 ]);
             }
 
