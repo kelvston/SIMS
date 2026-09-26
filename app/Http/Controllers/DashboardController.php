@@ -32,27 +32,28 @@ class DashboardController extends Controller
             $monthEnd->toDateString(),
         ])->sum('amount');
 
-        $monthlyItems = SaleItem::whereHas('sale', function ($query) use ($monthStart, $monthEnd) {
-            $query->whereBetween('sale_date', [$monthStart, $monthEnd]);
-        })->get();
-
-        $monthlyCogs = (float) $monthlyItems->sum(function ($item) {
-            return (float) ($item->cashews->unit_price ?? 0) * (int) $item->quantity;
-        });
+        $monthlyCogs = (float) (SaleItem::query()
+            ->whereHas('sale', function ($query) use ($monthStart, $monthEnd) {
+                $query->whereBetween('sale_date', [$monthStart, $monthEnd]);
+            })
+            ->selectRaw('SUM(CAST(COALESCE(unit_cost, 0) AS REAL) * CAST(quantity AS REAL)) as total')
+            ->value('total') ?? 0);
         $grossProfit = $monthlySales - $monthlyCogs;
         $netProfit = $grossProfit - $monthlyExpenses;
         $profitMarginPercentage = $monthlySales > 0 ? ($netProfit / $monthlySales) * 100 : 0;
 
-        $activeInstallmentPlans = InstallmentPlan::where('status', 'active')
-            ->with(['sale', 'installmentPayments'])
-            ->get();
+        $paymentTotals = InstallmentPayment::query()
+            ->select('installment_plan_id', DB::raw('SUM(amount_paid) as paid_total'))
+            ->groupBy('installment_plan_id');
 
-        $pendingInstallmentsAmount = (float) $activeInstallmentPlans->sum(function ($plan) {
-            $saleTotal = (float) optional($plan->sale)->final_amount;
-            $paid = (float) $plan->installmentPayments->sum('amount_paid');
-
-            return max($saleTotal - $paid, 0);
-        });
+        $pendingInstallmentsAmount = (float) (InstallmentPlan::query()
+            ->join('sales', 'sales.id', '=', 'installment_plans.sale_id')
+            ->leftJoinSub($paymentTotals, 'payment_totals', function ($join) {
+                $join->on('payment_totals.installment_plan_id', '=', 'installment_plans.id');
+            })
+            ->where('installment_plans.status', 'active')
+            ->selectRaw('SUM(CASE WHEN CAST(sales.final_amount AS REAL) - COALESCE(CAST(payment_totals.paid_total AS REAL), 0) > 0 THEN CAST(sales.final_amount AS REAL) - COALESCE(CAST(payment_totals.paid_total AS REAL), 0) ELSE 0 END) as total')
+            ->value('total') ?? 0);
 
         $salesData = Sale::select(
             DB::raw('DATE(sale_date) as date'),

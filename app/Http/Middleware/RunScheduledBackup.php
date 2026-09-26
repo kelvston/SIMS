@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 class RunScheduledBackup
@@ -12,12 +13,14 @@ class RunScheduledBackup
     public function handle(Request $request, Closure $next)
     {
         try {
-            $settings = Setting::whereIn('key', [
-                'backup_enabled',
-                'backup_frequency',
-                'backup_time',
-                'backup_last_run',
-            ])->pluck('value', 'key');
+            $settings = Cache::remember('settings.backup', now()->addMinutes(5), function () {
+                return Setting::whereIn('key', [
+                    'backup_enabled',
+                    'backup_frequency',
+                    'backup_time',
+                    'backup_last_run',
+                ])->pluck('value', 'key');
+            });
 
             // Skip if backup is disabled
             if (($settings['backup_enabled'] ?? '0') !== '1') {

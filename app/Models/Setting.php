@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class Setting extends Model
 {
@@ -18,4 +19,16 @@ class Setting extends Model
         'key',
         'value',
     ];
+
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            Cache::forget('settings.all');
+            Cache::forget('settings.backup');
+        });
+        static::deleted(function () {
+            Cache::forget('settings.all');
+            Cache::forget('settings.backup');
+        });
+    }
 }
