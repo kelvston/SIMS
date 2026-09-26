@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "61a96d3518d8366dd8153d4ddcacc2f0",
+    "content-hash": "d67e6b186bbd31fb0795c7b32f017541",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -5206,76 +5206,6 @@
             "time": "2024-09-25T14:21:43+00:00"
         },
         {
-            "name": "symfony/filesystem",
-            "version": "v7.4.11",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/symfony/filesystem.git",
-                "reference": "d721ea61b4a5fba8c5b6e7c1feda19efea144b50"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/symfony/filesystem/zipball/d721ea61b4a5fba8c5b6e7c1feda19efea144b50",
-                "reference": "d721ea61b4a5fba8c5b6e7c1feda19efea144b50",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=8.2",
-                "symfony/polyfill-ctype": "~1.8",
-                "symfony/polyfill-mbstring": "~1.8"
-            },
-            "require-dev": {
-                "symfony/process": "^6.4|^7.0|^8.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Symfony\\Component\\Filesystem\\": ""
-                },
-                "exclude-from-classmap": [
-                    "/Tests/"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Fabien Potencier",
-                    "email": "fabien@symfony.com"
-                },
-                {
-                    "name": "Symfony Community",
-                    "homepage": "https://symfony.com/contributors"
-                }
-            ],
-            "description": "Provides basic utilities for the filesystem",
-            "homepage": "https://symfony.com",
-            "support": {
-                "source": "https://github.com/symfony/filesystem/tree/v7.4.11"
-            },
-            "funding": [
-                {
-                    "url": "https://symfony.com/sponsor",
-                    "type": "custom"
-                },
-                {
-                    "url": "https://github.com/fabpot",
-                    "type": "github"
-                },
-                {
-                    "url": "https://github.com/nicolas-grekas",
-                    "type": "github"
-                },
-                {
-                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
-                    "type": "tidelift"
-                }
-            ],
-            "time": "2026-05-11T16:38:44+00:00"
-        },
-        {
             "name": "symfony/finder",
             "version": "v7.3.0",
             "source": {
@@ -7817,75 +7747,6 @@
                 "source": "https://github.com/laravel/sail"
             },
             "time": "2025-05-19T13:19:21+00:00"
-        },
-        {
-            "name": "laravel/telescope",
-            "version": "v5.10.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laravel/telescope.git",
-                "reference": "fc0a8662682c0375b534033873debb780c003486"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laravel/telescope/zipball/fc0a8662682c0375b534033873debb780c003486",
-                "reference": "fc0a8662682c0375b534033873debb780c003486",
-                "shasum": ""
-            },
-            "require": {
-                "ext-json": "*",
-                "laravel/framework": "^8.37|^9.0|^10.0|^11.0|^12.0",
-                "php": "^8.0",
-                "symfony/console": "^5.3|^6.0|^7.0",
-                "symfony/var-dumper": "^5.0|^6.0|^7.0"
-            },
-            "require-dev": {
-                "ext-gd": "*",
-                "guzzlehttp/guzzle": "^6.0|^7.0",
-                "laravel/octane": "^1.4|^2.0|dev-develop",
-                "orchestra/testbench": "^6.40|^7.37|^8.17|^9.0|^10.0",
-                "phpstan/phpstan": "^1.10",
-                "phpunit/phpunit": "^9.0|^10.5|^11.5"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Laravel\\Telescope\\TelescopeServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Laravel\\Telescope\\": "src/",
-                    "Laravel\\Telescope\\Database\\Factories\\": "database/factories/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Taylor Otwell",
-                    "email": "taylor@laravel.com"
-                },
-                {
-                    "name": "Mohamed Said",
-                    "email": "mohamed@laravel.com"
-                }
-            ],
-            "description": "An elegant debug assistant for the Laravel framework.",
-            "keywords": [
-                "debugging",
-                "laravel",
-                "monitoring"
-            ],
-            "support": {
-                "issues": "https://github.com/laravel/telescope/issues",
-                "source": "https://github.com/laravel/telescope/tree/v5.10.0"
-            },
-            "time": "2025-07-07T14:47:19+00:00"
         },
         {
             "name": "mockery/mockery",
