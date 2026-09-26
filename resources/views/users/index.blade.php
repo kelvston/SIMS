@@ -2,10 +2,10 @@
 
 @section('content')
 <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10">
-    <img src="{{ asset('images/fruits.png') }}"
-         alt="Watermark"
-         class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-         style="transform: translate(-50%, -50%);" />
+{{--    <img src="{{ asset('images/fruits.png') }}"--}}
+{{--         alt="Watermark"--}}
+{{--         class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"--}}
+{{--         style="transform: translate(-50%, -50%);" />--}}
     <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Manage Users</h1>
 
     @if (session('success'))
@@ -76,7 +76,7 @@
         </div>
     @endif
     <div class="flex justify-end mt-8">
-        <a href="{{ url('/') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-full transition duration-300 ease-in-out shadow-md">
+        <a href="{{ url('/dashboard') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-full transition duration-300 ease-in-out shadow-md">
             Back to Dashboard
         </a>
     </div>

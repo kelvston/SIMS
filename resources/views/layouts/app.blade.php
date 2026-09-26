@@ -19,18 +19,14 @@
            DASHBOARD WATERMARK
         ========================================================= */
 
-        /* =========================================================
-   PREMIUM CENTERED DASHBOARD WATERMARK
-========================================================= */
-
         .dashboard-watermark {
-            position: fixed;
+            position: absolute;
 
             top: 50%;
-            left: calc(240px + (100vw - 240px) / 2);
+            left: 50%;
 
-            width: min(520px, 48vw);
-            height: min(520px, 48vw);
+            width: min(520px, 65vw);
+            height: min(520px, 65vw);
 
             transform: translate(-50%, -50%);
 
@@ -41,20 +37,15 @@
             pointer-events: none;
             user-select: none;
 
-            z-index: 1;
+            z-index: 0;
 
-            opacity: .065;
+            opacity: .075;
 
             filter:
                 saturate(.75)
                 contrast(.95)
-                drop-shadow(
-                    0 18px 35px rgba(122,63,29,.10)
-                );
+                drop-shadow(0 15px 30px rgba(122,63,29,.08));
         }
-
-
-        /* Logo */
 
         .dashboard-watermark img {
             width: 100%;
@@ -64,7 +55,7 @@
 
             display: block;
 
-            transform: scale(.88);
+            transform: scale(.92);
 
             opacity: .9;
 
@@ -72,7 +63,7 @@
         }
 
 
-        /* Premium circular frame */
+        /* Soft premium ring around watermark */
 
         .dashboard-watermark::before {
             content: "";
@@ -84,68 +75,60 @@
 
             border-radius: 50%;
 
-            border:
-                1px solid rgba(173,93,41,.13);
+            border: 1px solid rgba(173,93,41,.12);
 
             box-shadow:
                 0 0 0 18px rgba(173,93,41,.018),
-                0 0 0 1px rgba(255,255,255,.35) inset,
-                0 0 70px rgba(173,93,41,.07);
+                0 0 60px rgba(173,93,41,.06);
 
             z-index: -1;
         }
 
 
-        /* Soft center glow */
+        /* Very subtle center glow */
 
         .dashboard-watermark::after {
             content: "";
 
             position: absolute;
 
-            width: 72%;
-            height: 72%;
+            width: 70%;
+            height: 70%;
 
             border-radius: 50%;
 
             background:
                 radial-gradient(
                     circle,
-                    rgba(173,93,41,.055) 0%,
-                    rgba(244,194,122,.025) 42%,
+                    rgba(173,93,41,.06) 0%,
+                    rgba(244,194,122,.025) 45%,
                     transparent 72%
                 );
 
-            filter: blur(18px);
+            filter: blur(15px);
 
             z-index: -2;
         }
 
 
-        /* Tablet */
+        /* Keep watermark nicely sized on smaller screens */
 
         @media (max-width: 1023px) {
 
             .dashboard-watermark {
-
-                left: 50%;
-
-                width: min(420px, 70vw);
-                height: min(420px, 70vw);
+                width: min(380px, 75vw);
+                height: min(380px, 75vw);
 
                 opacity: .055;
             }
         }
 
 
-        /* Mobile */
-
         @media (max-width: 640px) {
 
             .dashboard-watermark {
-
-                width: 290px;
-                height: 290px;
+                width: 280px;
+                height: 280px;
 
                 opacity: .045;
             }
@@ -1071,7 +1054,7 @@
                         alt="Logo">
 
                 @else
-a
+
                     <i class="fas fa-leaf text-[#3d220e]"></i>
 
                 @endif

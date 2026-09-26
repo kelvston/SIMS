@@ -2,10 +2,7 @@
 
 @section('content')
     <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative">
-        <img src="{{ asset('images/watermark.png') }}"
-             alt="Watermark"
-             class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-             style="transform: translate(-50%, -50%);" />
+
 
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">
             All Cashew Products in Inventory

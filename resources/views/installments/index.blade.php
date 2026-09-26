@@ -2,10 +2,7 @@
 
 @section('content')
     <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative"> <!-- Added relative -->
-        @if(isset($settings['organization_logo_path']) && $settings['organization_logo_path'])
-            <img src="{{ asset('storage/' . $settings['organization_logo_path']) }}" alt="Logo" class="logo pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-                 style="transform: translate(-50%, -50%);">
-        @endif
+
 
 {{--        <img src="{{ asset('images/watermark.png') }}"--}}
 {{--             alt="Watermark"--}}

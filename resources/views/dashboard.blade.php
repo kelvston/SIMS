@@ -32,12 +32,7 @@
 
     <!-- Watermark -->
 
-	@if(isset($settings['organization_logo_path']))
-    <img src="{{ asset('storage/' . $settings['organization_logo_path']) }}"
-         alt="Watermark"
-         class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-         style="transform: translate(-50%, -90%);" />
-@endif
+
 
 
 
