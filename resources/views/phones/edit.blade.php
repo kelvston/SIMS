@@ -2,11 +2,11 @@
 
 @section('content')
     <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative">
-        <img src="{{ asset('images/watermark.png') }}"
+        <img src="{{ asset('images/spare.png') }}"
              alt="Watermark"
              class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
              style="transform: translate(-60%, -50%);" />
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Edit Phone</h1>
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Edit Product</h1>
 
         <!-- Success/Error Messages -->
         @if (session('success'))
@@ -40,9 +40,9 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                    <label for="brand_id" class="block text-gray-700 text-sm font-bold mb-2">Brand:</label>
+                    <label for="brand_id" class="block text-gray-700 text-sm font-bold mb-2">Product:</label>
                     <select name="brand_id" id="brand_id" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('brand_id') border-red-500 @enderror">
-                        <option value="">Select a Brand</option>
+                        <option value="">Select a Product</option>
                         @foreach ($brands as $brand)
                             <option value="{{ $brand->id }}" {{ $phone->brand_id == $brand->id ? 'selected' : '' }}>
                                 {{ $brand->name }}
@@ -56,24 +56,8 @@
 
                 <div>
                     <label for="model" class="block text-gray-700 text-sm font-bold mb-2">Model:</label>
-                    <input type="text" name="model" id="model" value="{{ old('model', $phone->model) }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('model') border-red-500 @enderror" placeholder="e.g., iPhone 15 Pro Max">
+                    <input type="text" name="model" id="model" value="{{ old('model', $phone->model) }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('model') border-red-500 @enderror" placeholder="e.g., spring">
                     @error('model')
-                    <p class="text-red-500 text-xs italic">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="color" class="block text-gray-700 text-sm font-bold mb-2">Color:</label>
-                    <input type="text" name="color" id="color" value="{{ old('color', $phone->color) }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('color') border-red-500 @enderror" placeholder="e.g., Black, Blue, Silver">
-                    @error('color')
-                    <p class="text-red-500 text-xs italic">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="storage_capacity" class="block text-gray-700 text-sm font-bold mb-2">Storage Capacity:</label>
-                    <input type="text" name="storage_capacity" id="storage_capacity" value="{{ old('storage_capacity', $phone->storage_capacity) }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('storage_capacity') border-red-500 @enderror" placeholder="e.g., 128GB, 256GB">
-                    @error('storage_capacity')
                     <p class="text-red-500 text-xs italic">{{ $message }}</p>
                     @enderror
                 </div>
@@ -95,8 +79,8 @@
                 </div>
 
                 <div>
-                    <label for="imei" class="block text-gray-700 text-sm font-bold mb-2">IMEI:</label>
-                    <input type="text" name="imei" id="imei" value="{{ old('imei', $phone->imei) }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('imei') border-red-500 @enderror" placeholder="Enter IMEI">
+                    <label for="imei" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
+                    <input type="number" name="quantity" id="quantity" value="{{ old('imei', $phone->quantity) }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('imei') border-red-500 @enderror" placeholder="Enter quantity">
                     @error('imei')
                     <p class="text-red-500 text-xs italic">{{ $message }}</p>
                     @enderror
@@ -105,7 +89,7 @@
 
             <div class="flex items-center justify-between">
                 <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full focus:outline-none focus:shadow-outline transition duration-300 ease-in-out shadow-lg">
-                    Update Phone
+                    Update Product
                 </button>
                 <a href="{{ route('dashboard') }}" class="inline-block align-baseline font-bold text-sm text-gray-500 hover:text-gray-800">
                     Cancel

@@ -31,7 +31,7 @@
     </style>
 
     <!-- Watermark -->
-    <img src="{{ asset('images/watermark.png') }}"
+    <img src="{{ asset('images/spare.png') }}"
          alt="Watermark"
          class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
          style="transform: translate(-50%, -90%);" />
@@ -93,8 +93,13 @@
 <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
         @php
             $cards = [
-                ['icon' => '📱', 'label' => 'Phones', 'value' => number_format($totalPhones), 'color' => 'indigo'],
-                ['icon' => '📱', 'label' => 'accessories', 'value' => number_format($totalAccessories), 'color' => 'purple'],
+                [
+                    'icon' => '📱',
+                    'label' => 'Products',
+                    'value' => number_format($totalPhones->count()),
+                    'quantity' => number_format($totalPhones->sum('quantity')),
+                    'color' => 'indigo'
+                ],
                 ['icon' => '💰', 'label' => 'Sales (' . \Carbon\Carbon::now()->format('M') . ')', 'value' => 'Tsh ' . number_format($monthlySales, 2), 'color' => 'green'],
                 ['icon' => '⏳', 'label' => 'Pending', 'value' => 'Tsh ' . number_format($pendingInstallmentsAmount, 2), 'color' => 'yellow'],
                 ['icon' => '📈', 'label' => 'Net Margin', 'value' => number_format($profitMarginPercentage, 2) . '%', 'color' => $profitMarginPercentage >= 0 ? 'green' : 'red'],
@@ -237,10 +242,15 @@
         const inventoryChartLabels = @json($inventoryChartLabels);
         const inventoryChartData = @json($inventoryChartData);
 
+        // ==========================================
+        // SALES CHART
+        // ==========================================
         new Chart(document.getElementById('salesChart'), {
             type: 'line',
+
             data: {
                 labels: salesChartLabels,
+
                 datasets: [{
                     label: 'Sales (Tsh)',
                     data: salesChartData,
@@ -250,17 +260,21 @@
                     fill: true
                 }]
             },
+
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+
                 scales: {
                     y: {
                         beginAtZero: true,
+
                         title: {
                             display: true,
                             text: 'Sales Amount (Tsh)'
                         }
                     },
+
                     x: {
                         title: {
                             display: true,
@@ -268,11 +282,14 @@
                         }
                     }
                 },
+
                 plugins: {
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return context.dataset.label + ': Tsh ' + context.parsed.y.toFixed(2);
+                                return context.dataset.label +
+                                    ': Tsh ' +
+                                    context.parsed.y.toFixed(2);
                             }
                         }
                     }
@@ -280,12 +297,72 @@
             }
         });
 
+
+        // ==========================================
+        // DOUGHNUT CENTER TEXT PLUGIN
+        // ==========================================
+        const centerTextPlugin = {
+            id: 'centerText',
+
+            beforeDraw(chart) {
+                const { ctx, chartArea } = chart;
+
+                if (!chartArea) {
+                    return;
+                }
+
+                const data = chart.data.datasets[0].data;
+
+                // Calculate total inventory quantity
+                const total = data.reduce(
+                    (sum, value) => sum + Number(value),
+                    0
+                );
+
+                const centerX = (chartArea.left + chartArea.right) / 2;
+                const centerY = (chartArea.top + chartArea.bottom) / 2;
+
+                ctx.save();
+
+                // Center alignment
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // Percentage
+                ctx.font = 'bold 24px Arial';
+                ctx.fillStyle = '#111827';
+
+                // 100% because the entire doughnut represents
+                // the total inventory
+                ctx.fillText('100%', centerX, centerY - 7);
+
+                // Label underneath
+                ctx.font = '11px Arial';
+                ctx.fillStyle = '#6b7280';
+
+                ctx.fillText(
+                    'Total Stock',
+                    centerX,
+                    centerY + 15
+                );
+
+                ctx.restore();
+            }
+        };
+
+
+        // ==========================================
+        // INVENTORY DOUGHNUT CHART
+        // ==========================================
         new Chart(document.getElementById('inventoryChart'), {
             type: 'doughnut',
+
             data: {
                 labels: inventoryChartLabels,
+
                 datasets: [{
                     data: inventoryChartData,
+
                     backgroundColor: [
                         '#4f46e5', // Indigo
                         '#10b981', // Green
@@ -297,33 +374,68 @@
                         '#6b7280', // Gray
                         '#ec4899', // Pink
                         '#3b82f6'  // Blue
-                    ]
+                    ],
+
+                    borderWidth: 0
                 }]
             },
+
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+
+                // Size of the hole in the middle
                 cutout: '70%',
+
                 plugins: {
+
+                    // Legend
                     legend: {
                         position: 'right'
                     },
+
+                    // Tooltip
                     tooltip: {
                         callbacks: {
                             label: function(context) {
+
                                 let label = context.label || '';
+
                                 if (label) {
                                     label += ': ';
                                 }
+
                                 if (context.parsed !== null) {
-                                    label += context.parsed + ' units';
+
+                                    // Total inventory
+                                    const total = context.dataset.data.reduce(
+                                        (sum, value) => sum + Number(value),
+                                        0
+                                    );
+
+                                    // Current brand quantity
+                                    const quantity = Number(context.parsed);
+
+                                    // Brand percentage
+                                    const percentage = total > 0
+                                        ? ((quantity / total) * 100).toFixed(1)
+                                        : 0;
+
+                                    label += quantity +
+                                        ' units (' +
+                                        percentage +
+                                        '%)';
                                 }
+
                                 return label;
                             }
                         }
                     }
                 }
-            }
+            },
+
+            // Register center text plugin
+            plugins: [centerTextPlugin]
         });
     </script>
 @endpush

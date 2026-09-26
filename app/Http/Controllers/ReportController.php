@@ -291,25 +291,13 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
      */
     public function stockReport()
     {
-        $stockLevels = StockLevel::with('brand')->orderBy('current_stock', 'asc')->paginate(10);
-        $accessoryStocks = Product::withSum(['accessoryStocks as current_stock' => function ($query) {
-            $query->where('status', 'available');
-        }], 'quantity')
-            ->withMax(['accessoryStocks as low_stock_threshold' => function ($query) {
-                $query->where('status', 'available');
-            }], 'low_stock_threshold')
-            ->withMax(['accessoryStocks as selling_price' => function ($query) {
-                $query->where('status', 'available');
-            }], 'selling_price')
-            ->orderBy('name')
-            ->get();
 
+        $stockLevels = StockLevel::with('brand','phone')->orderBy('current_stock', 'asc')->paginate(10);
         // Calculate summary statistics for stock
-        $totalStockItems = StockLevel::sum('current_stock') + $accessoryStocks->sum(fn ($item) => (int) $item->current_stock);
-        $lowAccessoryCount = $accessoryStocks->filter(fn ($item) => (int) $item->current_stock <= (int) ($item->low_stock_threshold ?? 5))->count();
-        $lowStockCount = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')->count() + $lowAccessoryCount;
+        $totalStockItems = StockLevel::sum('current_stock') ;
+        $lowStockCount = StockLevel::whereColumn('current_stock', '<=', 'low_stock_threshold')->count();
 
-        return view('reports.stock', compact('stockLevels', 'accessoryStocks', 'totalStockItems', 'lowStockCount'));
+        return view('reports.stock', compact('stockLevels',  'totalStockItems', 'lowStockCount'));
     }
 
     /**
@@ -424,13 +412,12 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             : 0;
 
         // ── Inventory ─────────────────────────────────────────────────────
-        $availablePhones      = Phone::where('status', 'available')->count();
-        $availableAccessories = (int) AccessoryStock::where('status', 'available')->sum('quantity');
+        $availablePhones      = Phone::where('status', 'available')->sum('quantity');
         $soldPhones           = Phone::whereIn('status', ['sold', 'under_installment'])->count();
         $inventoryValue       = $this->inventoryCostValue();
 
         $stockByBrand = Phone::where('status', 'available')
-            ->select('brand_id', DB::raw('count(*) as count'), DB::raw('SUM(purchase_price) as value'))
+            ->select('brand_id', DB::raw('quantity as count'), DB::raw('SUM(purchase_price * quantity) as value'))
             ->with('brand')
             ->groupBy('brand_id')
             ->get();
@@ -479,8 +466,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             ->leftJoin('brands', 'phones.brand_id', '=', 'brands.id')
             ->select(
                 DB::raw("COALESCE(brands.name, 'Unknown') as brand_name"),
-                DB::raw('COUNT(*) as units_sold'),
-                DB::raw('SUM(sale_items.unit_price) as revenue')
+                DB::raw('sale_items.quantity as units_sold'),
+                DB::raw('SUM(sale_items.unit_price * sale_items.quantity) as revenue')
             )
             ->groupBy(DB::raw("COALESCE(brands.name, 'Unknown')"))
             ->orderByDesc('units_sold')
@@ -502,7 +489,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             'totalCogs', 'totalExpenses', 'expensesByCategory',
             'accessoryRevenue', 'accessoryCogs', 'accessoryGrossProfit',
             'grossProfit', 'netProfit', 'profitMargin',
-            'availablePhones', 'availableAccessories', 'soldPhones', 'inventoryValue', 'stockByBrand', 'lowStockItems',
+            'availablePhones',  'soldPhones', 'inventoryValue', 'stockByBrand', 'lowStockItems',
             'pendingInstallments', 'activeInstallmentCount',
             'dailySales', 'topBrands', 'recentSales'
         );
@@ -510,15 +497,8 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
 
     private function inventoryCostValue(): float
     {
-        $phoneValue = (float) Phone::where('status', 'available')->sum('purchase_price');
-        $accessoryValue = Schema::hasTable('cashews')
-            ? (float) DB::table('cashews')
-            ->where('status', 'available')
-            ->selectRaw('COALESCE(SUM(CAST(quantity AS DECIMAL(15, 2)) * CAST(unit_price AS DECIMAL(15, 2))), 0) as total')
-            ->value('total')
-            : 0;
-
-        return $phoneValue + $accessoryValue;
+        $phoneValue = (float) Phone::where('status', 'available')->sum('quantity * purchase_price');
+        return $phoneValue ;
     }
 
     private function saleItemsCostValue($saleItems): float

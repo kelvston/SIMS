@@ -31,4 +31,7 @@ class StockLevel extends Model
     {
         return $this->belongsTo(Brand::class);
     }
+    public function phone(){
+        return $this->belongsTo(Phone::class, 'brand_id', 'brand_id');
+    }
 }

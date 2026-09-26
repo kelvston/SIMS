@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative">
-    <img src="{{ asset('images/watermark.png') }}"
+    <img src="{{ asset('images/spare.png') }}"
          alt="Watermark"
          class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
          style="transform: translate(-50%, -50%);" />
@@ -54,7 +54,7 @@
                 <thead class="bg-gray-50">
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale ID</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
+{{--                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>--}}
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items Sold</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final Amount</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale Date</th>
@@ -65,13 +65,13 @@
                 @foreach ($sales as $sale)
                     <tr>
                         <td data-label="Sale ID" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->id }}</td>
-                        <td data-label="Customer Name" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->customer_name }}</td>
+{{--                        <td data-label="Customer Name" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $sale->customer_name }}</td>--}}
                         <td data-label="Items Sold" class="px-6 py-4 text-sm text-gray-900">
                             <ul class="list-disc list-inside">
                                 @foreach ($sale->saleItems as $item)
                                     <li>
                                         @if($item->phone)
-                                            {{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }}
+                                            {{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }} ({{$item->quantity}})
                                         @elseif($item->product)
                                             {{ $item->product->name }} x {{ $item->quantity }}
                                         @else

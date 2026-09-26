@@ -5,11 +5,11 @@
 
 @section('content')
     <div class="container mx-auto bg-white p-8 rounded-lg shadow-md relative">
-        <img src="{{ asset('images/watermark.png') }}"
+        <img src="{{ asset('images/spare.png') }}"
              alt="Watermark"
              class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
              style="transform: translate(-50%, -50%);" />
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Manage Brands</h1>
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Manage Products</h1>
 
         @if (session('success'))
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">

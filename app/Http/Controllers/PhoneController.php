@@ -71,92 +71,53 @@ class PhoneController extends Controller // <<< IMPORTANT: Ensure it extends App
      */
     public function storeReceivedPhones(Request $request)
     {
-        $productType = $request->input('product_type', 'phone');
-
-        if ($productType === 'accessory') {
-            return $this->storeReceivedAccessories($request);
-        }
-
-        // This method is now protected by 'permission:receive phones' middleware
-        // ... (rest of your existing storeReceivedPhones logic) ...
-        $request->merge([
-            'imeis' => collect($request->input('imeis', []))
-                ->map(fn ($imei) => preg_replace('/\s+/', '', trim((string) $imei)))
-                ->filter()
-                ->values()
-                ->all(),
-            'model' => trim((string) $request->input('model')),
-            'color' => trim((string) $request->input('color')),
-            'storage_capacity' => trim((string) $request->input('storage_capacity')),
-        ]);
-
         $request->validate([
             'brand_id' => 'required|exists:brands,id',
-            'model' => 'required|string|max:255',
-            'color' => 'required|string|max:255',
-            'storage_capacity' => 'required|string|max:255',
+            'model' => 'nullable|string|max:255',
             'purchase_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0|gte:purchase_price',
-            'imeis' => 'required|array|min:1',
-            'imeis.*' => 'required|string|distinct|unique:phones,imei|max:255',
+            'quantity' => 'required|integer|min:1',
         ]);
-
         try {
             DB::beginTransaction();
-
             $brand = Brand::findOrFail($request->brand_id);
-            $newPhonesCount = 0;
-            $phoneModel = PhoneModel::firstOrCreate([
-                'brand_id' => $brand->id,
-                'name' => $request->model,
+            Phone::create([
+                'model' => $request->model,
+                'brand_id' => $request->brand_id,
+                'purchase_price' => $request->purchase_price,
+                'selling_price' => $request->selling_price,
+                'status' => 'available',
+                'received_at' => now(),
+                'quantity' => $request->quantity,
             ]);
-
-            Color::firstOrCreate([
-                'phone_model_id' => $phoneModel->id,
-                'name' => $request->color,
-            ]);
-
-            PhoneStorageCapacity::firstOrCreate([
-                'phone_model_id' => $phoneModel->id,
-                'name' => $request->storage_capacity,
-            ]);
-
-            foreach ($request->imeis as $imei) {
-                Phone::create([
-                    'imei' => $imei,
-                    'model' => $request->model,
-                    'brand_id' => $request->brand_id,
-                    'color' => $request->color,
-                    'storage_capacity' => $request->storage_capacity,
-                    'purchase_price' => $request->purchase_price,
-                    'selling_price' => $request->selling_price,
-                    'status' => 'available',
-                    'received_at' => now(),
-                ]);
-                $newPhonesCount++;
-            }
-
-            // Update StockLevel: Find or create the stock entry and increment the count
             $stockLevel = StockLevel::firstOrNew([
                 'brand_id' => $request->brand_id,
                 'model' => $request->model,
-                'color' => $request->color,
             ]);
-            $stockLevel->current_stock = (int) $stockLevel->current_stock + $newPhonesCount;
+            $stockLevel->current_stock =
+                (int) $stockLevel->current_stock + (int) $request->quantity;
             $stockLevel->last_updated_at = now();
             $stockLevel->save();
-
             DB::commit();
-
-            return redirect()->back()->with('success', $newPhonesCount . ' phone(s) received successfully!');
-
-        } catch (ValidationException $e) {
-            DB::rollBack();
-            return redirect()->back()->withErrors($e->errors())->withInput();
+            return redirect()
+                ->back()
+                ->with(
+                    'success',
+                    $request->quantity . ' spare part(s) received successfully!'
+                );
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error receiving phones: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Failed to receive phones. Please try again. Error: ' . $e->getMessage())->withInput();
+            \Log::error(
+                'Error receiving spare parts: ' . $e->getMessage()
+            );
+            return redirect()
+                ->back()
+                ->with(
+                    'error',
+                    'Failed to receive spare parts. Please try again. Error: ' .
+                    $e->getMessage()
+                )
+                ->withInput();
         }
     }
 

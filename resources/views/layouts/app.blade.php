@@ -185,7 +185,7 @@
                     @endcan
                     @can('manage brands')
                         <a href="{{ route('brands.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
-                            <span class="mr-2">🏷️</span> Manage Brands
+                            <span class="mr-2">🏷️</span> Manage Products
                         </a>
                     @endcan
                 </div>

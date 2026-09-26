@@ -22,7 +22,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $totalPhones = Phone::where('status', 'available')->count();
+        $totalPhones = Phone::where('status', 'available');
         $totalInvested = $this->inventoryCostValue();
         $totalAccessories = DB::table('cashews')
             ->where('status', 'available')->count();
@@ -90,7 +90,7 @@ class DashboardController extends Controller
 
         // Inventory chart
         $inventoryDistribution = Phone::where('status', 'available')
-            ->select('brand_id', DB::raw('count(*) as count'))
+            ->select('brand_id', DB::raw('SUM(quantity) as count'))
             ->with('brand')
             ->groupBy('brand_id')
             ->get();
@@ -124,7 +124,7 @@ class DashboardController extends Controller
         $recentReceivedPhones = Phone::with('brand')->latest('received_at')->take(5)->get()->map(function($phone) {
             return [
                 'type' => 'received',
-                'description' => 'Received ' . (optional($phone->brand)->name ?? 'N/A') . " {$phone->model} ({$phone->color}) (IMEI: {$phone->imei})",
+                'description' => 'Received ' . (optional($phone->brand)->name ?? 'N/A') . " {$phone->model} ({$phone->quantity})",
                 'date' => $phone->received_at,
                 'link' => route('phones.index')
             ];
@@ -185,8 +185,8 @@ class DashboardController extends Controller
     private function inventoryCostValue(): float
     {
 //        $phoneValue = (float) Phone::sum('purchase_price');
-        $phoneValue = (float) Phone::where('status', '!=', 'sold')
-            ->sum('purchase_price');
+        $phoneValue = Phone::where('status', '!=', 'sold')
+            ->sum(DB::raw('purchase_price * quantity'));
         $accessoryValue = Schema::hasTable('cashews')
             ? (float) DB::table('cashews')
             ->where('status', 'available')
@@ -216,9 +216,7 @@ class DashboardController extends Controller
     {
         $this->authorize('edit phones');
 
-        if ($this->phoneIsSaleLinked($phone)) {
-            return redirect()->route('phones.index')->with('error', 'This phone is linked to a sale and can only be viewed.');
-        }
+
 
         $brands = Brand::all(); // Fetch all brands
         return view('phones.edit', compact('phone', 'brands'));
@@ -258,23 +256,21 @@ class DashboardController extends Controller
     {
         $this->authorize('edit phones');
 
-        if ($this->phoneIsSaleLinked($phone)) {
-            return redirect()->route('phones.index')->with('error', 'This phone is linked to a sale and can only be viewed.');
-        }
+//        if ($this->phoneIsSaleLinked($phone)) {
+//            return redirect()->route('phones.index')->with('error', 'This phone is linked to a sale and can only be viewed.');
+//        }
 
         $validated = $request->validate([
             'brand_id' => 'required|exists:brands,id',
-            'model' => 'required|string|max:255',
-            'color' => 'required|string|max:255',
-            'storage_capacity' => 'required|string|max:255',
+            'model' => 'nullable|string|max:255',
+            'quantity' => 'required|string|max:255',
             'purchase_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
-            'imei' => 'required|string|max:255|unique:phones,imei,' . $phone->id,
         ]);
 
         $phone->update($validated);
 
-        return redirect()->back()->with('success', 'Phone updated successfully');
+        return redirect()->back()->with('success', 'Product updated successfully');
     }
 
     public function editAccessory(Product $product)

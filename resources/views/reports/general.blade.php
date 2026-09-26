@@ -313,13 +313,9 @@
             <div class="kpi-card c-slate">
                 <span class="kpi-icon">📱</span>
                 <div class="kpi-value c-slate">{{ $availablePhones }}</div>
-                <div class="kpi-label">Phones in Stock</div>
+                <div class="kpi-label">Products in Stock</div>
             </div>
-            <div class="kpi-card c-teal">
-                <span class="kpi-icon">🔌</span>
-                <div class="kpi-value c-teal">{{ $availableAccessories }}</div>
-                <div class="kpi-label">Accessories in Stock</div>
-            </div>
+
             <div class="kpi-card c-navy">
                 <span class="kpi-icon">🏦</span>
                 <div class="kpi-value c-navy">Tsh {{ number_format($inventoryValue, 0) }}</div>
@@ -357,8 +353,6 @@
                     <tr><td>Total Revenue</td><td class="r" style="color:var(--emerald);font-weight:700">Tsh {{ number_format($totalRevenue, 2) }}</td></tr>
                     <tr class="row-sub"><td>Cost of Goods Sold</td><td class="r" style="color:var(--rose)">– Tsh {{ number_format($totalCogs, 2) }}</td></tr>
                     <tr class="row-gross"><td>Gross Profit</td><td class="r">Tsh {{ number_format($grossProfit, 2) }}</td></tr>
-                    <tr><td>Accessory Revenue</td><td class="r">Tsh {{ number_format($accessoryRevenue, 2) }}</td></tr>
-                    <tr><td>Accessory Profit/Loss</td><td class="r" style="color:{{ $accessoryGrossProfit >= 0 ? 'var(--accent)' : 'var(--rose)' }}">Tsh {{ number_format($accessoryGrossProfit, 2) }}</td></tr>
                     <tr class="row-sub"><td>Operating Expenses</td><td class="r" style="color:var(--rose)">– Tsh {{ number_format($totalExpenses, 2) }}</td></tr>
                     <tr class="row-net"><td>Net Profit</td><td class="r" style="color:{{ $netProfit >= 0 ? 'var(--accent)' : 'var(--rose)' }}">Tsh {{ number_format($netProfit, 2) }}</td></tr>
                     <tr class="row-sub"><td>Discounts Given</td><td class="r">– Tsh {{ number_format($totalDiscounts, 2) }}</td></tr>
@@ -413,10 +407,10 @@
 
             <div class="rpt-panel">
                 <div class="rpt-panel-header">
-                    <span class="dot" style="background:var(--amber)"></span> Top Selling Brands
+                    <span class="dot" style="background:var(--amber)"></span> Top Selling Products
                 </div>
                 <table class="rpt-table">
-                    <thead><tr><th>#</th><th>Brand</th><th class="r">Units</th><th class="r">Revenue</th></tr></thead>
+                    <thead><tr><th>#</th><th>Product</th><th class="r">Units</th><th class="r">Revenue</th></tr></thead>
                     <tbody>
                     @forelse($topBrands as $i => $brand)
                         <tr>
@@ -453,7 +447,8 @@
                         <tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">No inventory data.</td></tr>
                     @endforelse
                     </tbody>
-                    <tfoot><tr><td>Total</td><td class="r">{{ $availablePhones }}</td><td class="r">Tsh {{ number_format($inventoryValue, 2) }}</td></tr></tfoot>
+                    <tfoot><tr><td>Total</td><td class="r">{{ $availablePhones }}</td><td class="r">            Tsh {{ number_format($stockByBrand->sum('value'), 2) }}
+                        </td></tr></tfoot>
                 </table>
             </div>
         </div>
@@ -486,9 +481,10 @@
                                 <td style="color:var(--text-muted);white-space:nowrap;font-size:12px">{{ \Carbon\Carbon::parse($sale->sale_date)->format('d M Y') }}</td>
                                 <td style="font-weight:500">{{ $sale->customer_name }}</td>
                                 <td style="color:var(--text-muted);font-size:12px;max-width:200px">
-                                    {{ $sale->saleItems->map(fn($i) => $i->phone ? optional($i->phone->brand)->name . ' ' . $i->phone->model : ($i->product ? $i->product->name . ' x ' . $i->quantity : 'Item removed'))->implode(', ') }}
+                                    {{ $sale->saleItems->map(fn($i) => $i->phone ? optional($i->phone->brand)->name . ' ' . $i->phone->model .' '. '('.''.$i->quantity.')': ($i->product ? $i->product->name . ' x ' . $i->quantity : 'Item removed'))->implode(', ') }}
                                 </td>
-                                <td class="r" style="color:var(--emerald);font-weight:600">Tsh {{ number_format($sale->final_amount, 2) }}</td>
+                                <td class="r" style="color:var(--emerald);font-weight:600">    Tsh {{ number_format($sale->saleItems->sum(fn($i) => $i->price * $i->quantity), 2) }}
+                                </td>
                                 <td class="r">
                                 <span class="badge-pill {{ $sale->is_installment ? 'badge-install' : 'badge-full' }}">
                                     {{ $sale->is_installment ? 'Installment' : 'Full' }}

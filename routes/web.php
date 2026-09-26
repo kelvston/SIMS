@@ -89,6 +89,11 @@ Route::get('/users', [UserController::class, 'index'])->name('users.index');
 Route::get('/create_permission', [RoleController::class, 'createPermission'])->name('roles.create_permission');
 Route::post('/store_permission', [RoleController::class, 'storePermission'])->name('roles.store_permission');
 Route::resource('roles', RoleController::class);
+Route::post('/brands/bulk-upload', [BrandController::class, 'bulkUpload'])
+    ->name('brands.bulk.upload');
+
+Route::get('/brands/bulk-template', [BrandController::class, 'bulkTemplate'])
+    ->name('brands.bulk.template');
 Route::resource('brands', BrandController::class);
 Route::resource('expenses', ExpenseController::class);
 
@@ -97,6 +102,7 @@ Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function
     Route::get('/general/download', [ReportController::class, 'downloadGeneralReport']) ->name('general.download');
     Route::post('/general/email',   [ReportController::class, 'sendGeneralReportEmail'])->name('general.email');
 });
+
 
 // To view all installment plans
 

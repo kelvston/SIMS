@@ -11,7 +11,7 @@ class Phone extends Model
 
     // Define which attributes are mass assignable
     protected $fillable = [
-        'imei',
+        'quantity',
         'model',
         'brand_id',
         'color',

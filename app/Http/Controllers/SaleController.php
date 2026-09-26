@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Exceptions\UnauthorizedException; // Import for better error handling
 use Barryvdh\DomPDF\Facade\Pdf;
+
 use App\Mail\SaleReceiptMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
@@ -92,35 +93,15 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
     public function store(Request $request)
     {
         $request->merge([
-            'phone_imeis' => collect($request->input('phone_imeis', []))
-                ->map(fn ($imei) => preg_replace('/\s+/', '', trim((string) $imei)))
-                ->filter()
-                ->values()
-                ->all(),
-            'accessories' => collect($request->input('accessories', []))
-                ->map(function ($item) {
-                    return [
-                        'product_id' => $item['product_id'] ?? null,
-                        'quantity' => (int) ($item['quantity'] ?? 0),
-                    ];
-                })
-                ->filter(fn ($item) => $item['product_id'] && $item['quantity'] > 0)
-                ->values()
-                ->all(),
             'discount_amount' => $request->filled('discount_amount') ? $request->input('discount_amount') : 0,
             'payment_option' => $request->input('payment_option', $request->boolean('is_installment') ? 'installment' : 'cash'),
         ]);
 
         // Validate the request data
         $request->validate([
-            'customer_name' => 'required|string|max:255',
+            'customer_name' => 'nullable|string|max:255',
             'customer_phone' => 'nullable|string|max:255',
             'customer_email' => 'nullable|email|max:255',
-            'phone_imeis' => 'nullable|array',
-            'phone_imeis.*' => 'required|string|distinct|exists:phones,imei',
-            'accessories' => 'nullable|array',
-            'accessories.*.product_id' => 'required|exists:products,id',
-            'accessories.*.quantity' => 'required|integer|min:1',
             'discount_amount' => 'nullable|numeric|min:0',
             'payment_option' => ['required', Rule::in(['cash', 'installment', 'credit'])],
             'is_installment' => 'boolean',
@@ -130,100 +111,46 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             'credit_due_date' => 'required_if:payment_option,credit|nullable|date|after_or_equal:today',
             'credit_paid_amount' => 'nullable|numeric|min:0',
             'credit_reminder_days' => 'nullable|integer|min:0|max:30',
+            'phones' => 'required|array|min:1',
+            'phones.*.product_id' => 'required',
+            'phones.*.quantity' => 'required|integer|min:1',
         ]);
 
         try {
             DB::beginTransaction();
 
             $phoneIds = [];
-            $accessoryLines = [];
+            $phoneQuantities = []; // brand_id => quantity requested
             $totalAmountCents = 0;
 
             // Fetch phones and calculate total amount
-            foreach ($request->phone_imeis as $imei) {
-                $phone = Phone::where('imei', $imei)
+            foreach ($request->phones as $product) {
+                $phone = Phone::where('brand_id', $product['product_id'])
                     ->where('status', 'available')
                     ->lockForUpdate()
                     ->first();
 
                 if (!$phone) {
                     throw ValidationException::withMessages([
-                        'phone_imeis' => ['Phone with IMEI ' . $imei . ' is not available for sale.'],
+                        'phones' => ['One or more selected phones are no longer available.'],
                     ]);
                 }
 
-                $phoneIds[] = $phone->id;
-                $totalAmountCents += $this->moneyToCents($phone->selling_price);
-            }
-
-            foreach ($request->input('accessories', []) as $accessoryInput) {
-                $productId = (int) $accessoryInput['product_id'];
-                $quantityNeeded = (int) $accessoryInput['quantity'];
-                $remainingQuantity = $quantityNeeded;
-                $lineTotalCents = 0;
-                $lineCostCents = 0;
-                $batchesUsed = [];
-
-                $product = Product::lockForUpdate()->findOrFail($productId);
-                $batches = AccessoryStock::where('product_id', $productId)
-                    ->where('status', 'available')
-                    ->where('quantity', '>', 0)
-                    ->orderBy('received_at')
-                    ->orderBy('id')
-                    ->lockForUpdate()
-                    ->get();
-
-                foreach ($batches as $batch) {
-                    if ($remainingQuantity <= 0) {
-                        break;
-                    }
-
-                    $availableQuantity = (int) floor((float) $batch->quantity);
-                    $soldFromBatch = min($availableQuantity, $remainingQuantity);
-
-                    if ($soldFromBatch <= 0) {
-                        continue;
-                    }
-
-                    $batch->quantity = $availableQuantity - $soldFromBatch;
-                    if ($batch->quantity <= 0) {
-                        $batch->status = 'sold';
-                    }
-                    $batch->save();
-
-                    $lineTotalCents += $this->moneyToCents($batch->selling_price) * $soldFromBatch;
-                    $lineCostCents += $this->moneyToCents($batch->unit_price) * $soldFromBatch;
-                    $batchesUsed[] = [
-                        'batch_id' => $batch->id,
-                        'quantity' => $soldFromBatch,
-                    ];
-                    $remainingQuantity -= $soldFromBatch;
+                $quantity = (int) ($product['quantity'] ?? 1);
+                if ($quantity < 1) {
+                    $quantity = 1;
                 }
 
-                if ($remainingQuantity > 0) {
+                // Guard against selling more than what's actually in stock on this row
+                if ($quantity > $phone->quantity) {
                     throw ValidationException::withMessages([
-                        'accessories' => [$product->name . ' has only ' . ($quantityNeeded - $remainingQuantity) . ' unit(s) available.'],
+                        'phones' => ["Only {$phone->quantity} unit(s) available for this phone, but {$quantity} were requested."],
                     ]);
                 }
 
-                $unitPriceCents = (int) round($lineTotalCents / max($quantityNeeded, 1));
-                $unitCostCents = (int) round($lineCostCents / max($quantityNeeded, 1));
-
-                $accessoryLines[] = [
-                    'product' => $product,
-                    'quantity' => $quantityNeeded,
-                    'unit_price' => $this->centsToMoney($unitPriceCents),
-                    'unit_cost' => $this->centsToMoney($unitCostCents),
-                    'batches_used' => $batchesUsed,
-                ];
-
-                $totalAmountCents += $lineTotalCents;
-            }
-
-            if (empty($phoneIds) && empty($accessoryLines)) {
-                throw ValidationException::withMessages([
-                    'phone_imeis' => ['Add at least one phone or accessory to the sale.'],
-                ]);
+                $phoneIds[] = $phone->brand_id;
+                $phoneQuantities[$phone->brand_id] = $quantity;
+                $totalAmountCents += $this->moneyToCents($phone->selling_price) * $quantity;
             }
 
             $discountAmountCents = $this->moneyToCents($request->input('discount_amount', 0));
@@ -286,18 +213,27 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 'status' => 'completed',
             ]);
 
-            // Create SaleItem records, update phone status, and reduce stock level
+            // Create SaleItem records, decrement phone quantity, update status, and reduce stock level
             foreach ($phoneIds as $phoneId) {
-                $phone = Phone::lockForUpdate()->find($phoneId);
+                $phone = Phone::lockForUpdate()->where('brand_id', '=', $phoneId)->first();
+                $quantity = $phoneQuantities[$phoneId] ?? 1;
 
-                $phone->status = $isInstallment ? 'under_installment' : 'sold';
+                // Decrement the phone's own quantity column
+                $phone->quantity = max($phone->quantity - $quantity, 0);
+
+                // Only flip status once the row is fully depleted; otherwise it stays available
+                // with a reduced quantity so remaining stock is still sellable.
+                if ($phone->quantity <= 0) {
+                    $phone->status = $isInstallment ? 'under_installment' : 'sold';
+                }
+
                 $phone->save();
 
                 SaleItem::create([
                     'sale_id' => $sale->id,
                     'phone_id' => $phone->id,
                     'unit_price' => $this->centsToMoney($this->moneyToCents($phone->selling_price)),
-                    'quantity' => 1,
+                    'quantity' => $quantity,
                     'unit_cost' => $this->centsToMoney($this->moneyToCents($phone->purchase_price)),
                 ]);
 
@@ -308,22 +244,10 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                     ->first();
 
                 if ($stockLevel && $stockLevel->current_stock > 0) {
-                    $stockLevel->decrement('current_stock');
+                    $stockLevel->decrement('current_stock', min($quantity, $stockLevel->current_stock));
                     $stockLevel->last_updated_at = now();
                     $stockLevel->save();
                 }
-            }
-
-            foreach ($accessoryLines as $line) {
-                SaleItem::create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $line['product']->id,
-                    'phone_id' => null,
-                    'cosmetic_id' => $line['batches_used'][0]['batch_id'] ?? null,
-                    'unit_price' => $line['unit_price'],
-                    'quantity' => $line['quantity'],
-                    'unit_cost' => $line['unit_cost'],
-                ]);
             }
 
             // Generate unique receipt number
@@ -393,6 +317,202 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
         }
     }
 
+//    public function store(Request $request)
+//    {
+//        $request->merge([
+//            'discount_amount' => $request->filled('discount_amount') ? $request->input('discount_amount') : 0,
+//            'payment_option' => $request->input('payment_option', $request->boolean('is_installment') ? 'installment' : 'cash'),
+//        ]);
+//
+//        // Validate the request data
+//        $request->validate([
+//            'customer_name' => 'nullable|string|max:255',
+//            'customer_phone' => 'nullable|string|max:255',
+//            'customer_email' => 'nullable|email|max:255',
+//            'discount_amount' => 'nullable|numeric|min:0',
+//            'payment_option' => ['required', Rule::in(['cash', 'installment', 'credit'])],
+//            'is_installment' => 'boolean',
+//            'total_installments' => 'required_if:payment_option,installment|nullable|integer|min:1',
+//            'installment_amount' => 'required_if:payment_option,installment|nullable|numeric|min:0.01',
+//            'start_date' => 'required_if:payment_option,installment|nullable|date',
+//            'credit_due_date' => 'required_if:payment_option,credit|nullable|date|after_or_equal:today',
+//            'credit_paid_amount' => 'nullable|numeric|min:0',
+//            'credit_reminder_days' => 'nullable|integer|min:0|max:30',
+//        ]);
+//        try {
+//            DB::beginTransaction();
+//
+//            $phoneIds = [];
+//            $totalAmountCents = 0;
+//
+//            // Fetch phones and calculate total amount
+//            foreach ($request->phones as $product) {
+//                $phone = Phone::where('brand_id', $product['product_id'])
+//                    ->where('status', 'available')
+//                    ->lockForUpdate()
+//                    ->first();
+//
+//                $phoneIds[] = $phone->brand_id;
+//                $totalAmountCents += $this->moneyToCents($phone->selling_price);
+//            }
+//
+//
+//            $discountAmountCents = $this->moneyToCents($request->input('discount_amount', 0));
+//            $finalAmountCents = $totalAmountCents - $discountAmountCents;
+//
+//            if ($finalAmountCents < 0) {
+//                throw ValidationException::withMessages([
+//                    'discount_amount' => ['Discount cannot exceed the total amount.'],
+//                ]);
+//            }
+//
+//            $paymentOption = $request->input('payment_option');
+//            $isInstallment = $paymentOption === 'installment';
+//            $isCredit = $paymentOption === 'credit';
+//            $paidAmountCents = match ($paymentOption) {
+//                'installment' => $this->moneyToCents($request->installment_amount),
+//                'credit' => $this->moneyToCents($request->input('credit_paid_amount', 0)),
+//                default => $finalAmountCents,
+//            };
+//
+//            if ($paidAmountCents > $finalAmountCents) {
+//                $paidField = $isInstallment ? 'installment_amount' : 'credit_paid_amount';
+//
+//                throw ValidationException::withMessages([
+//                    $paidField => ['Paid amount cannot exceed the final sale amount.'],
+//                ]);
+//            }
+//
+//            if ($isInstallment) {
+//                $installmentTotalCents = $this->moneyToCents($request->installment_amount) * (int) $request->total_installments;
+//
+//                if ($installmentTotalCents < $finalAmountCents) {
+//                    throw ValidationException::withMessages([
+//                        'installment_amount' => ['Total installment amount is less than the final sale amount.'],
+//                    ]);
+//                }
+//            }
+//
+//            $totalAmount = $this->centsToMoney($totalAmountCents);
+//            $discountAmount = $this->centsToMoney($discountAmountCents);
+//            $finalAmount = $this->centsToMoney($finalAmountCents);
+//            $paidAmount = $this->centsToMoney($paidAmountCents);
+//            $amountDue = $this->centsToMoney(max($finalAmountCents - $paidAmountCents, 0));
+//
+//            // Create the Sale record
+//            $sale = Sale::create([
+//                'customer_name' => $request->customer_name,
+//                'customer_phone' => $request->customer_phone,
+//                'customer_email' => $request->customer_email,
+//                'total_amount' => $totalAmount,
+//                'discount_amount' => $discountAmount,
+//                'final_amount' => $finalAmount,
+//                'sale_date' => now(),
+//                'is_installment' => $isInstallment,
+//                'amount_paid' => $paidAmount,
+//                'amount_due' => $amountDue,
+//                'payment_option' => $paymentOption,
+//                'credit_due_date' => $isCredit ? $request->credit_due_date : null,
+//                'credit_reminder_days' => $isCredit ? (int) $request->input('credit_reminder_days', 3) : 3,
+//                'status' => 'completed',
+//            ]);
+//
+//            // Create SaleItem records, update phone status, and reduce stock level
+//            foreach ($phoneIds as $phoneId) {
+//                $phone = Phone::lockForUpdate()->where('brand_id','=',$phoneId)->first();
+//
+//                $phone->status = $isInstallment ? 'under_installment' : 'sold';
+//                $phone->save();
+//
+//                SaleItem::create([
+//                    'sale_id' => $sale->id,
+//                    'phone_id' => $phone->id,
+//                    'unit_price' => $this->centsToMoney($this->moneyToCents($phone->selling_price)),
+//                    'quantity' => 1,
+//                    'unit_cost' => $this->centsToMoney($this->moneyToCents($phone->purchase_price)),
+//                ]);
+//
+//                // Decrease stock in StockLevel
+//                $stockLevel = \App\Models\StockLevel::where('brand_id', $phone->brand_id)
+//                    ->where('model', $phone->model)
+//                    ->where('color', $phone->color)
+//                    ->first();
+//
+//                if ($stockLevel && $stockLevel->current_stock > 0) {
+//                    $stockLevel->decrement('current_stock');
+//                    $stockLevel->last_updated_at = now();
+//                    $stockLevel->save();
+//                }
+//            }
+//
+//
+//            // Generate unique receipt number
+//            $receiptNumber = 'RCPT-' . strtoupper(uniqid());
+//
+//            // Create the receipt
+//            $receipt = SaleReceipt::create([
+//                'receipt_number' => $receiptNumber,
+//                'sale_id' => $sale->id,
+//                'issued_at' => now(),
+//                'subtotal' => $totalAmount,
+//                'tax' => 0,
+//                'discount' => $discountAmount,
+//                'total' => $finalAmount,
+//                'is_installment' => $isInstallment,
+//                'paid_amount' => $paidAmount,
+//                'payment_method' => $isCredit ? 'credit' : 'cash',
+//                'status' => $paidAmountCents <= 0 ? 'unpaid' : ($paidAmountCents < $finalAmountCents ? 'partial' : 'paid'),
+//                'notes' => null,
+//            ]);
+//
+//            // If it's an installment sale, create InstallmentPlan
+//            if ($isInstallment) {
+//                InstallmentPlan::create([
+//                    'sale_id' => $sale->id,
+//                    'total_installments' => $request->total_installments,
+//                    'installment_amount' => $this->centsToMoney($this->moneyToCents($request->installment_amount)),
+//                    'start_date' => $request->start_date,
+//                    'next_payment_date' => $request->start_date,
+//                    'status' => 'active',
+//                ]);
+//            }
+//
+//            DB::commit();
+//
+//            $emailWarning = null;
+//
+//            if ($sale->customer_email) {
+//                try {
+//                    $sale->load('saleItems.phone.brand', 'saleItems.product', 'installmentPlan');
+//                    $receipt->load('sale');
+//
+//                    $pdf = Pdf::loadView('pdf.receipt', ['sale' => $sale, 'receipt' => $receipt]);
+//                    $pdfContent = base64_encode($pdf->output());
+//
+//                    Mail::to($sale->customer_email)->send(new SaleReceiptMail($sale, $receipt, $pdfContent));
+//                } catch (\Throwable $mailException) {
+//                    \Log::warning('Sale receipt email failed for sale #' . $sale->id . ': ' . $mailException->getMessage());
+//                    $emailWarning = 'Sale recorded successfully, but the receipt email was not sent. Please check mail settings.';
+//                }
+//            }
+//
+//            $redirect = redirect()->route('sales.index')->with('success', 'Sale recorded successfully!');
+//
+//            if ($emailWarning) {
+//                $redirect->with('warning', $emailWarning);
+//            }
+//
+//            return $redirect;
+//        } catch (ValidationException $e) {
+//            DB::rollBack();
+//            return redirect()->back()->withErrors($e->errors())->withInput();
+//        } catch (\Exception $e) {
+//            DB::rollBack();
+//            \Log::error('Error recording sale: ' . $e->getMessage());
+//            return redirect()->back()->with('error', 'Failed to record sale. Please try again. Error: ' . $e->getMessage())->withInput();
+//        }
+//    }
+
     private function moneyToCents($amount): int
     {
         return (int) round(((float) $amount) * 100);
@@ -417,20 +537,45 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
         return view('sales.show', compact('sale'));
     }
 
+//    public function receipt(Sale $sale)
+//    {
+//        $sale->load(['saleItems.phone.brand', 'saleItems.product', 'saleReceipt', 'installmentPlan']);
+//
+//        if (! $sale->saleReceipt) {
+//            abort(404, 'Receipt not found for this sale.');
+//        }
+//
+//        $pdf = Pdf::loadView('pdf.receipt', [
+//            'sale' => $sale,
+//            'receipt' => $sale->saleReceipt,
+//        ]);
+//
+//        return $pdf->download($sale->saleReceipt->receipt_number . '.pdf');
+//    }
+
     public function receipt(Sale $sale)
     {
-        $sale->load(['saleItems.phone.brand', 'saleItems.product', 'saleReceipt', 'installmentPlan']);
+        $sale->load([
+            'saleItems.phone.brand',
+            'saleItems.product',
+            'saleReceipt',
+            'installmentPlan',
+        ]);
 
-        if (! $sale->saleReceipt) {
-            abort(404, 'Receipt not found for this sale.');
-        }
+        abort_unless(
+            $sale->saleReceipt,
+            404,
+            'Receipt not found for this sale.'
+        );
 
         $pdf = Pdf::loadView('pdf.receipt', [
             'sale' => $sale,
             'receipt' => $sale->saleReceipt,
         ]);
 
-        return $pdf->download($sale->saleReceipt->receipt_number . '.pdf');
+        return $pdf->download(
+            $sale->saleReceipt->receipt_number . '.pdf'
+        );
     }
 
     public function void(Request $request, Sale $sale)

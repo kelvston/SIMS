@@ -26,7 +26,7 @@
 {{--    <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative">--}}
         <div class="max-w-5xl mx-auto bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-md mt-6 relative overflow-hidden">
 
-        <img src="{{ asset('images/watermark.png') }}"
+        <img src="{{ asset('images/spare.png') }}"
              alt="Watermark"
              class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
              style="transform: translate(-50%, -50%);" />

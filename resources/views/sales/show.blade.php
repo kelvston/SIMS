@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative"> <!-- Added relative -->
-        <img src="{{ asset('images/watermark.png') }}"
+        <img src="{{ asset('images/spare.png') }}"
              alt="Watermark"
              class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
              style="transform: translate(-50%, -50%);" /> <!-- Centered better -->
@@ -101,18 +101,12 @@
                     @foreach ($sale->saleItems as $item)
                         <li class="text-gray-700">
                             @if($item->phone)
-                                <strong>{{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }}</strong>
-                                ({{ $item->phone->color }}, {{ $item->phone->storage_capacity }}) -
-                                IMEI: {{ $item->phone->imei }} -
-                                Sold Price: Tsh {{ number_format($item->unit_price, 2) }}
-                            @elseif($item->product)
-                                <strong>{{ $item->product->name }}</strong>
-                                Qty: {{ $item->quantity }} -
-                                Unit Price: Tsh {{ number_format($item->unit_price, 2) }} -
-                                Line Total: Tsh {{ number_format($item->unit_price * $item->quantity, 2) }}
+                                <strong>{{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }}</strong><br>
+                                Quantity: {{ $item->quantity }} -<br>
+                                Sold Price: Tsh {{ number_format($item->unit_price * $item->quantity, 2) }}
                             @else
                                 <strong>Item removed</strong> -
-                                Sold Price: Tsh {{ number_format($item->unit_price, 2) }}
+                                Sold Price: Tsh {{ number_format($item->unit_price * $item->quantity, 2) }}
                             @endif
                         </li>
                     @endforeach

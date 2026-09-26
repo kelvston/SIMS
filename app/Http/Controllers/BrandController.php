@@ -55,6 +55,78 @@ class BrandController extends Controller
         return redirect()->route('brands.index')->with('success', 'Brand created successfully!');
     }
 
+    public function bulkUpload(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:5120',
+        ]);
+
+        $file = $request->file('csv_file');
+
+        $handle = fopen($file->getRealPath(), 'r');
+
+        $header = fgetcsv($handle);
+
+        if (!$header || !in_array('name', $header)) {
+            fclose($handle);
+
+            return back()->with('error', 'CSV must contain a name column.');
+        }
+
+        $nameIndex = array_search('name', $header);
+
+        $products = [];
+
+        while (($row = fgetcsv($handle)) !== false) {
+
+            if (empty(array_filter($row))) {
+                continue;
+            }
+
+            $name = trim($row[$nameIndex] ?? '');
+
+            if ($name !== '') {
+                $products[] = [
+                    'name' => $name,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+        }
+
+        fclose($handle);
+
+        if (empty($products)) {
+            return back()->with('error', 'No products found in the CSV.');
+        }
+
+        Brand::insert($products);
+
+        return back()->with(
+            'success',
+            count($products) . ' products uploaded successfully.'
+        );
+    }
+
+    public function bulkTemplate()
+    {
+        return response()->streamDownload(function () {
+            $handle = fopen('php://output', 'w');
+
+            // CSV header
+            fputcsv($handle, ['name']);
+
+            // Example products
+            fputcsv($handle, ['Bold']);
+            fputcsv($handle, ['Tyre']);
+            fputcsv($handle, ['Coil']);
+
+            fclose($handle);
+        }, 'products-import-template.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
     /**
      * Show the form for editing the specified brand.
      *

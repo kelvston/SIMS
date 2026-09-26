@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative">
-    <img src="{{ asset('images/watermark.png') }}"
+    <img src="{{ asset('images/spare.png') }}"
          alt="Watermark"
          class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
          style="transform: translate(-50%, -50%);" />
@@ -29,7 +29,6 @@
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Color</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Low Stock Threshold</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -41,8 +40,7 @@
                     <tr>
                         <td data-label="Brand" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->brand->name ?? 'N/A' }}</td>
                         <td data-label="Model" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->model }}</td>
-                        <td data-label="Color" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->color }}</td>
-                        <td data-label="Current Stock" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->current_stock }}</td>
+                        <td data-label="Current Stock" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->phone->quantity }}</td>
                         <td data-label="Low Stock Threshold" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->low_stock_threshold }}</td>
                         <td data-label="Status" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
@@ -60,44 +58,6 @@
 
         <div class="mt-6">
             {{ $stockLevels->links('pagination::tailwind') }}
-        </div>
-    @endif
-
-    <h2 class="text-2xl font-semibold text-gray-700 mt-10 mb-4">Accessory Stock</h2>
-    @if ($accessoryStocks->isEmpty())
-        <p class="text-center text-gray-600">No accessory stock recorded.</p>
-    @else
-        <div class="table-scroll sm:rounded-lg sm:border sm:border-gray-200 sm:shadow-sm">
-            <table class="responsive-table min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Accessory</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Low Stock Threshold</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selling Price</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                @foreach ($accessoryStocks as $stock)
-                    @php
-                        $currentStock = (int) $stock->current_stock;
-                        $threshold = (int) ($stock->low_stock_threshold ?? 5);
-                    @endphp
-                    <tr>
-                        <td data-label="Accessory" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $stock->name }}</td>
-                        <td data-label="Current Stock" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $currentStock }}</td>
-                        <td data-label="Low Stock Threshold" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $threshold }}</td>
-                        <td data-label="Selling Price" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Tsh {{ number_format($stock->selling_price ?? 0, 2) }}</td>
-                        <td data-label="Status" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $currentStock <= $threshold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800' }}">
-                                {{ $currentStock <= $threshold ? 'Low Stock' : 'Sufficient' }}
-                            </span>
-                        </td>
-                    </tr>
-                @endforeach
-                </tbody>
-            </table>
         </div>
     @endif
     <div class="flex justify-end mt-8">
