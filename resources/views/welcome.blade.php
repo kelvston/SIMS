@@ -1,180 +1,63 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - PhoneStore Pro</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ config('app.name', 'SIMS') }} | Sign in</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        body {
-            font-family: Poppins, ui-sans-serif, system-ui, sans-serif;
-            background: linear-gradient(to bottom right, #AD5D29 0%, #f5e6da 40%, #AD5D29 75%, #6e3618 100%);
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-        }
-
-        .glass {
-            background: rgba(60, 32, 20, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-        }
-
-        ::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        html, body {
-            overflow: hidden;
-        }
-        @keyframes loader-bar {
-            0%, 100% { transform: scaleY(1); }
-            50% { transform: scaleY(2); }
-        }
-
-        .animate-loader-bar {
-            animation: loader-bar 1s infinite ease-in-out;
-        }
-
-        .delay-100 { animation-delay: 0.1s; }
-        .delay-200 { animation-delay: 0.2s; }
-        .delay-300 { animation-delay: 0.3s; }
-        .delay-400 { animation-delay: 0.4s; }
-
-        #page-loader.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
+        :root { --ink:#14212d; --muted:#607080; --line:#dce3e8; --orange:#d75a13; --navy:#102638; }
+        * { box-sizing:border-box; } body { margin:0; min-height:100vh; background:#f4f6f7; color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,sans-serif; }
+        .photo { background:linear-gradient(90deg,rgba(12,27,38,.93) 0%,rgba(12,27,38,.77) 47%,rgba(12,27,38,.22)),url('{{ asset('images/spare.jpg') }}') center/cover; }
+        input[type=checkbox] { accent-color:var(--orange); }
+        .login-card { box-shadow: 0 24px 60px rgba(21, 36, 48, .10), 0 2px 5px rgba(21, 36, 48, .04); }
+        #loader { transition:opacity .25s ease,visibility .25s ease; } #loader.is-hidden { opacity:0; visibility:hidden; }
     </style>
 </head>
-<body class="flex items-center justify-center relative">
-<!-- Page Loader -->
-<div id="page-loader"
-     class="fixed inset-0 z-[9999] bg-white flex items-center justify-center transition-opacity duration-500">
-    <div class="loader-bars flex space-x-1">
-        <div class="w-2 h-6 bg-yellow-700 animate-loader-bar"></div>
-        <div class="w-2 h-6 bg-yellow-700 animate-loader-bar delay-100"></div>
-        <div class="w-2 h-6 bg-yellow-700 animate-loader-bar delay-200"></div>
-        <div class="w-2 h-6 bg-yellow-700 animate-loader-bar delay-300"></div>
-        <div class="w-2 h-6 bg-yellow-700 animate-loader-bar delay-400"></div>
-    </div>
-</div>
+<body>
+    <div id="loader" class="fixed inset-0 z-50 grid place-items-center bg-white"><div class="h-9 w-9 animate-spin rounded-full border-4 border-slate-200 border-t-orange-600"></div></div>
+    <main class="grid min-h-screen lg:grid-cols-[minmax(0,1.45fr)_minmax(420px,.8fr)]">
+        <section class="photo relative hidden min-h-screen p-10 text-white lg:flex lg:flex-col xl:p-14">
+            <header>
+                <a href="{{ url('/') }}" class="flex items-center gap-3 text-white no-underline">
+                    <span class="grid h-10 w-10 place-items-center rounded bg-orange-600"><svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0-1.4 0l-7 7a1 1 0 0 0 0 1.4l2 2a1 1 0 0 0 1.4 0l7-7a1 1 0 0 0 0-1.4l-2-2Z"/><path d="m5 19 2-2M15 5l2-2M12 8l4 4"/></svg></span>
+                    <span><strong class="block text-lg tracking-wide">{{ config('app.name', 'SIMS') }}</strong><small class="text-xs uppercase tracking-[.18em] text-slate-300">Service operations</small></span>
+                </a>
+            </header>
 
-<!-- Animated Blobs -->
-<div id="blob-container" class="absolute inset-0 z-10 pointer-events-none">
-    <div class="blob bg-yellow-400 opacity-30 blur-xl rounded-full w-60 h-60 absolute" id="blob1"></div>
-    <div class="blob bg-white opacity-20 blur-xl rounded-full w-72 h-52 absolute" id="blob2"></div>
-    <div class="blob bg-purple-500 opacity-30 blur-xl rounded-full w-52 h-52 absolute" id="blob3"></div>
-</div>
+            <div class="my-auto max-w-2xl py-12">
+                <h1 class="max-w-xl text-5xl font-semibold leading-[1.1] tracking-tight xl:text-6xl">GARAGE PRO<br>made simple.</h1>
+                <p class="mt-6 max-w-lg text-base leading-7 text-slate-200">Secured access to your workspace.</p>
+            </div>
+        </section>
 
-<!-- Main Container -->
-<div class="flex flex-col items-center justify-center w-full max-w-6xl mx-auto p-4 gap-8 z-20">
-
-    <!-- Logo and Header -->
-    <div class="text-center">
-        <!-- SVG Logo -->
-        <svg width="60" height="60" fill="none" viewBox="0 0 24 24" stroke="#facc15" stroke-width="1.5" class="mx-auto mb-2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2M12 3C6.477 3 2 7.477 2 13s4.477 10 10 10 10-4.477 10-10S17.523 3 12 3z"/>
-        </svg>
-        <h1 class="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-br from-yellow-200 via-orange-500 to-yellow-800">
-            Enrich Your Digital Transformation
-        </h1>
-        <p class="text-white/80 mt-1 text-sm">Powered by PhoneStore Pro</p>
-    </div>
-
-    <div class="flex flex-col md:flex-row items-center justify-center gap-6 w-full">
-
-        <!-- Glass Login Card -->
-        <div class="glass p-6 rounded-xl shadow-md w-full max-w-sm">
-            <form  action="{{ route('login') }}" method="POST" class="space-y-4">
-                @csrf
-
-                <div>
-                    <label for="email" class="block text-white/80 text-sm">Email</label>
-                    <input type="email" name="email" id="email"
-                           class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md focus:ring-2 focus:ring-yellow-900 text-white placeholder-white/60 text-sm"
-                           placeholder="you@example.com" required>
-                </div>
-
-                <div>
-                    <label for="password" class="block text-white/80 text-sm">Password</label>
-                    <div class="relative">
-                        <input type="password" name="password" id="password"
-                               class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md focus:ring-2 focus:ring-yellow-900 text-white placeholder-white/60 text-sm pr-10"
-                               placeholder="••••••••" required>
-                        <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-3 text-xs text-white/60 hover:text-white">
-                            Show
-                        </button>
+        <section class="flex min-h-screen items-center bg-[#f3f6f8] px-5 py-8 sm:px-10 lg:px-14">
+            <div class="mx-auto w-full max-w-md">
+                <a href="{{ url('/') }}" class="mb-8 flex items-center gap-3 text-[var(--ink)] no-underline lg:hidden"><span class="grid h-10 w-10 place-items-center rounded-xl bg-orange-600 text-white"><svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0-1.4 0l-7 7a1 1 0 0 0 0 1.4l2 2a1 1 0 0 0 1.4 0l7-7a1 1 0 0 0 0-1.4l-2-2Z"/></svg></span><strong>{{ config('app.name', 'SIMS') }}</strong></a>
+                <div class="login-card rounded-2xl border border-slate-200/80 bg-white p-7 sm:p-9">
+                    <div class="mb-8">
+                        <span class="mb-5 grid h-11 w-11 place-items-center rounded-xl bg-orange-50 text-orange-600"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+                        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Welcome back</h2>
+                        <p class="mt-2 text-sm leading-6 text-slate-500">Sign in to access your workspace.</p>
                     </div>
+                    @if ($errors->any())
+                        <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ $errors->first() }}</div>
+                    @endif
+                    <form action="{{ route('login') }}" method="POST" class="space-y-5">
+                    @csrf
+                    <div><label for="email" class="mb-2 block text-sm font-medium text-slate-700">Email address</label><input id="email" name="email" type="email" value="{{ old('email') }}" autocomplete="email" required autofocus placeholder="name@company.com" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-100"></div>
+                    <div><div class="mb-2 flex justify-between"><label for="password" class="text-sm font-medium text-slate-700">Password</label>@if(Route::has('password.request'))<a class="text-xs font-semibold text-orange-600 hover:text-orange-700 hover:underline" href="{{ route('password.request') }}">Forgot password?</a>@endif</div><div class="relative"><input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Enter your password" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 pr-16 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-100"><button id="toggle-password" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800">Show</button></div></div>
+                    <label class="flex cursor-pointer items-center gap-2.5 text-sm text-slate-600"><input type="checkbox" name="remember" class="h-4 w-4 rounded border-slate-300"> Remember this device</label>
+                    <button id="login-button" type="submit" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#d75a13] px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-600/20 transition hover:-translate-y-px hover:bg-[#bd4c0d] focus:outline-none focus:ring-4 focus:ring-orange-200 disabled:opacity-70"><span id="button-text">Sign in</span><svg id="spinner" class="hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" d="M12 3a9 9 0 1 1-9 9"/></svg></button>
+                    </form>
                 </div>
-
-                <button id="loginBtn" class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-md text-base font-medium transition duration-300 bg-yellow-900 hover:bg-yellow-800 text-white">
-                    <span id="btnText">Sign In</span>
-                    <svg id="spinner" class="hidden w-4 h-4 animate-spin" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" stroke="white" stroke-width="4" fill="none" />
-                        <path d="M12 2a10 10 0 0110 10" stroke="#facc15" stroke-width="4" fill="none"/>
-                    </svg>
-                </button>
-            </form>
-        </div>
-
-        <!-- Dashboard Image Preview -->
-        <div class="w-full max-w-md">
-            <img src="images/phonepro1.png" alt="PhoneStore Dashboard Preview"
-                 class="rounded-2xl shadow-lg w-full object-cover border-2 border-white/30">
-        </div>
-    </div>
-</div>
-
-<script>
-    window.addEventListener('load', () => {
-        document.getElementById('page-loader').classList.add('hidden');
-    });
-    function togglePassword() {
-        const passwordInput = document.getElementById("password");
-        const toggleBtn = event.currentTarget;
-        const isHidden = passwordInput.type === "password";
-        passwordInput.type = isHidden ? "text" : "password";
-        toggleBtn.textContent = isHidden ? "Hide" : "Show";
-    }
-
-    document.getElementById('loginBtn').addEventListener('click', function () {
-        document.getElementById('spinner').classList.remove('hidden');
-        document.getElementById('btnText').textContent = 'Signing In...';
-    });
-
-    // Animate blobs
-    const blobs = [
-        { el: document.getElementById("blob1"), x: 50, y: 100, dx: 1.2, dy: 0.9 },
-        { el: document.getElementById("blob2"), x: 300, y: 200, dx: -1.1, dy: 1 },
-        { el: document.getElementById("blob3"), x: 600, y: 150, dx: 1, dy: -1.3 }
-    ];
-
-    function animateBlobs() {
-        const winW = window.innerWidth;
-        const winH = window.innerHeight;
-
-        blobs.forEach(b => {
-            const w = b.el.offsetWidth;
-            const h = b.el.offsetHeight;
-
-            b.x += b.dx;
-            b.y += b.dy;
-
-            if (b.x <= 0 || b.x + w >= winW) b.dx *= -1;
-            if (b.y <= 0 || b.y + h >= winH) b.dy *= -1;
-
-            b.el.style.transform = `translate3d(${b.x}px, ${b.y}px, 0)`;
-        });
-
-        requestAnimationFrame(animateBlobs);
-    }
-
-    animateBlobs();
-</script>
-
+            </div>
+        </section>
+    </main>
+    <script>
+        window.addEventListener('load', () => document.getElementById('loader').classList.add('is-hidden'));
+        document.getElementById('toggle-password').addEventListener('click', function () { const field = document.getElementById('password'); const showing = field.type === 'password'; field.type = showing ? 'text' : 'password'; this.textContent = showing ? 'Hide' : 'Show'; });
+        document.querySelector('form').addEventListener('submit', () => { document.getElementById('login-button').disabled = true; document.getElementById('button-text').textContent = 'Signing in…'; document.getElementById('spinner').classList.remove('hidden'); });
+    </script>
 </body>
 </html>

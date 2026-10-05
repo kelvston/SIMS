@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Create New Brand')
-@section('subtitle', 'Add a new phone brand to the system.')
+@section('subtitle', 'Add a new product brand to the system.')
 
 @section('content')
 

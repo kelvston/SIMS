@@ -4,21 +4,8 @@
 @section('subtitle', 'View all recorded sales transactions.')
 
 @section('content')
-    <div class="container mx-auto bg-white p-8 rounded-lg shadow-md relative"> <!-- Added relative -->
-        <img src="{{ asset('images/spare.png') }}"
-             alt="Watermark"
-             class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-             style="transform: translate(-50%, -50%);" /> <!-- Centered watermark -->
-
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">All Sales</h1>
-
-        @can('create sales')
-            <div class="flex justify-end mb-4">
-                <a href="{{ route('sales.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
-                    Create New Sale
-                </a>
-            </div>
-        @endcan
+    <div class="container mx-auto bg-white p-5 sm:p-8 rounded-xl shadow-md relative">
+        <div class="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p class="text-xs font-semibold uppercase tracking-[.16em] text-orange-600">Transactions</p><h1 class="mt-1 text-2xl font-semibold text-slate-800">All sales</h1></div>@can('create sales')<a href="{{ route('sales.create') }}" class="inline-flex items-center justify-center rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700">Create sale</a>@endcan</div>
 
         @if (session('success'))
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">

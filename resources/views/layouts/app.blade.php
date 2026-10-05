@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@yield('title', 'PhoneStore Pro')</title>
+    <title>@yield('title', config('app.name', 'SIMS'))</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <link rel="shortcut icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}">
@@ -80,12 +80,27 @@
             opacity: 0;
             pointer-events: none;
         }
+        /* Shared application design system */
+        body { background:#f5f7fa; color:#18212b; }
+        .app-sidebar { background:linear-gradient(180deg,#152b3b 0%,#0e1d29 100%); box-shadow:8px 0 30px rgba(15,31,43,.08); }
+        .app-sidebar nav a, .app-sidebar nav button { color:#c9d5dc; font-size:.875rem; font-weight:500; }
+        .app-sidebar nav a:hover, .app-sidebar nav button:hover { background:rgba(255,255,255,.09)!important; color:#fff; }
+        .app-sidebar nav a[href="{{ url()->current() }}"] { background:#e76f24!important; color:#fff!important; box-shadow:0 7px 15px rgba(231,111,36,.2); }
+        .app-sidebar .brand-mark { background:#e76f24; }
+        .app-sidebar .user-panel { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.1); }
+        main .bg-white { border:1px solid #e8edf0; border-radius:.75rem; box-shadow:0 2px 8px rgba(17,36,49,.035); }
+        main input:not([type="checkbox"]):not([type="radio"]), main select, main textarea { border-color:#d8e0e5; border-radius:.5rem; }
+        main input:focus, main select:focus, main textarea:focus { border-color:#e76f24!important; --tw-ring-color:rgba(231,111,36,.16)!important; }
+        main table thead { background:#f6f8fa!important; color:#52616d; font-size:.72rem; letter-spacing:.045em; text-transform:uppercase; }
+        main table tbody tr { border-color:#edf1f3!important; }
+        main table tbody tr:hover { background:#fbfcfc; }
+        .page-topbar { border-bottom:1px solid #e8edf0; background:rgba(255,255,255,.92); backdrop-filter:blur(12px); }
 
 
     </style>
     @stack('styles')
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="font-sans">
 <!-- Page Loader -->
 <div id="page-loader"
      class="fixed inset-0 z-50 bg-white flex items-center justify-center">
@@ -100,10 +115,10 @@
 
 <div class="flex min-h-screen overflow-hidden">
     <!-- Sidebar for desktop -->
-    <aside class="fixed inset-y-0 left-0 w-60 bg-[#AD5D29] text-white p-4 hidden lg:flex flex-col z-40" x-data="{ reportsOpen: false, manageOpen: false }">
+    <aside class="app-sidebar fixed inset-y-0 left-0 w-64 text-white p-4 hidden lg:flex flex-col z-40" x-data="{ reportsOpen: false, manageOpen: false }">
         <a href="{{ route('dashboard') }}" class="mb-6 shrink-0 flex items-center gap-3 rounded px-1 py-1 hover:bg-[#C87137] transition">
             {{-- <img src="{{ asset('images/logo.png') }}" alt="PhoneStore Pro logo" class="h-11 w-11 rounded bg-white object-contain p-1"> --}}
-            <span class="text-xl font-bold leading-tight">PhoneStore Pro</span>
+            <span class="text-xl font-bold leading-tight">{{ config('app.name', 'SIMS') }}</span>
         </a>
         <nav class="space-y-2 overflow-y-auto pr-1">
             @can('view dashboard')
@@ -120,13 +135,22 @@
                 <a href="{{ route('sales.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                     <span class="mr-2">💰</span> Sales
                 </a>
+                <a href="{{ route('orders.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
+                    <span class="mr-2">🧾</span> Orders
+                </a>
             @endcan
+            @can('view motor services')
+                <a href="{{ route('motor-services.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition"><span class="mr-2">🔧</span> Motor Services</a>
+            @endcan
+            @hasanyrole('mechanic|mechanics')
+                <a href="{{ route('motor-services.my-pending') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition"><span class="mr-2">🛠️</span> My Pending Jobs</a>
+            @endhasanyrole
             @can('view installments')
                 <a href="{{ route('installments.index') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                     <span class="mr-2">🗓️</span> Installments
                 </a>
             @endcan
-            @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])
+            @canany(['view sales reports', 'view stock reports', 'view profit loss reports', 'view service reports'])
 
                     <button type="button" @click="reportsOpen = !reportsOpen"
                             class="w-full text-left py-2 px-3 rounded hover:bg-[#C87137] flex justify-between items-center transition"
@@ -149,6 +173,9 @@
                                 <span class="mr-2">🔐</span> Stock Report
                             </a>
                         @endcan
+                        @can('view service reports')
+                            <a href="{{ route('reports.services') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition"><span class="mr-2">🔧</span> Service Report</a>
+                        @endcan
                         @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])
                             <a href="{{ route('reports.general') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                                 <span class="mr-2">👥</span> General Report
@@ -158,6 +185,16 @@
                             <a href="{{ route('reports.profit_loss') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition">
                                 <span class="mr-2">🏷️</span> Profit/loss
                             </a>
+                            <a href="{{ route('reports.expenses') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition"><span class="mr-2">💸</span> Expense Report</a>
+                        @endcan
+                        @can('view sales reports')
+                            <a href="{{ route('reports.receivables') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition"><span class="mr-2">💳</span> Receivables</a>
+                            <a href="{{ route('reports.product_performance') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition"><span class="mr-2">📈</span> Product Performance</a>
+                            <a href="{{ route('reports.credit') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition"><span class="mr-2">📋</span> Credit Report</a>
+                            <a href="{{ route('reports.cashflow') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition"><span class="mr-2">💰</span> Cash Flow</a>
+                        @endcan
+                        @can('view stock reports')
+                            <a href="{{ route('reports.inventory_valuation') }}" class="flex items-center py-2 px-3 rounded hover:bg-[#C87137] transition"><span class="mr-2">📦</span> Inventory Valuation</a>
                         @endcan
                     </div>
             @endcanany
@@ -202,8 +239,8 @@
                 </button>
             </form>
                 @php($currentUser = Auth::user())
-                <div class="mt-auto flex items-center gap-3 px-3 py-2 border-t border-white/30">
-                    <div class="w-10 h-10 rounded-full bg-[#C87137] text-white flex items-center justify-center font-bold">
+                <div class="user-panel mt-auto flex items-center gap-3 rounded-xl px-3 py-3 border-t">
+                    <div class="brand-mark w-10 h-10 rounded-full text-white flex items-center justify-center font-bold">
                         {{ strtoupper(mb_substr($currentUser?->name ?? 'User', 0, 1)) }}
                     </div>
                     <div>
@@ -217,10 +254,10 @@
     <!-- Sidebar for mobile -->
     <div id="mobileSidebarOverlay" class="fixed inset-0 z-40 hidden bg-black/40 lg:hidden"></div>
 
-    <aside id="mobileSidebar" class="sidebar-mobile text-white p-4 lg:hidden" x-data="{ reportsOpen: false, manageOpen: false }">
+    <aside id="mobileSidebar" class="app-sidebar sidebar-mobile text-white p-4 lg:hidden" x-data="{ reportsOpen: false, manageOpen: false }">
         <a href="{{ route('dashboard') }}" class="mb-6 flex items-center gap-3 rounded px-1 py-1 hover:bg-[#C87137] transition">
             <img src="{{ asset('images/logo.png') }}" alt="PhoneStore Pro logo" class="h-11 w-11 rounded bg-white object-contain p-1">
-            <span class="text-xl font-bold leading-tight">PhoneStore Pro</span>
+            <span class="text-xl font-bold leading-tight">{{ config('app.name', 'SIMS') }}</span>
         </a>
         <nav class="space-y-2">
             @can('view dashboard')
@@ -231,11 +268,18 @@
             @endcan
             @can('view sales')
                 <a href="{{ route('sales.index') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Sales</a>
+                <a href="{{ route('orders.index') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Orders</a>
             @endcan
+            @can('view motor services')
+                <a href="{{ route('motor-services.index') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Motor Services</a>
+            @endcan
+            @hasanyrole('mechanic|mechanics')
+                <a href="{{ route('motor-services.my-pending') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">My Pending Jobs</a>
+            @endhasanyrole
             @can('view installments')
                 <a href="{{ route('installments.index') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Installments</a>
             @endcan
-            @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])
+            @canany(['view sales reports', 'view stock reports', 'view profit loss reports', 'view service reports'])
                 <button type="button" @click="reportsOpen = !reportsOpen"
                         class="w-full py-2 px-3 rounded hover:bg-[#C87137] flex justify-between items-center">
                     <span>Reports</span>
@@ -248,11 +292,24 @@
                     @can('view stock reports')
                         <a href="{{ route('reports.stock') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Stock Report</a>
                     @endcan
+                    @can('view service reports')
+                        <a href="{{ route('reports.services') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Service Report</a>
+                    @endcan
                     @canany(['view sales reports', 'view stock reports', 'view profit loss reports'])
                         <a href="{{ route('reports.general') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">General Report</a>
                     @endcanany
                     @can('view profit loss reports')
                         <a href="{{ route('reports.profit_loss') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Profit/loss</a>
+                        <a href="{{ route('reports.expenses') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Expense Report</a>
+                    @endcan
+                    @can('view sales reports')
+                        <a href="{{ route('reports.receivables') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Receivables</a>
+                        <a href="{{ route('reports.product_performance') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Product Performance</a>
+                        <a href="{{ route('reports.credit') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Credit Report</a>
+                        <a href="{{ route('reports.cashflow') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Cash Flow</a>
+                    @endcan
+                    @can('view stock reports')
+                        <a href="{{ route('reports.inventory_valuation') }}" class="block py-2 px-3 rounded hover:bg-[#C87137]">Inventory Valuation</a>
                     @endcan
                 </div>
             @endcanany
@@ -282,9 +339,9 @@
     </aside>
 
     <!-- Main content -->
-    <div class="flex-1 flex flex-col lg:ml-60">
+    <div class="flex-1 flex flex-col lg:ml-64">
         <!-- Top bar -->
-        <header class="sticky top-0 z-30 flex justify-between items-center bg-white px-4 py-3 shadow lg:hidden">
+        <header class="page-topbar sticky top-0 z-30 flex justify-between items-center px-4 py-3 lg:hidden">
             <button id="menuToggle" type="button" class="text-gray-600 p-2 -ml-2 rounded hover:bg-gray-100" aria-label="Open navigation" aria-controls="mobileSidebar" aria-expanded="false">
                 <i class="fas fa-bars text-2xl"></i>
             </button>
@@ -299,8 +356,13 @@
             </div>
         </header>
 
+        <header class="page-topbar sticky top-0 z-30 hidden h-[73px] items-center justify-between px-8 lg:flex">
+            <div><p class="text-xs font-semibold uppercase tracking-[.14em] text-slate-400">{{ config('app.name', 'SIMS') }}</p><h1 class="mt-1 text-lg font-semibold text-slate-800">@yield('title', 'Dashboard')</h1></div>
+            <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 rounded-lg px-2 py-1.5 text-slate-700 transition hover:bg-slate-100"><span class="grid h-8 w-8 place-items-center rounded-full bg-orange-100 text-sm font-bold text-orange-700">{{ strtoupper(mb_substr(Auth::user()?->name ?? 'U', 0, 1)) }}</span><span class="text-sm font-medium">{{ Auth::user()?->name ?? 'User' }}</span></a>
+        </header>
+
         <!-- Page content -->
-        <main class="flex-1 p-3 sm:p-5 lg:p-6 space-y-6 lg:space-y-8 overflow-y-auto overflow-x-hidden relative">
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8 overflow-y-auto overflow-x-hidden relative">
             <!-- All main content stays above watermark -->
             <div class="relative z-10 space-y-8">
 {{--                <!-- Top header section -->--}}

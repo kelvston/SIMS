@@ -20,6 +20,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\MotorServiceController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -32,11 +34,11 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 
 // Optional: Edit/Delete phone routes
 Route::middleware(['auth'])->group(function () {
-    Route::get('/phones/{phone}/edit', [DashboardController::class, 'editPhone'])->name('phones.edit');
-    Route::delete('/phones/{phone}', [DashboardController::class, 'deletePhone'])->name('phones.destroy');
-    Route::put('/phones/{phone}', [DashboardController::class, 'updatePhone'])->name('phones.update'); // <--- Add this
-    Route::get('/accessories/{product}/edit', [DashboardController::class, 'editAccessory'])->name('accessories.edit');
-    Route::put('/accessories/{product}', [DashboardController::class, 'updateAccessory'])->name('accessories.update');
+    Route::get('/phones/{phone}/edit', [DashboardController::class, 'editPhone'])->middleware('permission:edit phones')->name('phones.edit');
+    Route::delete('/phones/{phone}', [DashboardController::class, 'deletePhone'])->middleware('permission:delete phones')->name('phones.destroy');
+    Route::put('/phones/{phone}', [DashboardController::class, 'updatePhone'])->middleware('permission:edit phones')->name('phones.update');
+    Route::get('/accessories/{product}/edit', [DashboardController::class, 'editAccessory'])->middleware('permission:edit phones')->name('accessories.edit');
+    Route::put('/accessories/{product}', [DashboardController::class, 'updateAccessory'])->middleware('permission:edit phones')->name('accessories.update');
 
 });
 Route::middleware('auth')->group(function () {
@@ -60,6 +62,18 @@ Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
 Route::post('/sales/{sale}/void', [SaleController::class, 'void'])->name('sales.void');
 Route::get('/sales/{sale}/receipt', [SaleController::class, 'receipt'])->name('sales.receipt');
 Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
+Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
+Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+Route::get('/orders/{order}/invoice', [OrderController::class, 'invoice'])->name('orders.invoice');
+Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
+Route::post('/orders/{order}/reserve', [OrderController::class, 'reserve'])->name('orders.reserve');
+Route::get('/orders/{order}/create-sale', [OrderController::class, 'createSale'])->name('orders.create-sale');
+Route::get('/motor-services/my-pending', [MotorServiceController::class, 'myPending'])->name('motor-services.my-pending');
+Route::resource('motor-services', MotorServiceController::class)->except(['destroy']);
+Route::get('/vehicles/create', [MotorServiceController::class, 'createVehicle'])->name('vehicles.create');
+Route::post('/vehicles', [MotorServiceController::class, 'storeVehicle'])->name('vehicles.store');
 // For viewing a single sale detail
 
 // Installment Routes
@@ -71,6 +85,14 @@ Route::post('/installment/payment', [InstallmentController::class, 'store'])->na
 Route::get('/reports/sales', [ReportController::class, 'salesReport'])->name('reports.sales');
 Route::get('/reports/stock', [ReportController::class, 'stockReport'])->name('reports.stock');
 Route::get('/reports/profit-loss', [ReportController::class, 'profitLossReport'])->name('reports.profit_loss'); // New P&L route
+Route::get('/reports/expenses', [ReportController::class, 'expenseReport'])->name('reports.expenses');
+Route::get('/reports/receivables', [ReportController::class, 'receivablesReport'])->name('reports.receivables');
+Route::get('/reports/inventory-valuation', [ReportController::class, 'inventoryValuationReport'])->name('reports.inventory_valuation');
+Route::get('/reports/product-performance', [ReportController::class, 'productPerformanceReport'])->name('reports.product_performance');
+Route::get('/reports/credit', [ReportController::class, 'creditReport'])->name('reports.credit');
+Route::get('/reports/cashflow', [ReportController::class, 'cashFlowReport'])->name('reports.cashflow');
+Route::get('/reports/services', [ReportController::class, 'serviceReport'])->name('reports.services');
+Route::get('/reports/{report}/excel', [ReportController::class, 'export'])->whereIn('report',['sales','stock','profit-loss','general','expenses','receivables','inventory','product-performance','credit','cashflow','services'])->name('reports.excel');
 Route::get('/reports/sales-data', [ReportController::class, 'getSalesData'])->name('reports.sales.data');
 Route::get('/reports/sales-summary', [ReportController::class, 'getSalesSummary'])->name('reports.sales.summary');
 //Route::get('/index', [UserController::class, 'index'])->name('users.index');

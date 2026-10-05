@@ -66,7 +66,7 @@
             </div>
             <div class="kpi">
                 <div class="val">{{ $availablePhones }}</div>
-                <div class="lbl">Phones in Stock</div>
+                <div class="lbl">Products in Stock</div>
             </div>
         </div>
 

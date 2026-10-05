@@ -1,441 +1,367 @@
+{{-- @extends('layouts.app')
+@section('title', 'Business Dashboard')
+@section('content')
+<div class="mx-auto max-w-7xl space-y-8">
+    <div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-xs font-semibold uppercase tracking-[.16em] text-orange-600">Business overview</p><h1 class="mt-1 text-3xl font-bold text-slate-800">Garage dashboard</h1><p class="mt-1 text-sm text-slate-500">Sales, inventory, and workshop operations in one place.</p></div><div class="flex gap-3"><a href="{{ route('sales.create') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">New sale</a><a href="{{ route('motor-services.create') }}" class="rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white">New service job</a></div></div>
+<div class="row">
+    <div class = "col-md-6">
+<section class="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5 sm:p-6"><div class="mb-5 flex items-center justify-between"><div><p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Retail business</p><h2 class="text-xl font-semibold text-slate-800">Sales & inventory</h2></div><a href="{{ route('sales.index') }}" class="text-sm font-semibold text-emerald-700">View sales →</a></div><div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><div class="rounded-xl bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Sales this month</p><p class="mt-1 text-2xl font-bold">Tsh {{ number_format($monthlySales,2) }}</p></div><div class="rounded-xl bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Net profit</p><p class="mt-1 text-2xl font-bold {{ $netProfit >= 0 ? 'text-emerald-700':'text-red-700' }}">Tsh {{ number_format($netProfit,2) }}</p></div><div class="rounded-xl bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Available stock</p><p class="mt-1 text-2xl font-bold">{{ number_format($totalPhones->sum('quantity')) }} <span class="text-sm font-medium text-slate-500">units</span></p></div><div class="rounded-xl bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Credit/installment due</p><p class="mt-1 text-2xl font-bold text-amber-700">Tsh {{ number_format($pendingInstallmentsAmount,2) }}</p></div></div></section>
+    </div>
+    <div class = "col-md-6">
+        <section class="rounded-2xl border border-orange-100 bg-orange-50/50 p-5 sm:p-6"><div class="mb-5 flex items-center justify-between"><div><p class="text-xs font-bold uppercase tracking-wider text-orange-700">Workshop</p><h2 class="text-xl font-semibold text-slate-800">Motor services</h2></div><a href="{{ route('motor-services.index') }}" class="text-sm font-semibold text-orange-700">All service jobs →</a></div><div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><div class="rounded-xl bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Open jobs</p><p class="mt-1 text-2xl font-bold">{{ $openServiceJobs }}</p></div><div class="rounded-xl bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Waiting for parts</p><p class="mt-1 text-2xl font-bold text-amber-700">{{ $jobsWaitingParts }}</p></div><div class="rounded-xl bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Collections this month</p><p class="mt-1 text-2xl font-bold text-emerald-700">Tsh {{ number_format($serviceRevenueThisMonth,2) }}</p></div><div class="rounded-xl bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Service balance due</p><p class="mt-1 text-2xl font-bold text-red-700">Tsh {{ number_format($serviceOutstanding,2) }}</p></div></div></section>
+    </div>
+</div>
+
+
+
+
+    <div class="grid gap-6 lg:grid-cols-2"><section class="rounded-xl bg-white p-5 shadow-sm"><div class="mb-4 flex justify-between"><h2 class="font-semibold text-slate-800">Recent service jobs</h2><a href="{{ route('motor-services.create') }}" class="text-sm font-semibold text-orange-700">Add job</a></div><div class="table-scroll"><table class="min-w-full text-sm"><thead class="border-b text-left text-xs uppercase text-slate-500"><tr><th class="p-2">Job</th><th class="p-2">Vehicle / customer</th><th class="p-2">Status</th><th class="p-2 text-right">Balance</th></tr></thead><tbody>@forelse($recentServiceJobs as $job)<tr class="border-b last:border-0"><td class="p-2"><a class="font-semibold text-orange-700" href="{{ route('motor-services.show',$job) }}">{{ $job->job_number }}</a></td><td class="p-2">{{ $job->vehicle->registration_number }}<br><span class="text-xs text-slate-500">{{ $job->vehicle->customer_name }}</span></td><td class="p-2">{{ str_replace('_',' ',ucfirst($job->status)) }}</td><td class="p-2 text-right">Tsh {{ number_format($job->total_amount-$job->amount_paid,2) }}</td></tr>@empty<tr><td colspan="4" class="p-5 text-center text-slate-500">No service jobs yet.</td></tr>@endforelse</tbody></table></div></section>
+    <section class="rounded-xl bg-white p-5 shadow-sm"><div class="mb-4 flex justify-between"><h2 class="font-semibold text-slate-800">Recent retail activity</h2><a href="{{ route('sales.index') }}" class="text-sm font-semibold text-emerald-700">View sales</a></div><ul class="divide-y">@forelse($recentActivities as $activity)<li class="flex items-center justify-between gap-4 py-3"><a href="{{ $activity['link'] }}" class="min-w-0 truncate text-sm text-slate-700 hover:text-orange-700">{{ $activity['description'] }}</a><span class="shrink-0 text-xs text-slate-400">{{ \Carbon\Carbon::parse($activity['date'])->diffForHumans() }}</span></li>@empty<li class="py-5 text-center text-sm text-slate-500">No recent activity.</li>@endforelse</ul><div class="mt-3">{{ $recentActivities->links('pagination::tailwind') }}</div></section></div>
+
+    @if($lowStockProducts->isNotEmpty())<section class="rounded-xl border border-red-100 bg-white p-5 shadow-sm"><div class="mb-3 flex justify-between"><h2 class="font-semibold text-slate-800">Low stock alerts</h2><a href="{{ route('reports.stock') }}" class="text-sm font-semibold text-red-700">Stock report</a></div><div class="flex flex-wrap gap-2">@foreach($lowStockProducts as $item)<span class="rounded-full bg-red-50 px-3 py-1 text-sm text-red-700">{{ $item->brand->name ?? 'N/A' }} {{ $item->model }}: {{ $item->current_stock }} left</span>@endforeach</div></section>@endif
+</div>
+@endsection --}}
+
+
 @extends('layouts.app')
 
+@section('title', 'Business Dashboard')
+
 @section('content')
-    <style>
-        .hexagon-shape {
-            clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%);
-            transition: all 0.3s ease-in-out;
-            height: 60px;
-            font-size: 10px;
-        }
+<div class="mx-auto max-w-7xl space-y-8">
 
-        .hexagon-shape:hover {
-            transform: scale(1.03);
-        }
+    {{-- Page Header --}}
+    <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-[.16em] text-orange-600">
+                Business overview
+            </p>
 
-        .arrow-curve {
-            position: absolute;
-            z-index: 0;
-            pointer-events: none;
-        }
+            <h1 class="mt-1 text-3xl font-bold text-slate-800">
+                Garage dashboard
+            </h1>
 
-        .arrow-right {
-            top: 25px;
-            left: 32%;
-        }
+            <p class="mt-1 text-sm text-slate-500">
+                Sales, inventory, and workshop operations in one place.
+            </p>
+        </div>
 
-        .arrow-down {
-            top: 80px;
-            left: 66%;
-        }
-    </style>
+        <div class="flex gap-3">
+            <a href="{{ route('sales.create') }}"
+               class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                New sale
+            </a>
 
-    <!-- Watermark -->
-    <img src="{{ asset('images/spare.png') }}"
-         alt="Watermark"
-         class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-         style="transform: translate(-50%, -90%);" />
-
-    <!-- Hexagon Buttons and Arrows Wrapper -->
-    <div class="relative">
-        <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 relative z-10">
-            @can('receive phones')
-                <a href="{{ route('phones.receive.form') }}"
-                   class="hexagon-shape flex items-center justify-center gap-1 w-full text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-1 transition duration-200">
-                    <i class="fas fa-download text-[11px]"></i> Receive
-                </a>
-            @endcan
-
-            @can('create sales')
-                <a href="{{ route('sales.create') }}"
-                   class="hexagon-shape flex items-center justify-center gap-1 w-full text-[10px] bg-green-600 hover:bg-green-700 text-white py-2 px-1 transition duration-200">
-                    <i class="fas fa-dollar-sign text-[11px]"></i> Sale
-                </a>
-            @endcan
-
-            @can('create expenses')
-                <a href="{{ route('expenses.create') }}"
-                   class="hexagon-shape flex items-center justify-center gap-1 w-full text-[10px] bg-red-500 hover:bg-red-600 text-white py-2 px-1 transition duration-200">
-                    <i class="fas fa-receipt text-[11px]"></i> Expense
-                </a>
-            @endcan
-
-            <div class="lg:col-span-1 p-3 bg-white rounded-md shadow-sm border border-gray-200">
-                <h2 class="text-xs font-bold mb-2 text-gray-800 flex items-center gap-1">
-                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2"
-                         viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    SUMMARY
-                </h2>
-                <table class="text-xs w-full text-left">
-                    <tr class="font-semibold text-gray-700">
-                        <th colspan="2" class="pb-1">GENERAL SUMMARY</th>
-                    </tr>
-                    <tr>
-                        <td>Invested:</td>
-                        <td><b>{{ number_format($totalInvested, 2) }}</b></td>
-                    </tr>
-                    <tr>
-                        <td>Net Profit:</td>
-                        <td><b>{{ number_format($totalProfit, 2) }}</b></td>
-                    </tr>
-                    <tr>
-                        <td>Loss:</td>
-                        <td><b>{{ number_format($totalLoss, 2) }}</b></td>
-                    </tr>
-                </table>
-            </div>
+            <a href="{{ route('motor-services.create') }}"
+               class="rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-700">
+                New service job
+            </a>
         </div>
     </div>
 
 
-<div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
-        @php
-            $cards = [
-                [
-                    'icon' => '📱',
-                    'label' => 'Products',
-                    'value' => number_format($totalPhones->count()),
-                    'quantity' => number_format($totalPhones->sum('quantity')),
-                    'color' => 'indigo'
-                ],
-                ['icon' => '💰', 'label' => 'Sales (' . \Carbon\Carbon::now()->format('M') . ')', 'value' => 'Tsh ' . number_format($monthlySales, 2), 'color' => 'green'],
-                ['icon' => '⏳', 'label' => 'Pending', 'value' => 'Tsh ' . number_format($pendingInstallmentsAmount, 2), 'color' => 'yellow'],
-                ['icon' => '📈', 'label' => 'Net Margin', 'value' => number_format($profitMarginPercentage, 2) . '%', 'color' => $profitMarginPercentage >= 0 ? 'green' : 'red'],
-            ];
-        @endphp
+    {{-- Sales & Motor Services --}}
+    <div class="grid gap-6 md:grid-cols-2">
+        {{-- Motor Services --}}
+        <section class="rounded-2xl border border-orange-100 bg-orange-50/50 p-5 sm:p-6">
 
-        @foreach($cards as $card)
-            <div class="p-2 bg-gradient-to-br from-{{ $card['color'] }}-50 to-white rounded-lg border border-{{ $card['color'] }}-200 shadow-sm hover:shadow-md transition duration-200 transform hover:-translate-y-0.5">
-                <div class="flex items-center gap-1 mb-0.5 text-{{ $card['color'] }}-600 text-xs">
-                    <span class="text-base">{{ $card['icon'] }}</span>
-                    <span class="font-semibold uppercase tracking-wide truncate">{{ $card['label'] }}</span>
+            <div class="mb-5 flex items-center justify-between gap-4">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-wider text-orange-700">
+                        Workshop
+                    </p>
+
+                    <h2 class="text-xl font-semibold text-slate-800">
+                        Motor services
+                    </h2>
                 </div>
-                <p class="text-lg font-bold text-gray-800">{{ $card['value'] }}</p>
+
+                <a href="{{ route('motor-services.index') }}"
+                   class="shrink-0 text-sm font-semibold text-orange-700 hover:text-orange-800">
+                    All service jobs →
+                </a>
             </div>
-        @endforeach
-    </div>
 
-    <!-- Charts -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <!-- Sales Chart -->
-        <div class="p-2 bg-white rounded-md shadow-sm border border-gray-200">
-            <h2 class="text-xs font-semibold mb-1 text-gray-800">Sales (30 Days)</h2>
-            <div class="h-48 overflow-hidden">
-                <canvas id="salesChart"></canvas>
+            <div class="grid gap-4 sm:grid-cols-2">
+
+                {{-- Open Jobs --}}
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="text-sm text-slate-500">
+                        Open jobs
+                    </p>
+
+                    <p class="mt-1 text-2xl font-bold text-slate-800">
+                        {{ $openServiceJobs }}
+                    </p>
+                </div>
+
+                {{-- Waiting For Parts --}}
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="text-sm text-slate-500">
+                        Waiting for parts
+                    </p>
+
+                    <p class="mt-1 text-2xl font-bold text-amber-700">
+                        {{ $jobsWaitingParts }}
+                    </p>
+                </div>
+
+                {{-- Service Revenue --}}
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="text-sm text-slate-500">
+                        Collections this month
+                    </p>
+
+                    <p class="mt-1 text-2xl font-bold text-emerald-700">
+                        Tsh {{ number_format($serviceRevenueThisMonth, 2) }}
+                    </p>
+                </div>
+
+                {{-- Service Balance --}}
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="text-sm text-slate-500">
+                        Service balance due
+                    </p>
+
+                    <p class="mt-1 text-2xl font-bold text-red-700">
+                        Tsh {{ number_format($serviceOutstanding, 2) }}
+                    </p>
+                </div>
+
             </div>
-        </div>
+        </section>
+   {{-- Sales & Inventory --}}
+        <section class="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5 sm:p-6">
 
-        <!-- Inventory Chart -->
-        <div class="p-2 bg-white rounded-md shadow-sm border border-gray-200">
-            <h2 class="text-xs font-semibold mb-1 text-gray-800">Inventory by Brand</h2>
-            <div class="h-48 overflow-hidden">
-                <canvas id="inventoryChart"></canvas>
+            <div class="mb-5 flex items-center justify-between gap-4">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                        Retail business
+                    </p>
+
+                    <h2 class="text-xl font-semibold text-slate-800">
+                        Sales & inventory
+                    </h2>
+                </div>
+
+                <a href="{{ route('sales.index') }}"
+                   class="shrink-0 text-sm font-semibold text-emerald-700 hover:text-emerald-800">
+                    View sales →
+                </a>
             </div>
-        </div>
-    </div>
 
-    <!-- Quick Actions and Activity -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-1 p-3 bg-white rounded-md shadow-sm border border-gray-200">
-            <h2 class="text-sm font-bold mb-3 text-gray-800 flex items-center gap-1">
-                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round"
-                                               d="M5 13l4 4L19 7" /></svg>
-                Quick Actions
-            </h2>
-            <div class="space-y-1">
-                @can('receive phones')
-                    <a href="{{ route('phones.receive.form') }}"
-                       class="flex items-center justify-center gap-2 w-full text-sm bg-indigo-600 hover:bg-indigo-700 text-white py-1.5 px-3 rounded transition duration-200">
-                        <i class="fas fa-download"></i> Receive Phones
-                    </a>
-                @endcan
+            <div class="grid gap-4 sm:grid-cols-2">
 
-                @can('create sales')
-                    <a href="{{ route('sales.create') }}"
-                       class="flex items-center justify-center gap-2 w-full text-sm bg-green-600 hover:bg-green-700 text-white py-1.5 px-3 rounded transition duration-200">
-                        <i class="fas fa-dollar-sign"></i> Record Sale
-                    </a>
-                @endcan
+                {{-- Sales This Month --}}
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="text-sm text-slate-500">
+                        Sales this month
+                    </p>
 
-                @can('create expenses')
-                    <a href="{{ route('expenses.create') }}"
-                       class="flex items-center justify-center gap-2 w-full text-sm bg-red-500 hover:bg-red-600 text-white py-1.5 px-3 rounded transition duration-200">
-                        <i class="fas fa-receipt"></i> Record Expense
-                    </a>
-                @endcan
-            </div>
-        </div>
+                    <p class="mt-1 text-2xl font-bold text-slate-800">
+                        Tsh {{ number_format($monthlySales, 2) }}
+                    </p>
+                </div>
 
-        <!-- Recent Activity -->
-        <div class="lg:col-span-2 p-2 bg-white rounded-md shadow border border-gray-200">
-            <h2 class="text-xs font-semibold text-gray-800 mb-1 flex items-center gap-1">
-                <svg class="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M12 8v4l3 3M12 6a9 9 0 100 18 9 9 0 000-18z"/>
-                </svg>
-                Recent Activity
-            </h2>
-            <ul class="space-y-0.5 text-[11px] text-gray-700">
-                @forelse ($recentActivities as $activity)
-                    <li class="px-2 py-0.5 flex justify-between items-center hover:bg-gray-100 rounded transition">
-                        <a href="{{ $activity['link'] }}" class="text-blue-600 hover:underline truncate w-3/4">
-                            {{ $activity['description'] }}
-                        </a>
-                        <span class="text-[10px] text-gray-400 text-right w-1/4 whitespace-nowrap">
-                            {{ \Carbon\Carbon::parse($activity['date'])->diffForHumans() }}
+                {{-- Net Profit --}}
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="text-sm text-slate-500">
+                        Net profit
+                    </p>
+
+                    <p class="mt-1 text-2xl font-bold {{ $netProfit >= 0 ? 'text-emerald-700' : 'text-red-700' }}">
+                        Tsh {{ number_format($netProfit, 2) }}
+                    </p>
+                </div>
+
+                {{-- Available Stock --}}
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="text-sm text-slate-500">
+                        Available stock
+                    </p>
+
+                    <p class="mt-1 text-2xl font-bold text-slate-800">
+                        {{ number_format($totalPhones->sum('quantity')) }}
+                        <span class="text-sm font-medium text-slate-500">
+                            units
                         </span>
-                    </li>
-                @empty
-                    <li class="text-gray-500 text-xs px-2">No recent activity to display.</li>
-                @endforelse
-            </ul>
+                    </p>
+                </div>
 
-            <div class="mt-1 text-xs px-2">
-                {{ $recentActivities->links('pagination::tailwind') }}
+                {{-- Credit / Installment --}}
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="text-sm text-slate-500">
+                        Credit/installment due
+                    </p>
+
+                    <p class="mt-1 text-2xl font-bold text-amber-700">
+                        Tsh {{ number_format($pendingInstallmentsAmount, 2) }}
+                    </p>
+                </div>
+
             </div>
-        </div>
+        </section>
     </div>
 
-    <!-- Table -->
-    @can('view stock reports')
-        <div class="p-4 bg-white rounded-lg shadow overflow-x-auto">
-            <h2 class="font-semibold mb-4">Low Stock Products Overview</h2>
-            @if ($lowStockProducts->isEmpty())
-                <p class="text-center text-gray-600">No products are currently low in stock.</p>
-            @else
+
+    {{-- Recent Activity --}}
+    <div class="grid gap-6 lg:grid-cols-2">
+
+        {{-- Recent Service Jobs --}}
+        <section class="rounded-xl bg-white p-5 shadow-sm">
+
+            <div class="mb-4 flex items-center justify-between gap-4">
+                <h2 class="font-semibold text-slate-800">
+                    Recent service jobs
+                </h2>
+
+                <a href="{{ route('motor-services.create') }}"
+                   class="text-sm font-semibold text-orange-700 hover:text-orange-800">
+                    Add job
+                </a>
+            </div>
+
+            <div class="table-scroll overflow-x-auto">
                 <table class="min-w-full text-sm">
-                    <thead class="bg-gray-100">
-                    <tr>
-                        <th class="text-left p-2">Product</th>
-                        <th class="text-left p-2">Brand</th>
-                        <th class="text-left p-2">Stock</th>
-                        <th class="text-left p-2">Threshold</th>
-                        <th class="text-left p-2">Status</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    @foreach ($lowStockProducts as $item)
+                    <thead class="border-b text-left text-xs uppercase text-slate-500">
                         <tr>
-                            <td class="p-2">{{ $item->model }} ({{ $item->color }})</td>
-                            <td class="p-2">{{ $item->brand->name ?? 'N/A' }}</td>
-                            <td class="p-2">{{ $item->current_stock }} units</td>
-                            <td class="p-2">{{ $item->low_stock_threshold }} units</td>
-                            <td class="p-2 text-red-600">Critical</td>
+                            <th class="p-2">Job</th>
+                            <th class="p-2">Vehicle / customer</th>
+                            <th class="p-2">Status</th>
+                            <th class="p-2 text-right">Balance</th>
                         </tr>
-                    @endforeach
+                    </thead>
+
+                    <tbody>
+                        @forelse($recentServiceJobs as $job)
+                            <tr class="border-b last:border-0">
+
+                                <td class="p-2">
+                                    <a href="{{ route('motor-services.show', $job) }}"
+                                       class="font-semibold text-orange-700 hover:text-orange-800">
+                                        {{ $job->job_number }}
+                                    </a>
+                                </td>
+
+                                <td class="p-2">
+                                    {{ $job->vehicle->registration_number }}
+
+                                    <br>
+
+                                    <span class="text-xs text-slate-500">
+                                        {{ $job->vehicle->customer_name }}
+                                    </span>
+                                </td>
+
+                                <td class="p-2">
+                                    {{ str_replace('_', ' ', ucfirst($job->status)) }}
+                                </td>
+
+                                <td class="p-2 text-right whitespace-nowrap">
+                                    Tsh {{ number_format($job->total_amount - $job->amount_paid, 2) }}
+                                </td>
+
+                            </tr>
+                        @empty
+
+                            <tr>
+                                <td colspan="4"
+                                    class="p-5 text-center text-slate-500">
+                                    No service jobs yet.
+                                </td>
+                            </tr>
+
+                        @endforelse
                     </tbody>
                 </table>
-            @endif
-        </div>
-    @endcan
+            </div>
+
+        </section>
+
+
+        {{-- Recent Retail Activity --}}
+        <section class="rounded-xl bg-white p-5 shadow-sm">
+
+            <div class="mb-4 flex items-center justify-between gap-4">
+                <h2 class="font-semibold text-slate-800">
+                    Recent retail activity
+                </h2>
+
+                <a href="{{ route('sales.index') }}"
+                   class="text-sm font-semibold text-emerald-700 hover:text-emerald-800">
+                    View sales
+                </a>
+            </div>
+
+            <ul class="divide-y">
+
+                @forelse($recentActivities as $activity)
+
+                    <li class="flex items-center justify-between gap-4 py-3">
+
+                        <a href="{{ $activity['link'] }}"
+                           class="min-w-0 truncate text-sm text-slate-700 hover:text-orange-700">
+                            {{ $activity['description'] }}
+                        </a>
+
+                        <span class="shrink-0 text-xs text-slate-400">
+                            {{ \Carbon\Carbon::parse($activity['date'])->diffForHumans() }}
+                        </span>
+
+                    </li>
+
+                @empty
+
+                    <li class="py-5 text-center text-sm text-slate-500">
+                        No recent activity.
+                    </li>
+
+                @endforelse
+
+            </ul>
+
+            <div class="mt-3">
+                {{ $recentActivities->links('pagination::tailwind') }}
+            </div>
+
+        </section>
+
+    </div>
+
+
+    {{-- Low Stock Alerts --}}
+    @if($lowStockProducts->isNotEmpty())
+
+        <section class="rounded-xl border border-red-100 bg-white p-5 shadow-sm">
+
+            <div class="mb-3 flex items-center justify-between gap-4">
+                <h2 class="font-semibold text-slate-800">
+                    Low stock alerts
+                </h2>
+
+                <a href="{{ route('reports.stock') }}"
+                   class="text-sm font-semibold text-red-700 hover:text-red-800">
+                    Stock report
+                </a>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+
+                @foreach($lowStockProducts as $item)
+
+                    <span class="rounded-full bg-red-50 px-3 py-1 text-sm text-red-700">
+                        {{ $item->brand->name ?? 'N/A' }}
+                        {{ $item->model }}:
+                        {{ $item->current_stock }} left
+                    </span>
+
+                @endforeach
+
+            </div>
+
+        </section>
+
+    @endif
+
+</div>
 @endsection
-
-@push('scripts')
-    <script>
-        // Chart Data from Laravel Controller
-        const salesChartLabels = @json($salesChartLabels);
-        const salesChartData = @json($salesChartData);
-        const inventoryChartLabels = @json($inventoryChartLabels);
-        const inventoryChartData = @json($inventoryChartData);
-
-        // ==========================================
-        // SALES CHART
-        // ==========================================
-        new Chart(document.getElementById('salesChart'), {
-            type: 'line',
-
-            data: {
-                labels: salesChartLabels,
-
-                datasets: [{
-                    label: 'Sales (Tsh)',
-                    data: salesChartData,
-                    borderColor: '#4f46e5',
-                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                    borderWidth: 3,
-                    fill: true
-                }]
-            },
-
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-
-                scales: {
-                    y: {
-                        beginAtZero: true,
-
-                        title: {
-                            display: true,
-                            text: 'Sales Amount (Tsh)'
-                        }
-                    },
-
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Date'
-                        }
-                    }
-                },
-
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.dataset.label +
-                                    ': Tsh ' +
-                                    context.parsed.y.toFixed(2);
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-
-        // ==========================================
-        // DOUGHNUT CENTER TEXT PLUGIN
-        // ==========================================
-        const centerTextPlugin = {
-            id: 'centerText',
-
-            beforeDraw(chart) {
-                const { ctx, chartArea } = chart;
-
-                if (!chartArea) {
-                    return;
-                }
-
-                const data = chart.data.datasets[0].data;
-
-                // Calculate total inventory quantity
-                const total = data.reduce(
-                    (sum, value) => sum + Number(value),
-                    0
-                );
-
-                const centerX = (chartArea.left + chartArea.right) / 2;
-                const centerY = (chartArea.top + chartArea.bottom) / 2;
-
-                ctx.save();
-
-                // Center alignment
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-
-                // Percentage
-                ctx.font = 'bold 24px Arial';
-                ctx.fillStyle = '#111827';
-
-                // 100% because the entire doughnut represents
-                // the total inventory
-                ctx.fillText('100%', centerX, centerY - 7);
-
-                // Label underneath
-                ctx.font = '11px Arial';
-                ctx.fillStyle = '#6b7280';
-
-                ctx.fillText(
-                    'Total Stock',
-                    centerX,
-                    centerY + 15
-                );
-
-                ctx.restore();
-            }
-        };
-
-
-        // ==========================================
-        // INVENTORY DOUGHNUT CHART
-        // ==========================================
-        new Chart(document.getElementById('inventoryChart'), {
-            type: 'doughnut',
-
-            data: {
-                labels: inventoryChartLabels,
-
-                datasets: [{
-                    data: inventoryChartData,
-
-                    backgroundColor: [
-                        '#4f46e5', // Indigo
-                        '#10b981', // Green
-                        '#f59e0b', // Amber
-                        '#ef4444', // Red
-                        '#8b5cf6', // Purple
-                        '#06b6d4', // Cyan
-                        '#f97316', // Orange
-                        '#6b7280', // Gray
-                        '#ec4899', // Pink
-                        '#3b82f6'  // Blue
-                    ],
-
-                    borderWidth: 0
-                }]
-            },
-
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-
-                // Size of the hole in the middle
-                cutout: '70%',
-
-                plugins: {
-
-                    // Legend
-                    legend: {
-                        position: 'right'
-                    },
-
-                    // Tooltip
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-
-                                let label = context.label || '';
-
-                                if (label) {
-                                    label += ': ';
-                                }
-
-                                if (context.parsed !== null) {
-
-                                    // Total inventory
-                                    const total = context.dataset.data.reduce(
-                                        (sum, value) => sum + Number(value),
-                                        0
-                                    );
-
-                                    // Current brand quantity
-                                    const quantity = Number(context.parsed);
-
-                                    // Brand percentage
-                                    const percentage = total > 0
-                                        ? ((quantity / total) * 100).toFixed(1)
-                                        : 0;
-
-                                    label += quantity +
-                                        ' units (' +
-                                        percentage +
-                                        '%)';
-                                }
-
-                                return label;
-                            }
-                        }
-                    }
-                }
-            },
-
-            // Register center text plugin
-            plugins: [centerTextPlugin]
-        });
-    </script>
-@endpush

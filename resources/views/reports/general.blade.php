@@ -246,6 +246,9 @@
                     <p>{{ \Carbon\Carbon::parse($startDate)->format('d M Y') }} &mdash; {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }} &nbsp;·&nbsp; Generated {{ now()->format('d M Y, H:i') }}</p>
                 </div>
                 <div class="rpt-hero-actions">
+                    <a href="{{ route('reports.excel', array_merge(['report' => 'general'], request()->query())) }}" class="btn-pdf">
+                        Download Excel
+                    </a>
                     <a href="{{ route('reports.general.download', request()->query()) }}" class="btn-pdf">
                         <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
                         Download PDF

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Manage Brands')
-@section('subtitle', 'View, create, edit, and delete phone brands.')
+@section('subtitle', 'View, create, edit, and delete product brands.')
 
 @section('content')
     <div class="container mx-auto bg-white p-8 rounded-lg shadow-md relative">
@@ -53,7 +53,7 @@
                             <td data-label="Actions" class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex flex-wrap gap-3">
                                     <a href="{{ route('brands.edit', $brand->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                                    <form action="{{ route('brands.destroy', $brand->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this brand? This will also delete all associated phones due to cascade delete in migrations.');">
+                                    <form action="{{ route('brands.destroy', $brand->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this brand? This will also delete all associated products due to cascade delete in migrations.');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>

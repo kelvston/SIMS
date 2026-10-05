@@ -1,20 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative">
-    <img src="{{ asset('images/spare.png') }}"
-         alt="Watermark"
-         class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-         style="transform: translate(-50%, -50%);" />
-    <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Stock Report</h1>
+<div class="container mx-auto bg-white p-5 sm:p-8 rounded-xl shadow-md">
+    <div class="mb-7 flex flex-wrap items-start justify-between gap-4"><div><p class="text-xs font-semibold uppercase tracking-[.16em] text-orange-600">Reporting</p><h1 class="mt-1 text-2xl font-semibold text-slate-800">Stock report</h1><p class="mt-1 text-sm text-slate-500">Track available stock and items requiring replenishment.</p></div><a class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700" href="{{ route('reports.excel', ['report' => 'stock']) }}">Download report (.xlsx)</a></div>
 
     <!-- Summary Statistics -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="bg-blue-100 p-5 rounded-lg shadow-md text-center">
+        <div class="border border-blue-100 bg-blue-50 p-5 rounded-xl text-center">
             <p class="text-blue-700 text-sm font-semibold">Total Stocked Items (Units)</p>
             <p class="text-2xl font-bold text-blue-900">{{ $totalStockItems }}</p>
         </div>
-        <div class="bg-red-100 p-5 rounded-lg shadow-md text-center">
+        <div class="border border-red-100 bg-red-50 p-5 rounded-xl text-center">
             <p class="text-red-700 text-sm font-semibold">Items Below Low Stock Threshold</p>
             <p class="text-2xl font-bold text-red-900">{{ $lowStockCount }}</p>
         </div>

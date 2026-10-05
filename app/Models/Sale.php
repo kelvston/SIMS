@@ -12,6 +12,7 @@ class Sale extends Model
     // Define which attributes are mass assignable
     protected $fillable = [
         'customer_name',
+        'order_id',
         'customer_phone',
         'total_amount',
         'discount_amount',
@@ -52,6 +53,11 @@ class Sale extends Model
     public function saleItems()
     {
         return $this->hasMany(SaleItem::class);
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
     }
 
     /**

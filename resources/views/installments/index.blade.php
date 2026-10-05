@@ -1,13 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative"> <!-- Added relative -->
-        <img src="{{ asset('images/spare.png') }}"
-             alt="Watermark"
-             class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-             style="transform: translate(-50%, -50%);" />
-
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">All Installment Plans</h1>
+    <div class="container mx-auto bg-white p-5 sm:p-8 rounded-xl shadow-md relative">
+        <div class="mb-7"><p class="text-xs font-semibold uppercase tracking-[.16em] text-orange-600">Payment plans</p><h1 class="mt-1 text-2xl font-semibold text-slate-800">Installments</h1></div>
 
         @if (session('error'))
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -24,7 +19,7 @@
                     <thead class="bg-gray-50">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phones</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Products</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final Amount</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Installment Amount</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Installments</th>
@@ -44,7 +39,7 @@
                                             @if($item->phone)
                                                 {{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }}
                                             @else
-                                                Phone removed
+                                                Product removed
                                             @endif
                                         </li>
                                     @endforeach

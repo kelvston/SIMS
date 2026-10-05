@@ -105,11 +105,12 @@
 
         <form action="{{ route('sales.store') }}" method="POST" id="sale-form" class="relative z-10">
             @csrf
+            @if($orderDraft)<input type="hidden" name="order_id" value="{{ $orderDraft['id'] }}">@endif
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                     <label for="customer_name" class="block text-gray-700 text-sm font-bold mb-2">Customer Name:</label>
-                    <input type="text" name="customer_name" id="customer_name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('customer_name') border-red-500 @enderror" value="{{ old('customer_name') }}" placeholder="Customer's Full Name">
+                    <input type="text" name="customer_name" id="customer_name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('customer_name') border-red-500 @enderror" value="{{ old('customer_name', $orderDraft['customer_name'] ?? '') }}" placeholder="Customer's Full Name">
                     @error('customer_name')
                     <p class="text-red-500 text-xs italic">{{ $message }}</p>
                     @enderror
@@ -117,7 +118,7 @@
 
                 <div>
                     <label for="customer_phone" class="block text-gray-700 text-sm font-bold mb-2">Customer Phone (Optional):</label>
-                    <input type="text" name="customer_phone" id="customer_phone" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('customer_phone') border-red-500 @enderror" value="{{ old('customer_phone') }}" placeholder="e.g., +2557XXXXXXXX">
+                    <input type="text" name="customer_phone" id="customer_phone" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('customer_phone') border-red-500 @enderror" value="{{ old('customer_phone', $orderDraft['customer_phone'] ?? '') }}" placeholder="e.g., +2557XXXXXXXX">
                     @error('customer_phone')
                     <p class="text-red-500 text-xs italic">{{ $message }}</p>
                     @enderror
@@ -127,7 +128,7 @@
                     <label for="customer_email" class="block text-gray-700 text-sm font-bold mb-2">Customer Email (Optional):</label>
                     <input type="email" name="customer_email" id="customer_email"
                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('customer_email') border-red-500 @enderror"
-                           value="{{ old('customer_email') }}" placeholder="customer@example.com">
+                           value="{{ old('customer_email', $orderDraft['customer_email'] ?? '') }}" placeholder="customer@example.com">
                     @error('customer_email')
                     <p class="text-red-500 text-xs italic">{{ $message }}</p>
                     @enderror
@@ -138,7 +139,7 @@
                 <div class="border rounded-lg p-4 bg-gray-50">
                     <label for="phone-search"
                            class="block text-gray-700 text-sm font-bold mb-2">
-                        Search Phone:
+                        Search Product:
                     </label>
 
                     {{-- Step 1: Search --}}
@@ -146,7 +147,7 @@
                         <input type="text"
                                id="phone-search"
                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                               placeholder="Search phone name or model..."
+                               placeholder="Search product name or model..."
                                autocomplete="off">
 
                         <div id="phone-results"
@@ -162,7 +163,7 @@
 
                             <div class="flex-1">
                                 <p class="text-sm text-gray-500">
-                                    Selected Phone
+                                    Selected Product
                                 </p>
 
                                 <p id="selected-phone-name"
@@ -252,7 +253,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                     <label for="discount_amount" class="block text-gray-700 text-sm font-bold mb-2">Discount Amount (Tsh):</label>
-                    <input type="number" step="0.01" name="discount_amount" id="discount_amount" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('discount_amount') border-red-500 @enderror" value="{{ old('discount_amount', 0) }}" min="0">
+                    <input type="number" step="0.01" name="discount_amount" id="discount_amount" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('discount_amount') border-red-500 @enderror" value="{{ old('discount_amount', $orderDraft['discount_amount'] ?? 0) }}" min="0">
                     @error('discount_amount')
                     <p class="text-red-500 text-xs italic">{{ $message }}</p>
                     @enderror
@@ -341,6 +342,7 @@
 
     <script>
         const availablePhones = @json($availablePhones);
+        const orderDraft = @json($orderDraft);
 
         const selectedPhones = new Map();
         let pendingPhone = null;
@@ -399,7 +401,7 @@
 
             const matches = availablePhones
                 .filter(phone => {
-                    const productId = String(phone.brand_id);
+                    const productId = String(phone.id);
 
                     return !selectedPhones.has(productId);
                 })
@@ -421,7 +423,7 @@
             if (!matches.length) {
                 container.innerHTML = `
             <div class="sale-search-empty">
-                No available phone found.
+                No available product found.
             </div>
         `;
 
@@ -508,7 +510,7 @@
 
         // Step 3: only now does the phone go into the selected-items table.
         function addPhoneToSale(phone, quantity) {
-            const productId = String(phone.brand_id);
+            const productId = String(phone.id);
 
             let normalizedQuantity = Math.max(1, parseInt(quantity, 10) || 1);
 
@@ -621,7 +623,7 @@
 
                 <td data-label="Type"
                     class="px-4 py-3 text-sm text-gray-700">
-                    Phone
+                    Product
                 </td>
 
                 <td data-label="Qty"
@@ -667,7 +669,7 @@
             <tr id="selected-empty-row" class="sale-empty-row">
                 <td colspan="6"
                     class="px-4 py-6 text-center text-sm text-gray-500">
-                    No phone selected yet.
+                    No product selected yet.
                 </td>
             </tr>
         `;
@@ -680,7 +682,7 @@
             const finalCents = subtotalCents - discountCents;
 
             document.getElementById('selected-count').textContent =
-                `${itemCount} phone${itemCount === 1 ? '' : 's'}`;
+                `${itemCount} product${itemCount === 1 ? '' : 's'}`;
 
             document.getElementById('sale-subtotal').textContent =
                 formatMoney(subtotalCents);
@@ -731,7 +733,7 @@
                 const query = this.value.trim();
 
                 if (!query) {
-                    setMessage('Enter a phone name or model.', true);
+                    setMessage('Enter a product name or model.', true);
                     return;
                 }
 
@@ -745,7 +747,7 @@
                 });
 
                 if (!phone) {
-                    setMessage('No available phone found.', true);
+                    setMessage('No available product found.', true);
                     return;
                 }
 
@@ -783,12 +785,18 @@
                     event.preventDefault();
 
                     setMessage(
-                        'Add at least one phone before recording the sale.',
+                        'Add at least one product before recording the sale.',
                         true
                     );
                 }
             });
 
+        if (orderDraft) {
+            orderDraft.items.forEach(line => {
+                const phone = availablePhones.find(item => Number(item.id) === Number(line.phone_id));
+                if (phone) selectedPhones.set(String(phone.id), { item: phone, quantity: Number(line.quantity) });
+            });
+        }
         renderSelectedItems();
     </script>
 @endsection

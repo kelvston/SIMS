@@ -13,6 +13,7 @@ use App\Models\Phone;
 use App\Models\Product;
 use App\Models\InstallmentPlan;
 use App\Models\InstallmentPayment;
+use App\Models\MotorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -22,6 +23,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
  use App\Mail\GeneralReportMail;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Exceptions\UnauthorizedException; // Import for better error handling
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ReportController extends Controller // <<< IMPORTANT: Ensure it extends App\Http\Controllers\Controller
 {
@@ -30,8 +33,12 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         // Protect report related actions
         $this->middleware('auth'); // All reports require authentication
         $this->middleware('permission:view sales reports')->only('salesReport');
+        $this->middleware('permission:view sales reports')->only(['receivablesReport', 'productPerformanceReport', 'creditReport', 'cashFlowReport']);
+        $this->middleware('permission:view service reports')->only('serviceReport');
         $this->middleware('permission:view stock reports')->only('stockReport');
+        $this->middleware('permission:view stock reports')->only('inventoryValuationReport');
         $this->middleware('permission:view profit loss reports')->only('profitLossReport');
+        $this->middleware('permission:view profit loss reports')->only('expenseReport');
         // Dashboard can be accessed by anyone with 'view dashboard' permission
         $this->middleware('permission:view dashboard')->only('home');
         $this->middleware('permission:view general reports')->only(['generalReport', 'downloadGeneralReport', 'sendGeneralReportEmail']);
@@ -362,6 +369,165 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
             'accessoryGrossProfit'
         ));
     }
+
+    public function expenseReport(Request $request)
+    {
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->toDateString());
+        $query = Expense::with('user')->whereDate('expense_date', '>=', $startDate)->whereDate('expense_date', '<=', $endDate);
+        $totalExpenses = (clone $query)->sum('amount');
+        $byCategory = (clone $query)->select('category', DB::raw('SUM(amount) as total'))->groupBy('category')->orderByDesc('total')->get();
+        $expenses = $query->latest('expense_date')->paginate(20)->withQueryString();
+        return view('reports.expenses', compact('startDate', 'endDate', 'totalExpenses', 'byCategory', 'expenses'));
+    }
+
+    public function receivablesReport()
+    {
+        $plans = InstallmentPlan::where('status', 'active')->with(['sale.saleReceipt', 'installmentPayments'])->orderBy('next_payment_date')->get();
+        $plans->each(function ($plan) {
+            $paid = $plan->installmentPayments->sum('amount_paid') + (optional($plan->sale->saleReceipt)->paid_amount ?? 0);
+            $plan->outstanding_balance = max(0, (float) $plan->sale->final_amount - $paid);
+        });
+        $totalOutstanding = $plans->sum('outstanding_balance');
+        $overdueCount = $plans->filter(fn ($plan) => $plan->next_payment_date && $plan->next_payment_date->isPast())->count();
+        return view('reports.receivables', compact('plans', 'totalOutstanding', 'overdueCount'));
+    }
+
+    public function inventoryValuationReport()
+    {
+        $items = Phone::where('status', 'available')->with('brand')->orderBy('brand_id')->orderBy('model')->get();
+        $inventoryCost = $items->sum(fn ($item) => $item->purchase_price * $item->quantity);
+        $inventoryRetail = $items->sum(fn ($item) => $item->selling_price * $item->quantity);
+        return view('reports.inventory_valuation', compact('items', 'inventoryCost', 'inventoryRetail'));
+    }
+
+    public function productPerformanceReport(Request $request)
+    {
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->toDateString());
+        $items = SaleItem::whereHas('sale', fn ($q) => $q->activeTransaction()->whereDate('sale_date', '>=', $startDate)->whereDate('sale_date', '<=', $endDate))
+            ->with(['phone.brand', 'product'])->get()
+            ->groupBy(fn ($item) => $item->phone_id ? 'phone-'.$item->phone_id : 'product-'.$item->product_id)
+            ->map(function ($group) {
+                $first = $group->first();
+                $name = $first->phone ? trim(($first->phone->brand->name ?? '') . ' ' . $first->phone->model) : ($first->product->name ?? 'Removed item');
+                return (object) ['name' => $name, 'units' => $group->sum('quantity'), 'revenue' => $group->sum(fn ($item) => $item->unit_price * $item->quantity)];
+            })->sortByDesc('revenue')->values();
+        return view('reports.product_performance', compact('startDate', 'endDate', 'items'));
+    }
+
+    public function creditReport(Request $request)
+    {
+        $startDate = $request->input('start_date', '');
+        $endDate = $request->input('end_date', '');
+        $credits = Sale::activeTransaction()->where('payment_option', 'credit')->where('amount_due', '>', 0)
+            ->when($startDate, fn ($q) => $q->whereDate('sale_date', '>=', $startDate))
+            ->when($endDate, fn ($q) => $q->whereDate('sale_date', '<=', $endDate))
+            ->orderBy('credit_due_date')->get();
+        $outstanding = $credits->sum('amount_due');
+        $overdue = $credits->filter(fn ($sale) => $sale->credit_due_date?->isBefore(today()))->sum('amount_due');
+        return view('reports.credit', compact('credits', 'outstanding', 'overdue', 'startDate', 'endDate'));
+    }
+
+    public function cashFlowReport(Request $request)
+    {
+        $data = $this->cashFlowData($request);
+        return view('reports.cashflow', $data);
+    }
+
+    public function serviceReport(Request $request)
+    {
+        $data = $this->serviceReportData($request);
+
+        return view('reports.services', $data);
+    }
+
+    public function export(Request $request, string $report)
+    {
+        $permission = ['sales'=>'view sales reports', 'receivables'=>'view sales reports', 'product-performance'=>'view sales reports', 'credit'=>'view sales reports', 'cashflow'=>'view sales reports', 'stock'=>'view stock reports', 'inventory'=>'view stock reports', 'profit-loss'=>'view profit loss reports', 'expenses'=>'view profit loss reports', 'general'=>'view general reports', 'services'=>'view service reports'][$report];
+        abort_unless($request->user()->can($permission), 403);
+        $data = $this->exportDataset($request, $report);
+        $sheet = (new Spreadsheet())->getActiveSheet();
+        $sheet->setTitle(substr($data['title'], 0, 31));
+        $sheet->fromArray([[$data['title']]], null, 'A1');
+        $summaryRow = 2;
+        foreach ($data['summary'] as $label => $value) {
+            $sheet->fromArray([[$label, $value]], null, 'A' . $summaryRow++);
+        }
+        $headerRow = count($data['summary']) + 3;
+        $sheet->fromArray($data['headers'], null, 'A' . $headerRow);
+        $sheet->fromArray($data['rows'], null, 'A' . ($headerRow + 1));
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A' . $headerRow . ':' . $sheet->getHighestColumn() . $headerRow)->getFont()->setBold(true);
+        $sheet->freezePane('A' . ($headerRow + 1));
+        foreach (range('A', $sheet->getHighestColumn()) as $column) $sheet->getColumnDimension($column)->setAutoSize(true);
+        $writer = new Xlsx($sheet->getParent());
+        $name = $report.'-report.xlsx';
+        return response()->streamDownload(fn()=> $writer->save('php://output'), $name, ['Content-Type'=>'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+    }
+
+    /** The export data deliberately mirrors each report's on-screen filters and totals. */
+    private function exportDataset(Request $request, string $report): array
+    {
+        [$start, $end] = [$request->input('start_date', ''), $request->input('end_date', '')];
+        $sales = fn () => Sale::activeTransaction()->when($start, fn ($q) => $q->whereDate('sale_date', '>=', $start))->when($end, fn ($q) => $q->whereDate('sale_date', '<=', $end));
+        $expenses = fn () => Expense::query()->when($start, fn ($q) => $q->whereDate('expense_date', '>=', $start))->when($end, fn ($q) => $q->whereDate('expense_date', '<=', $end));
+
+        return match ($report) {
+            'sales' => (function () use ($sales) { $items = $sales()->with('saleItems.phone.brand', 'saleItems.product')->latest('sale_date')->get(); return ['title'=>'Sales report','summary'=>['Total sales'=>$items->sum('final_amount'),'Discounts'=>$items->sum('discount_amount'),'Installment sales'=>$items->where('is_installment', true)->count(),'Full-payment sales'=>$items->where('is_installment', false)->count()],'headers'=>['Sale ID','Customer','Items','Sale date','Payment type','Final amount'],'rows'=>$items->map(fn($s)=>[$s->id,$s->customer_name,$s->saleItems->map(fn($i)=>$i->phone ? trim(($i->phone->brand->name ?? '').' '.$i->phone->model).' x'.$i->quantity : (($i->product->name ?? 'Removed item').' x'.$i->quantity))->implode(', '),optional($s->sale_date)->format('Y-m-d H:i'),$s->sale_type_label,(float)$s->final_amount])->all()]; })(),
+            'stock' => (function () { $items = StockLevel::with('brand','phone')->orderBy('current_stock')->get(); return ['title'=>'Stock report','summary'=>['Total stock units'=>$items->sum('current_stock'),'Low-stock items'=>$items->filter(fn($i)=>$i->current_stock <= $i->low_stock_threshold)->count()],'headers'=>['Brand','Model','Current stock','Low-stock threshold','Status','Last updated'],'rows'=>$items->map(fn($i)=>[$i->brand->name ?? 'N/A',$i->model,$i->current_stock,$i->low_stock_threshold,$i->current_stock <= $i->low_stock_threshold ? 'Low stock':'Sufficient',optional($i->last_updated_at)->format('Y-m-d H:i')])->all()]; })(),
+            'expenses' => (function () use ($expenses) { $items = $expenses()->latest('expense_date')->get(); return ['title'=>'Expense report','summary'=>['Total expenses'=>$items->sum('amount'),'Expense count'=>$items->count()],'headers'=>['Date','Category','Description','Amount'],'rows'=>$items->map(fn($e)=>[Carbon::parse($e->expense_date)->format('Y-m-d'),$e->category,$e->description,(float)$e->amount])->all()]; })(),
+            'inventory' => (function () { $items = Phone::where('status','available')->with('brand')->orderBy('brand_id')->orderBy('model')->get(); $cost=$items->sum(fn($i)=>(float)$i->purchase_price*$i->quantity); $retail=$items->sum(fn($i)=>(float)$i->selling_price*$i->quantity); return ['title'=>'Inventory valuation report','summary'=>['Stock cost'=>$cost,'Potential retail value'=>$retail,'Potential margin'=>$retail-$cost],'headers'=>['Brand','Model','Units','Cost value','Retail value'],'rows'=>$items->map(fn($i)=>[$i->brand->name ?? 'N/A',$i->model,$i->quantity,(float)$i->purchase_price*$i->quantity,(float)$i->selling_price*$i->quantity])->all()]; })(),
+            'credit' => (function () use ($sales) { $items=$sales()->where('payment_option','credit')->where('amount_due','>',0)->orderBy('credit_due_date')->get(); return ['title'=>'Credit report','summary'=>['Total outstanding'=>$items->sum('amount_due'),'Overdue balance'=>$items->filter(fn($s)=>$s->credit_due_date?->isBefore(today()))->sum('amount_due')],'headers'=>['Sale ID','Customer','Phone','Sale date','Due date','Outstanding balance'],'rows'=>$items->map(fn($s)=>[$s->id,$s->customer_name,$s->customer_phone,optional($s->sale_date)->format('Y-m-d'),optional($s->credit_due_date)->format('Y-m-d'),(float)$s->amount_due])->all()]; })(),
+            'receivables' => $this->receivablesExportDataset(),
+            'product-performance' => $this->productPerformanceExportDataset($request),
+            'profit-loss' => $this->profitLossExportDataset($request),
+            'general' => $this->generalExportDataset($request),
+            'cashflow' => $this->cashFlowExportDataset($request),
+            'services' => $this->serviceExportDataset($request),
+        };
+    }
+
+    private function serviceReportData(Request $request): array
+    {
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->toDateString());
+        $status = $request->input('status', '');
+
+        $services = MotorService::with(['vehicle', 'mechanic'])
+            ->whereDate('service_date', '>=', $startDate)
+            ->whereDate('service_date', '<=', $endDate)
+            ->when($status, fn ($query) => $query->where('status', $status))
+            ->latest('service_date')
+            ->paginate(20)
+            ->withQueryString();
+
+        $totals = MotorService::whereDate('service_date', '>=', $startDate)
+            ->whereDate('service_date', '<=', $endDate)
+            ->when($status, fn ($query) => $query->where('status', $status))
+            ->selectRaw('COUNT(*) as jobs, COALESCE(SUM(total_amount), 0) as billed, COALESCE(SUM(amount_paid), 0) as collected')
+            ->first();
+
+        return compact('services', 'startDate', 'endDate', 'status', 'totals');
+    }
+
+    private function cashFlowData(Request $request): array
+    {
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->toDateString());
+        $saleCollections = Sale::activeTransaction()->whereDate('sale_date','>=',$startDate)->whereDate('sale_date','<=',$endDate)->where('amount_paid','>',0)->get()->map(fn($s)=>(object)['date'=>$s->sale_date,'type'=>'Sale collection','reference'=>'Sale #'.$s->id.' — '.$s->customer_name,'inflow'=>(float)$s->amount_paid,'outflow'=>0]);
+        $installments = InstallmentPayment::with('installmentPlan.sale')->whereDate('payment_date','>=',$startDate)->whereDate('payment_date','<=',$endDate)->get()->map(fn($p)=>(object)['date'=>$p->payment_date,'type'=>'Installment collection','reference'=>'Sale #'.($p->installmentPlan->sale_id ?? 'N/A').' — '.($p->installmentPlan->sale->customer_name ?? 'Unknown'),'inflow'=>(float)$p->amount_paid,'outflow'=>0]);
+        $outflows = Expense::whereDate('expense_date','>=',$startDate)->whereDate('expense_date','<=',$endDate)->get()->map(fn($e)=>(object)['date'=>Carbon::parse($e->expense_date),'type'=>'Expense','reference'=>$e->category.($e->description ? ' — '.$e->description : ''),'inflow'=>0,'outflow'=>(float)$e->amount]);
+        $rows = $saleCollections->concat($installments)->concat($outflows)->sortByDesc('date')->values();
+        return ['startDate'=>$startDate,'endDate'=>$endDate,'rows'=>$rows,'cashIn'=>$rows->sum('inflow'),'cashOut'=>$rows->sum('outflow'),'netCashFlow'=>$rows->sum('inflow')-$rows->sum('outflow')];
+    }
+
+    private function cashFlowExportDataset(Request $request): array { $d=$this->cashFlowData($request); return ['title'=>'Cash flow report','summary'=>['Cash in'=>$d['cashIn'],'Cash out'=>$d['cashOut'],'Net cash flow'=>$d['netCashFlow']],'headers'=>['Date','Type','Reference','Cash in','Cash out','Net movement'],'rows'=>$d['rows']->map(fn($r)=>[optional($r->date)->format('Y-m-d H:i'),$r->type,$r->reference,$r->inflow,$r->outflow,$r->inflow-$r->outflow])->all()]; }
+    private function serviceExportDataset(Request $request): array { $d=$this->serviceReportData($request); $items=MotorService::with(['vehicle','mechanic'])->whereDate('service_date','>=',$d['startDate'])->whereDate('service_date','<=',$d['endDate'])->when($d['status'],fn($q)=>$q->where('status',$d['status']))->latest('service_date')->get(); return ['title'=>'Service report','summary'=>['Service jobs'=>$items->count(),'Amount billed'=>$items->sum('total_amount'),'Amount collected'=>$items->sum('amount_paid'),'Outstanding balance'=>$items->sum(fn($item)=>(float)$item->total_amount-(float)$item->amount_paid)],'headers'=>['Job number','Service date','Vehicle','Customer','Mechanic','Status','Billed','Paid','Balance'],'rows'=>$items->map(fn($item)=>[$item->job_number,optional($item->service_date)->format('Y-m-d'),$item->vehicle?->registration_number,$item->vehicle?->customer_name,$item->mechanic?->name,ucwords(str_replace('_',' ',$item->status)),(float)$item->total_amount,(float)$item->amount_paid,(float)$item->total_amount-(float)$item->amount_paid])->all()]; }
+    private function receivablesExportDataset(): array { $plans=InstallmentPlan::where('status','active')->with(['sale.saleReceipt','installmentPayments'])->orderBy('next_payment_date')->get(); $plans->each(function($p){$p->outstanding_balance=max(0,(float)$p->sale->final_amount-$p->installmentPayments->sum('amount_paid')-(optional($p->sale->saleReceipt)->paid_amount ?? 0));}); return ['title'=>'Receivables report','summary'=>['Outstanding balance'=>$plans->sum('outstanding_balance'),'Overdue plans'=>$plans->filter(fn($p)=>$p->next_payment_date?->isPast())->count()],'headers'=>['Sale ID','Customer','Next payment','Installment amount','Outstanding'],'rows'=>$plans->map(fn($p)=>[$p->sale_id,$p->sale->customer_name ?? 'N/A',optional($p->next_payment_date)->format('Y-m-d'),(float)$p->installment_amount,(float)$p->outstanding_balance])->all()]; }
+    private function productPerformanceExportDataset(Request $request): array { $start=$request->input('start_date',Carbon::now()->startOfMonth()->toDateString());$end=$request->input('end_date',Carbon::now()->toDateString());$items=SaleItem::whereHas('sale',fn($q)=>$q->activeTransaction()->whereDate('sale_date','>=',$start)->whereDate('sale_date','<=',$end))->with(['phone.brand','product'])->get()->groupBy(fn($i)=>$i->phone_id?'phone-'.$i->phone_id:'product-'.$i->product_id)->map(function($g){$f=$g->first();return [ $f->phone ? trim(($f->phone->brand->name ?? '').' '.$f->phone->model) : ($f->product->name ?? 'Removed item'),$g->sum('quantity'),$g->sum(fn($i)=>(float)$i->unit_price*$i->quantity)];})->sortByDesc(fn($r)=>$r[2])->values();return ['title'=>'Product performance report','summary'=>['Units sold'=>$items->sum(fn($r)=>$r[1]),'Revenue'=>$items->sum(fn($r)=>$r[2])],'headers'=>['Product','Units sold','Revenue'],'rows'=>$items->all()]; }
+    private function profitLossExportDataset(Request $request): array { $start=$request->input('start_date','');$end=$request->input('end_date','');$sales=Sale::activeTransaction()->when($start,fn($q)=>$q->whereDate('sale_date','>=',$start))->when($end,fn($q)=>$q->whereDate('sale_date','<=',$end))->with('saleItems.phone','saleItems.product')->get();$expense=Expense::when($start,fn($q)=>$q->whereDate('expense_date','>=',$start))->when($end,fn($q)=>$q->whereDate('expense_date','<=',$end))->get();$revenue=$sales->sum('final_amount');$cogs=$this->saleItemsCostValue($sales->flatMap->saleItems);$totalExpenses=$expense->sum('amount');return ['title'=>'Profit and loss report','summary'=>['Revenue'=>$revenue,'COGS'=>$cogs,'Gross profit'=>$revenue-$cogs,'Expenses'=>$totalExpenses,'Net profit'=>$revenue-$cogs-$totalExpenses],'headers'=>['Date','Entry type','Reference','Revenue','COGS','Expense'],'rows'=>$sales->map(fn($s)=>[optional($s->sale_date)->format('Y-m-d'),'Sale #'.$s->id,$s->customer_name,(float)$s->final_amount,$this->saleItemsCostValue($s->saleItems),0])->concat($expense->map(fn($e)=>[Carbon::parse($e->expense_date)->format('Y-m-d'),'Expense',$e->category.': '.$e->description,0,0,(float)$e->amount]))->sortByDesc(fn($r)=>$r[0])->values()->all()]; }
+    private function generalExportDataset(Request $request): array { $d=$this->buildGeneralReportData($request);$sales=Sale::activeTransaction()->whereDate('sale_date','>=',$d['startDate'])->whereDate('sale_date','<=',$d['endDate'])->orderByDesc('sale_date')->get();return ['title'=>'General business report','summary'=>['Revenue'=>$d['totalRevenue'],'COGS'=>$d['totalCogs'],'Expenses'=>$d['totalExpenses'],'Net profit'=>$d['netProfit'],'Sales count'=>$d['totalSalesCount']],'headers'=>['Sale ID','Customer','Date','Payment type','Amount'],'rows'=>$sales->map(fn($s)=>[$s->id,$s->customer_name,optional($s->sale_date)->format('Y-m-d'),$s->sale_type_label,(float)$s->final_amount])->all()]; }
     private function buildGeneralReportData(Request $request): array
     {
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
@@ -417,7 +583,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         $inventoryValue       = $this->inventoryCostValue();
 
         $stockByBrand = Phone::where('status', 'available')
-            ->select('brand_id', DB::raw('quantity as count'), DB::raw('SUM(purchase_price * quantity) as value'))
+            ->select('brand_id', DB::raw('SUM(quantity) as count'), DB::raw('SUM(purchase_price * quantity) as value'))
             ->with('brand')
             ->groupBy('brand_id')
             ->get();
@@ -506,11 +672,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
         return (float) $saleItems->sum(function ($item) {
             $quantity = (float) ($item->quantity ?? 1);
 
-            if ($item->phone) {
-                return (float) $item->phone->purchase_price * $quantity;
-            }
-
-            $unitCost = $item->unit_cost ?? 0;
+            $unitCost = $item->unit_cost ?? $item->phone?->purchase_price ?? 0;
             return (float) $unitCost * $quantity;
         });
     }
@@ -576,6 +738,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
      */
     public function getSalesData(Request $request)
     {
+        abort_unless($request->user()->can('view sales reports'), 403);
         try {
             // Debug: Log the incoming request
             \Log::info('DataTables Request:', $request->all());
@@ -694,6 +857,7 @@ class ReportController extends Controller // <<< IMPORTANT: Ensure it extends Ap
      */
     public function getSalesSummary(Request $request)
     {
+        abort_unless($request->user()->can('view sales reports'), 403);
         try {
             $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
             $endDate = $request->get('end_date', Carbon::now()->format('Y-m-d'));

@@ -19,6 +19,7 @@ class InstallmentPayment extends Model
     // Define the casts for attributes
     protected $casts = [
         'payment_date' => 'datetime',
+        'amount_paid' => 'decimal:2',
     ];
 
     /**

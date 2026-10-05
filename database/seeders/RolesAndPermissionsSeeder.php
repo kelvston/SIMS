@@ -118,6 +118,11 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'edit phones']);
         Permission::firstOrCreate(['name' => 'delete phones']);
         Permission::firstOrCreate(['name' => 'view general reports']);
+        Permission::firstOrCreate(['name' => 'view motor services']);
+        Permission::firstOrCreate(['name' => 'create motor service jobs']);
+        Permission::firstOrCreate(['name' => 'manage motor services']);
+        Permission::firstOrCreate(['name' => 'update assigned service jobs']);
+        Permission::firstOrCreate(['name' => 'view service reports']);
 
         // Sales Permissions
         Permission::firstOrCreate(['name' => 'view sales']);
@@ -128,6 +133,8 @@ class RolesAndPermissionsSeeder extends Seeder
         // Expense Permissions
         Permission::firstOrCreate(['name' => 'create expenses']);
         Permission::firstOrCreate(['name' => 'view expenses']); // new
+        Permission::firstOrCreate(['name' => 'edit expenses']);
+        Permission::firstOrCreate(['name' => 'delete expenses']);
 
         // Installment Permissions
         Permission::firstOrCreate(['name' => 'view installments']);
@@ -153,6 +160,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $salesManagerRole = Role::firstOrCreate(['name' => 'sales_manager']);
         $salesManagerRole->givePermissionTo([
+            'view dashboard',
             'view phones', 'receive phones',
             'view sales', 'create sales', 'edit sales',
             'view installments', 'record installment payments',
@@ -161,6 +169,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $staffRole = Role::firstOrCreate(['name' => 'staff']);
         $staffRole->givePermissionTo([
+            'view dashboard',
             'view phones', 'receive phones',
             'view sales', 'create sales',
             'view installments', 'record installment payments',
@@ -168,9 +177,15 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $viewerRole = Role::firstOrCreate(['name' => 'viewer']);
         $viewerRole->givePermissionTo([
+            'view dashboard',
             'view phones', 'view sales', 'view installments',
             'view sales reports', 'view stock reports', 'view profit loss reports',
         ]);
+
+        $mechanicRole = Role::firstOrCreate(['name' => 'mechanic']);
+        $mechanicRole->syncPermissions(['update assigned service jobs']);
+        $mechanicsRole = Role::firstOrCreate(['name' => 'mechanics']);
+        $mechanicsRole->syncPermissions(['update assigned service jobs']);
 
         // --- Assign all roles and permissions to the first admin user ---
         $user = \App\Models\User::where('email', 'admin@yoga.com')->first();

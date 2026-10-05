@@ -48,7 +48,7 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
         // Calculate total paid and remaining amount
         $receiptPaid = optional(optional($installmentPlan->sale)->saleReceipt)->paid_amount ?? 0;
         $totalPaid = $installmentPlan->installmentPayments->sum('amount_paid') + $receiptPaid;
-        $remainingAmount = $installmentPlan->sale->final_amount - $totalPaid;
+        $remainingAmount = max((float) $installmentPlan->sale->final_amount - (float) $totalPaid, 0);
 
         return view('installments.pay', compact('installmentPlan', 'totalPaid', 'remainingAmount'));
     }
@@ -81,16 +81,19 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
             // Calculate current total paid and remaining balance
             $receiptPaid = optional(optional($installmentPlan->sale)->saleReceipt)->paid_amount ?? 0;
             $totalPaid = $installmentPlan->installmentPayments->sum('amount_paid') + $receiptPaid;
-            $remainingAmount = $installmentPlan->sale->final_amount - $totalPaid;
-
-            $amountToPay = $request->amount_paid;
+            $remainingCents = max(
+                $this->moneyToCents($installmentPlan->sale->final_amount) - $this->moneyToCents($totalPaid),
+                0
+            );
+            $amountToPayCents = $this->moneyToCents($request->amount_paid);
 
             // Prevent overpayment beyond the remaining amount
-            if ($amountToPay > $remainingAmount + 0.01) { // Add a small tolerance for floating point issues
+            if ($amountToPayCents > $remainingCents) {
                 throw ValidationException::withMessages([
-                    'amount_paid' => ['The payment amount cannot exceed the remaining balance of Tsh ' . number_format($remainingAmount, 2) . '.'],
+                    'amount_paid' => ['The payment amount cannot exceed the remaining balance of Tsh ' . number_format($remainingCents / 100, 2) . '.'],
                 ]);
             }
+            $amountToPay = $this->centsToMoney($amountToPayCents);
 
             // Create the InstallmentPayment record
             InstallmentPayment::create([
@@ -100,10 +103,11 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
             ]);
 
             // Recalculate total paid after the new payment
-            $newTotalPaid = $totalPaid + $amountToPay;
+            $newTotalPaidCents = $this->moneyToCents($totalPaid) + $amountToPayCents;
+            $finalAmountCents = $this->moneyToCents($installmentPlan->sale->final_amount);
 
             // Update installment plan status and next payment date
-            if ($newTotalPaid >= $installmentPlan->sale->final_amount) {
+            if ($newTotalPaidCents >= $finalAmountCents) {
                 $installmentPlan->status = 'completed';
                 $installmentPlan->next_payment_date = null; // No more payments expected
             } else {
@@ -113,8 +117,8 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
             }
             $installmentPlan->save();
 
-            $installmentPlan->sale->amount_paid = $newTotalPaid;
-            $installmentPlan->sale->amount_due = max($installmentPlan->sale->final_amount - $newTotalPaid, 0);
+            $installmentPlan->sale->amount_paid = $this->centsToMoney($newTotalPaidCents);
+            $installmentPlan->sale->amount_due = $this->centsToMoney(max($finalAmountCents - $newTotalPaidCents, 0));
             $installmentPlan->sale->save();
 
             DB::commit();
@@ -154,5 +158,15 @@ class InstallmentController extends Controller // <<< IMPORTANT: Ensure it exten
         });
 
         return response()->json(['message' => 'Payment recorded successfully!']);
+    }
+
+    private function moneyToCents($amount): int
+    {
+        return (int) round((float) $amount * 100);
+    }
+
+    private function centsToMoney(int $cents): string
+    {
+        return number_format($cents / 100, 2, '.', '');
     }
 }

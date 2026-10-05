@@ -1,15 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto bg-white p-8 rounded-lg shadow-md mt-10 relative">
-    <img src="{{ asset('images/spare.png') }}"
-         alt="Watermark"
-         class="pointer-events-none select-none absolute top-1/2 left-1/2 opacity-20 w-96 z-0"
-         style="transform: translate(-50%, -50%);" />
-    <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Sales Report</h1>
+<div class="container mx-auto bg-white p-5 sm:p-8 rounded-xl shadow-md">
+    <div class="mb-7 flex flex-wrap items-start justify-between gap-4"><div><p class="text-xs font-semibold uppercase tracking-[.16em] text-orange-600">Reporting</p><h1 class="mt-1 text-2xl font-semibold text-slate-800">Sales report</h1><p class="mt-1 text-sm text-slate-500">Review revenue, discounts and payment mix for a selected period.</p></div><a class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700" href="{{ route('reports.excel', array_merge(['report' => 'sales'], request()->query())) }}">Download report (.xlsx)</a></div>
 
     <!-- Date Filter Form -->
-    <form action="{{ route('reports.sales') }}" method="GET" class="mb-6 p-4 bg-gray-50 rounded-lg shadow-sm flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center sm:justify-center gap-4">
+    <form action="{{ route('reports.sales') }}" method="GET" class="mb-7 rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-end gap-4">
         <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <label for="start_date" class="text-gray-700 text-sm font-bold">Start Date:</label>
             <input type="date" name="start_date" id="start_date" class="w-full sm:w-auto shadow-sm border rounded py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ $startDate }}">
@@ -18,29 +14,29 @@
             <label for="end_date" class="text-gray-700 text-sm font-bold">End Date:</label>
             <input type="date" name="end_date" id="end_date" class="w-full sm:w-auto shadow-sm border rounded py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ $endDate }}">
         </div>
-        <button type="submit" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
+        <button type="submit" class="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2.5 px-4 rounded-lg transition shadow-sm">
             Apply Filter
         </button>
-        <a href="{{ route('reports.sales') }}" class="w-full sm:w-auto text-center bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out shadow-md">
+        <a href="{{ route('reports.sales') }}" class="w-full sm:w-auto text-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold py-2.5 px-4 rounded-lg transition">
             Clear Filter
         </a>
     </form>
 
     <!-- Summary Statistics -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-blue-100 p-5 rounded-lg shadow-md text-center">
+        <div class="border border-blue-100 bg-blue-50 p-5 rounded-xl text-center">
             <p class="text-blue-700 text-sm font-semibold">Total Sales Amount</p>
             <p class="text-2xl font-bold text-blue-900">Tsh {{ number_format($totalSalesAmount, 2) }}</p>
         </div>
-        <div class="bg-yellow-100 p-5 rounded-lg shadow-md text-center">
+        <div class="border border-amber-100 bg-amber-50 p-5 rounded-xl text-center">
             <p class="text-yellow-700 text-sm font-semibold">Total Discount Given</p>
             <p class="text-2xl font-bold text-yellow-900">Tsh {{ number_format($totalDiscountAmount, 2) }}</p>
         </div>
-        <div class="bg-purple-100 p-5 rounded-lg shadow-md text-center">
+        <div class="border border-violet-100 bg-violet-50 p-5 rounded-xl text-center">
             <p class="text-purple-700 text-sm font-semibold">Installment Sales</p>
             <p class="text-2xl font-bold text-purple-900">{{ $totalInstallmentSales }}</p>
         </div>
-        <div class="bg-green-100 p-5 rounded-lg shadow-md text-center">
+        <div class="border border-emerald-100 bg-emerald-50 p-5 rounded-xl text-center">
             <p class="text-green-700 text-sm font-semibold">Full Payment Sales</p>
             <p class="text-2xl font-bold text-green-900">{{ $totalFullPaymentSales }}</p>
         </div>
@@ -105,4 +101,5 @@
             Back to Dashboard
         </a>
     </div>
+</div>
 @endsection

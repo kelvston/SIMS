@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockLevel;
+use App\Models\MotorService;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
@@ -22,10 +23,12 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        abort_if(auth()->user()?->hasAnyRole(['mechanic', 'mechanics']), 403);
+
         $totalPhones = Phone::where('status', 'available');
         $totalInvested = $this->inventoryCostValue();
-        $totalAccessories = DB::table('cashews')
-            ->where('status', 'available')->count();
+        $totalAccessories = (int) DB::table('cashews')
+            ->where('status', 'available')->sum('quantity');
 
         $currentMonth = Carbon::now()->month;
         $currentYear = Carbon::now()->year;
@@ -124,7 +127,7 @@ class DashboardController extends Controller
         $recentReceivedPhones = Phone::with('brand')->latest('received_at')->take(5)->get()->map(function($phone) {
             return [
                 'type' => 'received',
-                'description' => 'Received ' . (optional($phone->brand)->name ?? 'N/A') . " {$phone->model} ({$phone->quantity})",
+                'description' => 'Received product ' . (optional($phone->brand)->name ?? 'N/A') . " {$phone->model} ({$phone->quantity})",
                 'date' => $phone->received_at,
                 'link' => route('phones.index')
             ];
@@ -160,6 +163,16 @@ class DashboardController extends Controller
             ['path' => request()->url(), 'query' => request()->query()]
         );
 
+        // Motor service dashboard data
+        $openServiceStatuses = ['received', 'diagnosing', 'in_progress', 'waiting_parts'];
+        $openServiceJobs = MotorService::whereIn('status', $openServiceStatuses)->count();
+        $jobsWaitingParts = MotorService::where('status', 'waiting_parts')->count();
+        $serviceRevenueThisMonth = MotorService::whereMonth('service_date', $currentMonth)
+            ->whereYear('service_date', $currentYear)->sum('amount_paid');
+        $serviceOutstanding = MotorService::whereIn('payment_status', ['unpaid', 'partial'])
+            ->selectRaw('COALESCE(SUM(total_amount - amount_paid), 0) as balance')->value('balance');
+        $recentServiceJobs = MotorService::with(['vehicle', 'mechanic'])->latest('updated_at')->take(6)->get();
+
         return view('dashboard', compact(
             'totalPhones',
             'totalAccessories',
@@ -178,14 +191,19 @@ class DashboardController extends Controller
             'netProfit',
             'totalProfit',
             'totalLoss',
-            'totalMonthlyExpenses'
+            'totalMonthlyExpenses',
+            'openServiceJobs',
+            'jobsWaitingParts',
+            'serviceRevenueThisMonth',
+            'serviceOutstanding',
+            'recentServiceJobs'
         ));
     }
 
     private function inventoryCostValue(): float
     {
 //        $phoneValue = (float) Phone::sum('purchase_price');
-        $phoneValue = Phone::where('status', '!=', 'sold')
+        $phoneValue = Phone::where('status', 'available')
             ->sum(DB::raw('purchase_price * quantity'));
         $accessoryValue = Schema::hasTable('cashews')
             ? (float) DB::table('cashews')
@@ -202,11 +220,7 @@ class DashboardController extends Controller
         return (float) $saleItems->sum(function ($item) {
             $quantity = (float) ($item->quantity ?? 1);
 
-            if ($item->phone) {
-                return (float) $item->phone->purchase_price * $quantity;
-            }
-
-            $unitCost = $item->unit_cost ?? 0;
+            $unitCost = $item->unit_cost ?? $item->phone?->purchase_price ?? 0;
             return (float) $unitCost * $quantity;
         });
     }
@@ -235,12 +249,11 @@ class DashboardController extends Controller
             if ($phone->status === 'available') {
                 $stockLevel = StockLevel::where('brand_id', $phone->brand_id)
                     ->where('model', $phone->model)
-                    ->where('color', $phone->color)
                     ->lockForUpdate()
                     ->first();
 
                 if ($stockLevel && $stockLevel->current_stock > 0) {
-                    $stockLevel->decrement('current_stock');
+                    $stockLevel->decrement('current_stock', (int) $phone->quantity);
                     $stockLevel->last_updated_at = now();
                     $stockLevel->save();
                 }
@@ -263,12 +276,19 @@ class DashboardController extends Controller
         $validated = $request->validate([
             'brand_id' => 'required|exists:brands,id',
             'model' => 'nullable|string|max:255',
-            'quantity' => 'required|string|max:255',
+            'quantity' => 'required|integer|min:0',
             'purchase_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
         ]);
 
-        $phone->update($validated);
+        DB::transaction(function () use ($phone, $validated) {
+            $oldBrandId = $phone->brand_id;
+            $oldModel = $phone->model;
+            $phone->update($validated);
+
+            $this->syncStockLevel($oldBrandId, $oldModel);
+            $this->syncStockLevel($phone->brand_id, $phone->model);
+        });
 
         return redirect()->back()->with('success', 'Product updated successfully');
     }
@@ -379,5 +399,22 @@ class DashboardController extends Controller
     private function phoneIsSaleLinked(Phone $phone): bool
     {
         return in_array($phone->status, ['sold', 'under_installment'], true) || $phone->saleItem()->exists();
+    }
+
+    private function syncStockLevel(int $brandId, ?string $model): void
+    {
+        $currentStock = (int) Phone::where('status', 'available')
+            ->where('brand_id', $brandId)
+            ->where('model', $model)
+            ->sum('quantity');
+
+        $stockLevel = StockLevel::firstOrCreate(
+            ['brand_id' => $brandId, 'model' => $model],
+            ['low_stock_threshold' => 5]
+        );
+
+        $stockLevel->current_stock = $currentStock;
+        $stockLevel->last_updated_at = now();
+        $stockLevel->save();
     }
 }

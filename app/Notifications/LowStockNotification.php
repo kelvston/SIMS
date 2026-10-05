@@ -42,7 +42,7 @@ class LowStockNotification extends Notification
     public function toVonage(object $notifiable): VonageMessage
     {
         $brandName = $this->stockLevel->brand->name ?? 'Unknown Brand';
-        $message = "Low Stock Alert! Phone: {$brandName} {$this->stockLevel->model} ({$this->stockLevel->color}). Current stock: {$this->stockLevel->current_stock}. Threshold: {$this->stockLevel->low_stock_threshold}.";
+        $message = "Low Stock Alert! Product: {$brandName} {$this->stockLevel->model} ({$this->stockLevel->color}). Current stock: {$this->stockLevel->current_stock}. Threshold: {$this->stockLevel->low_stock_threshold}.";
 
         return (new VonageMessage())
             ->content($message);
@@ -53,7 +53,7 @@ class LowStockNotification extends Notification
     public function toTwilio(object $notifiable): TwilioSmsMessage
     {
         $brandName = $this->stockLevel->brand->name ?? 'Unknown Brand';
-        $message = "Low Stock Alert! Phone: {$brandName} {$this->stockLevel->model} ({$this->stockLevel->color}). Current stock: {$this->stockLevel->current_stock}. Threshold: {$this->stockLevel->low_stock_threshold}.";
+        $message = "Low Stock Alert! Product: {$brandName} {$this->stockLevel->model} ({$this->stockLevel->color}). Current stock: {$this->stockLevel->current_stock}. Threshold: {$this->stockLevel->low_stock_threshold}.";
 
         return (new TwilioSmsMessage())
                     ->content($message);

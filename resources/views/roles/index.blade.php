@@ -48,9 +48,11 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $role->name }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">
                             @forelse ($role->permissions as $permission)
+                                @if (!in_array($permission->name, $hiddenPermissions))
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 mb-1">
                                             {{ $permission->name }}
                                         </span>
+                                @endif
                             @empty
                                 <span class="text-gray-500">No Permissions Assigned</span>
                             @endforelse

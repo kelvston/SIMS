@@ -145,22 +145,13 @@
                         Product:
                     </label>
 
-                    <select name="brand_id"
-                            id="brand_id"
-                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('brand_id') border-red-500 @enderror">
-
-                        <option value="">
-                            Select Product
-                        </option>
-
-                        @foreach ($brands as $brand)
-                            <option value="{{ $brand->id }}"
-                                {{ old('brand_id') == $brand->id ? 'selected' : '' }}>
-                                {{ $brand->name }}
-                            </option>
-                        @endforeach
-
-                    </select>
+                    <div class="autocomplete-wrap">
+                        <input type="hidden" name="brand_id" id="brand_id" value="{{ old('brand_id') }}">
+                        <input type="text" id="brand_search" autocomplete="off" placeholder="Search product..."
+                               class="autocomplete-input shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('brand_id') border-red-500 @enderror">
+                        <div id="brand_search_suggestions" class="autocomplete-list hidden"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Type to find a product, then choose it from the list.</p>
 
                     @error('brand_id')
                     <p class="text-red-500 text-xs italic mt-1">
@@ -456,6 +447,43 @@
             input.focus();
         }
 
+        function productOptions() {
+            return Object.entries(brandOptions).map(([id, data]) => ({
+                id,
+                name: data.name || data.label || String(id)
+            }));
+        }
+
+        function chooseProduct(product) {
+            document.getElementById('brand_id').value = product.id;
+            document.getElementById('brand_search').value = product.name;
+            document.getElementById('model').value = '';
+            closeSuggestions();
+            document.getElementById('model').focus();
+        }
+
+        function openProductSuggestions() {
+            const input = document.getElementById('brand_search');
+            const list = document.getElementById('brand_search_suggestions');
+            const query = normalizeValue(input.value).toLowerCase();
+            const matches = productOptions().filter(product => product.name.toLowerCase().includes(query)).slice(0, 25);
+            closeSuggestions();
+            matches.forEach(product => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-option';
+                item.textContent = product.name;
+                item.addEventListener('mousedown', event => { event.preventDefault(); chooseProduct(product); });
+                list.appendChild(item);
+            });
+            if (!matches.length) {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-option autocomplete-empty';
+                item.textContent = 'No matching products found.';
+                list.appendChild(item);
+            }
+            list.classList.remove('hidden');
+        }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -711,11 +739,14 @@
                 const brandSelect =
                     document.getElementById('brand_id');
 
+                const brandSearch =
+                    document.getElementById('brand_search');
+
                 const modelInput =
                     document.getElementById('model');
 
 
-                if (!brandSelect || !modelInput) {
+                if (!brandSelect || !brandSearch || !modelInput) {
                     return;
                 }
 
@@ -726,18 +757,12 @@
                 |--------------------------------------------------------------------------
                 */
 
-                brandSelect.addEventListener(
-                    'change',
-                    function() {
-
-                        modelInput.value = '';
-
-                        closeSuggestions();
-
-                        modelInput.focus();
-
-                    }
-                );
+                brandSearch.addEventListener('focus', openProductSuggestions);
+                brandSearch.addEventListener('input', function () {
+                    brandSelect.value = '';
+                    modelInput.value = '';
+                    openProductSuggestions();
+                });
 
 
                 bindModelAutocomplete();
@@ -777,6 +802,9 @@
 
                     brandSelect.value =
                         oldValues.brandId;
+
+                    const selectedProduct = productOptions().find(product => String(product.id) === String(oldValues.brandId));
+                    if (selectedProduct) brandSearch.value = selectedProduct.name;
 
                 }
 

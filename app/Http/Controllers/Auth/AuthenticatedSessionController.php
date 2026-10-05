@@ -28,7 +28,35 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        if ($request->user()->hasAnyRole(['mechanic', 'mechanics'])) {
+            return redirect()->route('motor-services.my-pending');
+        }
+
+        $user = $request->user();
+
+        if ($user->can('view dashboard')) {
+            return redirect()->intended(route('dashboard', absolute: false));
+        }
+
+        foreach ([
+            'view motor services' => 'motor-services.index',
+            'view sales' => 'sales.index',
+            'view phones' => 'phones.index',
+            'view installments' => 'installments.index',
+            'view expenses' => 'expenses.index',
+        ] as $permission => $route) {
+            if ($user->can($permission)) {
+                return redirect()->route($route);
+            }
+        }
+
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login')->withErrors([
+            'email' => 'Your account has no assigned access role. Please contact an administrator.',
+        ]);
     }
 
     /**

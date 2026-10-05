@@ -10,6 +10,8 @@ use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
+    /** Legacy retail-inventory permissions remain active internally but are not part of garage role setup. */
+    private const HIDDEN_LEGACY_PERMISSIONS = ['view phones', 'receive phones', 'edit phones', 'delete phones'];
     public function __construct()
     {
         // Only authenticated users with 'manage roles' permission can access these actions
@@ -24,7 +26,8 @@ class RoleController extends Controller
     public function index()
     {
         $roles = Role::with('permissions')->paginate(10);
-        return view('roles.index', compact('roles'));
+        $hiddenPermissions = self::HIDDEN_LEGACY_PERMISSIONS;
+        return view('roles.index', compact('roles', 'hiddenPermissions'));
     }
 
     /**
@@ -34,7 +37,7 @@ class RoleController extends Controller
      */
     public function create()
     {
-        $permissions = Permission::all(); // Get all available permissions
+        $permissions = Permission::whereNotIn('name', self::HIDDEN_LEGACY_PERMISSIONS)->get();
         return view('roles.create', compact('permissions'));
     }
 
@@ -92,7 +95,7 @@ class RoleController extends Controller
      */
     public function edit(Role $role)
     {
-        $permissions = Permission::all();
+        $permissions = Permission::whereNotIn('name', self::HIDDEN_LEGACY_PERMISSIONS)->get();
         $rolePermissions = $role->permissions->pluck('name')->toArray(); // Get permissions assigned to this role
         return view('roles.edit', compact('role', 'permissions', 'rolePermissions'));
     }
@@ -116,7 +119,12 @@ class RoleController extends Controller
         $role->save();
 
         // Sync permissions
-        $role->syncPermissions($request->permissions ?? []);
+        // Keep legacy inventory permissions already assigned to this role; they are deliberately hidden from garage setup.
+        $hiddenAssignedPermissions = $role->permissions()
+            ->whereIn('name', self::HIDDEN_LEGACY_PERMISSIONS)
+            ->pluck('name')
+            ->all();
+        $role->syncPermissions(array_unique(array_merge($request->permissions ?? [], $hiddenAssignedPermissions)));
 
         return redirect()->route('roles.index')->with('success', 'Role updated successfully!');
     }

@@ -79,13 +79,13 @@
                     </span>
                 </div>
                 <div class="detail-item">
-                    <span class="detail-label">Phone(s) Sold:</span>
+                    <span class="detail-label">Product(s) Sold:</span>
                     <span class="detail-value">
                         @foreach ($installmentPlan->sale->saleItems as $item)
                             @if($item->phone)
                                 {{ $item->phone->brand->name ?? 'N/A' }} {{ $item->phone->model }} (IMEI: {{ $item->phone->imei }})<br>
                             @else
-                                Phone removed<br>
+                                Product removed<br>
                             @endif
                         @endforeach
                     </span>

@@ -9,6 +9,7 @@ use App\Models\SaleItem;
 use App\Models\InstallmentPlan;
 use App\Models\SaleReceipt;
 use App\Models\StockLevel;
+use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -64,7 +65,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
      *
      * @return \Illuminate\View\View
      */
-    public function create()
+    public function create(Request $request)
     {
         // Fetch only available phones for selection in the sales form
         $availablePhones = Phone::with('brand')
@@ -72,7 +73,10 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             ->orderBy('model')
             ->orderBy('storage_capacity')
             ->orderBy('imei')
-            ->get();
+            ->get()
+            ->each(function (Phone $phone) {
+                $phone->setAttribute('available_quantity', max((int) $phone->quantity - (int) $phone->reserved_quantity, 0));
+            });
         $accessoryProducts = Product::query()
             ->whereHas('accessoryStocks', fn ($query) => $query->where('status', 'available')->where('quantity', '>', 0))
             ->withSum(['accessoryStocks as available_quantity' => fn ($query) => $query->where('status', 'available')], 'quantity')
@@ -80,7 +84,21 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             ->orderBy('name')
             ->get();
 
-        return view('sales.create', compact('availablePhones', 'accessoryProducts'));
+        $orderDraft = null;
+        if ($request->filled('order')) {
+            $order = Order::with('items.phone.brand')->findOrFail($request->integer('order'));
+            abort_unless($order->reserved_at && ! in_array($order->status, ['completed', 'cancelled'], true), 422, 'This order is not ready to be converted into a sale.');
+            $orderDraft = [
+                'id' => $order->id,
+                'customer_name' => $order->customer_name,
+                'customer_phone' => $order->customer_phone,
+                'customer_email' => $order->customer_email,
+                'discount_amount' => $order->discount_amount,
+                'items' => $order->items->map(fn ($item) => ['phone_id' => $item->phone_id, 'quantity' => $item->quantity])->values(),
+            ];
+        }
+
+        return view('sales.create', compact('availablePhones', 'accessoryProducts', 'orderDraft'));
     }
 
     /**
@@ -114,25 +132,38 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             'phones' => 'required|array|min:1',
             'phones.*.product_id' => 'required',
             'phones.*.quantity' => 'required|integer|min:1',
+            'order_id' => 'nullable|integer|exists:orders,id',
         ]);
 
         try {
             DB::beginTransaction();
 
-            $phoneIds = [];
-            $phoneQuantities = []; // brand_id => quantity requested
+            $phonesToSell = [];
+            $selectedPhoneIds = [];
             $totalAmountCents = 0;
+            $order = null;
+            $reservedByPhone = [];
+
+            if ($request->filled('order_id')) {
+                $order = Order::with('items')->lockForUpdate()->findOrFail($request->integer('order_id'));
+                if (! $order->reserved_at || in_array($order->status, ['completed', 'cancelled'], true)) {
+                    throw ValidationException::withMessages(['order_id' => ['This order is no longer available for sale.']]);
+                }
+                foreach ($order->items as $item) {
+                    $reservedByPhone[$item->phone_id] = ($reservedByPhone[$item->phone_id] ?? 0) + $item->reserved_quantity;
+                }
+            }
 
             // Fetch phones and calculate total amount
             foreach ($request->phones as $product) {
-                $phone = Phone::where('brand_id', $product['product_id'])
+                $phone = Phone::whereKey($product['product_id'])
                     ->where('status', 'available')
                     ->lockForUpdate()
                     ->first();
 
                 if (!$phone) {
                     throw ValidationException::withMessages([
-                        'phones' => ['One or more selected phones are no longer available.'],
+                        'phones' => ['One or more selected products are no longer available.'],
                     ]);
                 }
 
@@ -142,15 +173,30 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 }
 
                 // Guard against selling more than what's actually in stock on this row
-                if ($quantity > $phone->quantity) {
+                $availableForThisSale = $phone->quantity - $phone->reserved_quantity + ($reservedByPhone[$phone->id] ?? 0);
+                if ($quantity > $availableForThisSale) {
                     throw ValidationException::withMessages([
-                        'phones' => ["Only {$phone->quantity} unit(s) available for this phone, but {$quantity} were requested."],
+                        'phones' => ["Only {$availableForThisSale} unit(s) available for this phone, but {$quantity} were requested."],
                     ]);
                 }
 
-                $phoneIds[] = $phone->brand_id;
-                $phoneQuantities[$phone->brand_id] = $quantity;
+                if (isset($selectedPhoneIds[$phone->id])) {
+                    throw ValidationException::withMessages([
+                        'phones' => ['Each inventory item can only be included once in a sale.'],
+                    ]);
+                }
+
+                $selectedPhoneIds[$phone->id] = true;
+                $phonesToSell[] = ['id' => $phone->id, 'quantity' => $quantity];
                 $totalAmountCents += $this->moneyToCents($phone->selling_price) * $quantity;
+            }
+
+            if ($order) {
+                $requestedQuantities = collect($phonesToSell)->mapWithKeys(fn ($line) => [$line['id'] => $line['quantity']]);
+                $orderedQuantities = $order->items->groupBy('phone_id')->map(fn ($items) => $items->sum('quantity'));
+                if ($requestedQuantities->count() !== $orderedQuantities->count() || $orderedQuantities->contains(fn ($quantity, $phoneId) => (int) $requestedQuantities->get($phoneId, 0) !== (int) $quantity)) {
+                    throw ValidationException::withMessages(['phones' => ['An order sale must contain exactly the reserved order items and quantities.']]);
+                }
             }
 
             $discountAmountCents = $this->moneyToCents($request->input('discount_amount', 0));
@@ -197,6 +243,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
 
             // Create the Sale record
             $sale = Sale::create([
+                'order_id' => $order?->id,
                 'customer_name' => $request->customer_name,
                 'customer_phone' => $request->customer_phone,
                 'customer_email' => $request->customer_email,
@@ -214,12 +261,15 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
             ]);
 
             // Create SaleItem records, decrement phone quantity, update status, and reduce stock level
-            foreach ($phoneIds as $phoneId) {
-                $phone = Phone::lockForUpdate()->where('brand_id', '=', $phoneId)->first();
-                $quantity = $phoneQuantities[$phoneId] ?? 1;
+            foreach ($phonesToSell as $line) {
+                $phone = Phone::lockForUpdate()->findOrFail($line['id']);
+                $quantity = $line['quantity'];
 
                 // Decrement the phone's own quantity column
                 $phone->quantity = max($phone->quantity - $quantity, 0);
+                if ($order) {
+                    $phone->reserved_quantity = max($phone->reserved_quantity - ($reservedByPhone[$phone->id] ?? 0), 0);
+                }
 
                 // Only flip status once the row is fully depleted; otherwise it stays available
                 // with a reduced quantity so remaining stock is still sellable.
@@ -240,11 +290,11 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 // Decrease stock in StockLevel
                 $stockLevel = \App\Models\StockLevel::where('brand_id', $phone->brand_id)
                     ->where('model', $phone->model)
-                    ->where('color', $phone->color)
+                    ->lockForUpdate()
                     ->first();
 
-                if ($stockLevel && $stockLevel->current_stock > 0) {
-                    $stockLevel->decrement('current_stock', min($quantity, $stockLevel->current_stock));
+                if ($stockLevel) {
+                    $stockLevel->current_stock = max((int) $stockLevel->current_stock - $quantity, 0);
                     $stockLevel->last_updated_at = now();
                     $stockLevel->save();
                 }
@@ -281,6 +331,11 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                 ]);
             }
 
+            if ($order) {
+                $order->items()->update(['reserved_quantity' => 0]);
+                $order->update(['status' => 'completed']);
+            }
+
             DB::commit();
 
             $emailWarning = null;
@@ -291,7 +346,7 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                     $receipt->load('sale');
 
                     $pdf = Pdf::loadView('pdf.receipt', ['sale' => $sale, 'receipt' => $receipt]);
-                    $pdfContent = base64_encode($pdf->output());
+                    $pdfContent = $pdf->output();
 
                     Mail::to($sale->customer_email)->send(new SaleReceiptMail($sale, $receipt, $pdfContent));
                 } catch (\Throwable $mailException) {
@@ -641,15 +696,14 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                         continue;
                     }
 
-                    if (in_array($phone->status, ['sold', 'under_installment'], true)) {
-                        $phone->status = 'available';
-                        $phone->save();
+                    $phone->quantity = (int) $phone->quantity + (int) ($item->quantity ?? 1);
+                    $phone->status = 'available';
+                    $phone->save();
 
-                        $stockLevel = StockLevel::firstOrCreate(
+                    $stockLevel = StockLevel::firstOrCreate(
                             [
                                 'brand_id' => $phone->brand_id,
                                 'model' => $phone->model,
-                                'color' => $phone->color,
                             ],
                             [
                                 'current_stock' => 0,
@@ -658,10 +712,9 @@ class SaleController extends Controller // <<< IMPORTANT: Ensure it extends App\
                             ]
                         );
 
-                        $stockLevel->increment('current_stock');
-                        $stockLevel->last_updated_at = now();
-                        $stockLevel->save();
-                    }
+                    $stockLevel->increment('current_stock', (int) ($item->quantity ?? 1));
+                    $stockLevel->last_updated_at = now();
+                    $stockLevel->save();
                 }
 
                 $sale->forceFill([

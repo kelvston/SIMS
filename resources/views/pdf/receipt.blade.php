@@ -106,7 +106,7 @@
         @if(file_exists(public_path('images/logo.png')))
             <img src="{{ public_path('images/logo.png') }}" alt="Logo" class="logo" />
         @endif
-        <h1>PhoneStore Pro</h1>
+        <h1>ProductStore Pro</h1>
         <p>Sales Receipt</p>
 
         {{-- QR Code --}}
@@ -231,7 +231,7 @@
 
     <footer class="footer">
         <p>Thank you for your purchase!</p>
-        <p>PhoneStore Pro &mdash; Your trusted phone seller</p>
+        <p>ProductStore Pro &mdash; Your trusted product seller</p>
     </footer>
 </div>
 </body>

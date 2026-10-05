@@ -75,7 +75,7 @@
     </tr>
     <tr>
         <td><div class="kpi-box"><div class="kpi-value c-red">Tsh {{ number_format($totalExpenses, 2) }}</div><div class="kpi-label">Total Expenses</div></div></td>
-        <td><div class="kpi-box"><div class="kpi-value c-gray">{{ $availablePhones }}</div><div class="kpi-label">Phones in Stock</div></div></td>
+        <td><div class="kpi-box"><div class="kpi-value c-gray">{{ $availablePhones }}</div><div class="kpi-label">Products in Stock</div></div></td>
         <td><div class="kpi-box"><div class="kpi-value c-blue">Tsh {{ number_format($inventoryValue, 2) }}</div><div class="kpi-label">Inventory Value</div></div></td>
         <td><div class="kpi-box"><div class="kpi-value c-amber">Tsh {{ number_format($pendingInstallments, 2) }}</div><div class="kpi-label">Pending Installments</div></div></td>
     </tr>

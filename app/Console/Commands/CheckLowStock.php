@@ -28,7 +28,7 @@ class CheckLowStock extends Command
         $alerts = [];
 
         foreach ($lowStockItems as $item) {
-            $message = "Low Stock Alert! Phone: {$item->brand->name} {$item->model} ({$item->color}). Current stock: {$item->current_stock}, Threshold: {$item->low_stock_threshold}.";
+            $message = "Low Stock Alert! Product: {$item->brand->name} {$item->model} ({$item->color}). Current stock: {$item->current_stock}, Threshold: {$item->low_stock_threshold}.";
             Log::warning("[CheckLowStock] {$message}");
             $alerts[] = $message;
         }
